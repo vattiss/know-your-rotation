@@ -374,15 +374,6 @@ function ns.Physics.NoteEnergy(current)
 	lastEnergy = current
 end
 
-local function sampleEnergy()
-	local ok, cur = pcall(UnitPower, "player", ENERGY)
-	if ok then
-		ns.Physics.NoteEnergy(cur)
-	elseif energyAt <= 0 then
-		energyAt = GetTime()
-	end
-end
-
 local function handRemain(at, speed)
 	if at <= 0 or speed <= 0 then
 		return nil, 0
@@ -466,32 +457,6 @@ function ns.Physics.EnergySoon(spellID)
 	return tick ~= nil and tick <= ENERGY_WAIT
 end
 
-function ns.Physics.Cue(spellID)
-	if not ns.Physics.Enabled() or not spellID then
-		return false
-	end
-	if ns.Physics.IsSwing(spellID) then
-		return ns.Physics.SwingWindow()
-	end
-	if ns.Physics.IsClip(spellID) then
-		local left = shotRemain()
-		return left ~= nil and not ns.Physics.WouldClip()
-	end
-	local cost = spellEnergyCost(spellID)
-	if cost <= 0 then
-		return false
-	end
-	local ok, cur = pcall(UnitPower, "player", ENERGY)
-	cur = ok and plainNumber(cur)
-	if not cur then
-		return false
-	end
-	if cur >= cost then
-		return true
-	end
-	return ns.Physics.EnergySoon(spellID)
-end
-
 function ns.Physics.Blocks(spellID)
 	if not ns.Physics.Enabled() or not spellID then
 		return false
@@ -503,65 +468,6 @@ function ns.Physics.Blocks(spellID)
 		return true
 	end
 	return false
-end
-
-local function addBar(bars, kind, left, speed, window, label)
-	if not left or speed <= 0 then
-		return
-	end
-	bars[#bars + 1] = {
-		kind = kind,
-		progress = 1 - (left / speed),
-		hot = left <= window,
-		mark = 1 - (window / speed),
-		label = label,
-	}
-end
-
-function ns.Physics.Status()
-	if not ns.Physics.Enabled() then
-		return
-	end
-	pcall(ensureLive)
-	local bars = {}
-	if mhSpeed <= 0 then
-		mhSpeed = 2
-	end
-	local token = ns.ClassToken and ns.ClassToken()
-	local role = ns.db and ns.db.role
-	if token == "HUNTER" and role ~= "melee" then
-		local left, speed = shotRemain()
-		addBar(bars, "shot", left, speed, CLIP_WINDOW, ns.T("PHYS_SHOT"))
-	end
-	local mhLeft, mhSp = handRemain(mhAt, mhSpeed)
-	if not mhLeft then
-		mhLeft, mhSp = mhSpeed, mhSpeed
-	end
-	addBar(bars, "swing", mhLeft, mhSp, SWING_WINDOW, ns.T("PHYS_SWING"))
-	local ohLeft, ohSp = handRemain(ohAt, ohSpeed)
-	addBar(bars, "offhand", ohLeft, ohSp, SWING_WINDOW, ns.T("PHYS_OFFHAND"))
-	if token == "ROGUE" or (token == "DRUID" and role ~= "tank" and role ~= "heal") then
-		sampleEnergy()
-		local tick = energyTickRemain() or ENERGY_TICK
-		bars[#bars + 1] = {
-			kind = "energy",
-			progress = 1 - (tick / ENERGY_TICK),
-			hot = tick <= ENERGY_WAIT,
-			mark = 1 - (ENERGY_WAIT / ENERGY_TICK),
-			left = tick,
-			label = ns.T("PHYS_ENERGY"),
-		}
-	end
-	if #bars == 0 then
-		return
-	end
-	return {
-		bars = bars,
-		progress = bars[1].progress,
-		hot = bars[1].hot,
-		kind = bars[1].kind,
-		label = bars[1].label,
-	}
 end
 
 local function hastenMainHand()

@@ -155,9 +155,6 @@ local function makeCard(parent, titleKey, x, y, width, height)
 end
 
 local function featureOn(key)
-	if key == "locked" then
-		return ns.db.locked == true
-	end
 	return ns.db[key] ~= false
 end
 
@@ -447,85 +444,39 @@ local function ensureOptions()
 		return ns.UI.options
 	end
 	ns.optSerial = (ns.optSerial or 0) + 1
-	local frame = CreateFrame("Frame", "KnowYourRotationOptions" .. ns.optSerial, UIParent, "BackdropTemplate")
-	frame:SetSize(900, 680)
-	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
-	frame:SetFrameStrata("DIALOG")
-	frame:SetClampedToScreen(true)
-	frame:SetMovable(true)
-	frame:EnableMouse(true)
-	frame:RegisterForDrag("LeftButton")
-	frame:SetScript("OnDragStart", frame.StartMoving)
-	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-	frame:SetBackdrop({
-		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-		tile = true,
-		tileSize = 32,
-		edgeSize = 24,
-		insets = { left = 8, right = 8, top = 8, bottom = 8 },
-	})
+	-- One shared page host. Each Settings category (General, Rotation, ...)
+	-- owns an empty panel; opening it moves this frame into that panel.
+	local frame = CreateFrame("Frame", "KnowYourRotationOptions" .. ns.optSerial, UIParent)
 	frame:Hide()
-	tinsert(UISpecialFrames, frame:GetName())
 
-	local titleBar = CreateFrame("Frame", nil, frame)
-	titleBar:SetPoint("TOPLEFT", 12, -10)
-	titleBar:SetPoint("TOPRIGHT", -42, -10)
-	titleBar:SetHeight(36)
-	titleBar:EnableMouse(true)
-	titleBar:RegisterForDrag("LeftButton")
-	titleBar:SetScript("OnDragStart", function()
-		frame:StartMoving()
-	end)
-	titleBar:SetScript("OnDragStop", function()
-		frame:StopMovingOrSizing()
-	end)
-
-	local title = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	title:SetPoint("LEFT", 8, 0)
-	title:SetPoint("RIGHT", titleBar, "RIGHT", -8, 0)
-	title:SetJustifyH("LEFT")
-	frame.windowTitle = title
-
-	local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-	close:SetPoint("TOPRIGHT", -6, -6)
-
-	local nav = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-	nav:SetPoint("TOPLEFT", 16, -52)
-	nav:SetPoint("BOTTOMLEFT", 16, 16)
-	nav:SetWidth(200)
-	nav:SetBackdrop(PANEL)
-	nav:SetBackdropColor(0.02, 0.02, 0.02, 0.96)
-	nav:SetBackdropBorderColor(0.55, 0.45, 0.18, 1)
-
-	local navTitle = nav:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	navTitle:SetPoint("TOPLEFT", 14, -14)
-	navTitle:SetTextColor(1, 0.82, 0.2)
-	frame.navTitle = navTitle
-
-	local navStatus = nav:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	navStatus:SetPoint("TOPLEFT", navTitle, "BOTTOMLEFT", 0, -6)
-	navStatus:SetPoint("RIGHT", -12, 0)
-	navStatus:SetJustifyH("LEFT")
-	navStatus:SetTextColor(0.65, 0.65, 0.65)
-	frame.navStatus = navStatus
-
-	local content = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-	content:SetPoint("TOPLEFT", nav, "TOPRIGHT", 12, 0)
-	content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -16, 16)
-	content:SetBackdrop(PANEL)
-	content:SetBackdropColor(0.015, 0.015, 0.015, 0.98)
-	content:SetBackdropBorderColor(0.55, 0.45, 0.18, 1)
+	local content = CreateFrame("Frame", nil, frame)
+	content:SetAllPoints(frame)
 
 	local pageTitle = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	pageTitle:SetPoint("TOPLEFT", 16, -14)
+	pageTitle:SetPoint("TOPLEFT", 16, -12)
 	pageTitle:SetTextColor(1, 0.82, 0.2)
 	frame.pageTitle = pageTitle
 
+	local PAGE_TOP = -44
+	local function newPage(hidden)
+		local page = CreateFrame("Frame", nil, content)
+		page:SetPoint("TOPLEFT", 8, PAGE_TOP)
+		page:SetPoint("BOTTOMRIGHT", -8, 8)
+		if hidden then
+			page:Hide()
+		end
+		return page
+	end
+	local general = newPage(false)
+	local rotation = newPage(true)
+	local profiles = newPage(true)
+	local extra = newPage(true)
+	local info = newPage(true)
+
 	frame.profileButtons = {}
 	for i, key in ipairs({ "base", "pve", "pvp", "custom" }) do
-		local btn = makeGoldBtn(content, 88, 22, ns.T("PROFILE_" .. key:upper()))
-		btn:SetPoint("TOPLEFT", 16 + (i - 1) * 94, -42)
+		local btn = makeGoldBtn(profiles, 88, 22, ns.T("PROFILE_" .. key:upper()))
+		btn:SetPoint("TOPLEFT", 8 + (i - 1) * 94, -4)
 		btn.profile = key
 		btn:SetScript("OnClick", function(self)
 			if ns.SetProfile then
@@ -535,36 +486,16 @@ local function ensureOptions()
 		frame.profileButtons[i] = btn
 	end
 
-	local general = CreateFrame("Frame", nil, content)
-	general:SetPoint("TOPLEFT", 8, -72)
-	general:SetPoint("BOTTOMRIGHT", -8, 8)
-
-	local rotation = CreateFrame("Frame", nil, content)
-	rotation:SetPoint("TOPLEFT", 8, -72)
-	rotation:SetPoint("BOTTOMRIGHT", -8, 8)
-	rotation:Hide()
-
-	local extra = CreateFrame("Frame", nil, content)
-	extra:SetPoint("TOPLEFT", 8, -72)
-	extra:SetPoint("BOTTOMRIGHT", -8, 8)
-	extra:Hide()
-
-	local info = CreateFrame("Frame", nil, content)
-	info:SetPoint("TOPLEFT", 8, -72)
-	info:SetPoint("BOTTOMRIGHT", -8, 8)
-	info:Hide()
 	frame.general = general
 	frame.rotation = rotation
+	frame.profiles = profiles
 	frame.extra = extra
 	frame.info = info
 	frame.content = content
-	frame.nav = nav
 
 	local hudCard = makeCard(general, "OPT_CARD_HUD", 8, -4, 318, 172)
-	frame.optLock = addSwitch(hudCard, "locked", ns.T("OPT_LOCK"))
 	frame.optRotation = addSwitch(hudCard, "showRotation", ns.T("OPT_ROTATION"))
 	frame.optGlow = addSwitch(hudCard, "glow", ns.T("OPT_GLOW"))
-	frame.optModes = addSwitch(hudCard, "showModes", ns.T("OPT_MODES"))
 
 	local winCard = makeCard(general, "OPT_CARD_WINDOWS", 338, -4, 318, 172)
 	frame.optDef = addSwitch(winCard, "showDefense", ns.T("OPT_DEFENSE"))
@@ -574,35 +505,8 @@ local function ensureOptions()
 	frame.optWeapon = addSwitch(winCard, "showWeapon", ns.T("OPT_WEAPON"))
 
 	local displayCard = makeCard(general, "OPT_CARD_DISPLAY", 8, -188, 318, 196)
-	local scaleLabel = displayCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	scaleLabel:SetPoint("TOPLEFT", 12, -32)
-	scaleLabel:SetTextColor(0.92, 0.92, 0.92)
-	frame.scaleLabel = scaleLabel
-	local scaleBar = makeBarSlider(displayCard, 200, 60, 200, 10)
-	scaleBar:SetPoint("TOPLEFT", 12, -52)
-	scaleBar.OnValueChanged = function(_, value)
-		ns.db.uiScale = value / 100
-		if ns.UI and ns.UI.ApplyScale then
-			ns.db.uiScale = ns.UIScale and ns.UIScale() or (value / 100)
-			ns.UI.ApplyScale()
-		end
-		if frame.scaleLabel then
-			frame.scaleLabel:SetText(ns.T("OPT_SCALE"):format(math.floor((ns.UIScale and ns.UIScale() or value / 100) * 100 + 0.5)))
-		end
-	end
-	frame.scaleBar = scaleBar
-
-
-	local resetPos = makeGoldBtn(displayCard, 140, 22, ns.T("OPT_RESET_POS"))
-	resetPos:SetPoint("TOPLEFT", 12, -84)
-	resetPos:SetScript("OnClick", function()
-		ns.db.pos = nil
-		ns.UI.ApplyPosition()
-	end)
-	frame.resetPos = resetPos
-
 	local resetAll = makeGoldBtn(displayCard, 140, 22, ns.T("OPT_RESET_ALL"))
-	resetAll:SetPoint("LEFT", resetPos, "RIGHT", 8, 0)
+	resetAll:SetPoint("TOPLEFT", 12, -32)
 	resetAll:SetScript("OnClick", function()
 		ns.ConfirmResetAll()
 	end)
@@ -855,17 +759,12 @@ local function ensureOptions()
 		end
 	end
 
-	local combatCard = makeCard(extra, "OPT_CARD_COMBAT", 8, -4, 318, 148)
-	frame.optHideIdle = addSwitch(combatCard, "hideIdle", ns.T("OPT_HIDE_IDLE"))
+	local combatCard = makeCard(extra, "OPT_CARD_COMBAT", 8, -4, 318, 118)
 	frame.optPhysics = addSwitch(combatCard, "showPhysics", ns.T("OPT_PHYSICS"))
-	frame.optRoleAuto = addSwitch(combatCard, "roleAuto", ns.T("OPT_ROLE_AUTO"))
 	frame.optBarOnly = addSwitch(combatCard, "barOnly", ns.T("OPT_BAR_ONLY"))
+	frame.optCleanseGroup = addSwitch(combatCard, "cleanseGroup", ns.T("OPT_CLEANSE_GROUP"))
 
-	local autoCard = makeCard(extra, "OPT_CARD_AUTOMATION", 338, -4, 318, 96)
-	frame.optAutoProfile = addSwitch(autoCard, "autoProfile", ns.T("OPT_AUTO_PROFILE"))
-	frame.optCleanseGroup = addSwitch(autoCard, "cleanseGroup", ns.T("OPT_CLEANSE_GROUP"))
-
-	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -138, 318, 132)
+	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -134, 318, 132)
 	local soundLabel = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	soundLabel:SetPoint("TOPLEFT", 12, -32)
 	soundLabel:SetTextColor(0.92, 0.92, 0.92)
@@ -886,7 +785,7 @@ local function ensureOptions()
 	soundHint:SetTextColor(0.65, 0.65, 0.65)
 	frame.soundHint = soundHint
 
-	local colorCard = makeCard(extra, "OPT_COLORS", 338, -112, 318, 184)
+	local colorCard = makeCard(extra, "OPT_COLORS", 338, -4, 318, 150)
 	frame.colorButtons = {}
 	frame.colorLabels = {}
 	local colorKeys = { "next", "heal", "def", "weapon" }
@@ -917,7 +816,11 @@ local function ensureOptions()
 		frame.colorLabels[i] = label
 	end
 
-	local shareCard = makeCard(extra, "OPT_CARD_SHARE", 8, -282, 648, 248)
+	local autoCard = makeCard(profiles, "OPT_CARD_AUTOMATION", 8, -36, 648, 90)
+	frame.optAutoProfile = addSwitch(autoCard, "autoProfile", ns.T("OPT_AUTO_PROFILE"))
+	frame.optRoleAuto = addSwitch(autoCard, "roleAuto", ns.T("OPT_ROLE_AUTO"))
+
+	local shareCard = makeCard(profiles, "OPT_CARD_SHARE", 8, -138, 648, 248)
 	local shareHint = shareCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	shareHint:SetPoint("TOPLEFT", 12, -28)
 	shareHint:SetPoint("RIGHT", -12, 0)
@@ -1000,66 +903,14 @@ local function ensureOptions()
 	aboutSupport:SetTextColor(0.72, 0.72, 0.72)
 	frame.aboutSupport = aboutSupport
 
-	local cmdCard = makeCard(info, "OPT_CARD_COMMANDS", 8, -212, 648, 196)
-	local cmdHint = cmdCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	cmdHint:SetPoint("TOPLEFT", 12, -28)
-	cmdHint:SetPoint("RIGHT", -12, 0)
-	cmdHint:SetJustifyH("LEFT")
-	cmdHint:SetTextColor(0.72, 0.72, 0.72)
-	frame.cmdHint = cmdHint
-	local cmdList = cmdCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	cmdList:SetPoint("TOPLEFT", 12, -48)
-	cmdList:SetPoint("RIGHT", -12, 0)
-	cmdList:SetJustifyH("LEFT")
-	cmdList:SetWordWrap(true)
-	cmdList:SetTextColor(0.92, 0.92, 0.92)
-	frame.cmdList = cmdList
 
-	local linksCard = makeCard(info, "OPT_CARD_LINKS", 8, -420, 648, 70)
+	local linksCard = makeCard(info, "OPT_CARD_LINKS", 8, -212, 648, 70)
 	frame.githubRow = makeLinkRow(linksCard, "INFO_GITHUB", GITHUB_URL)
 	frame.githubRow:SetPoint("TOPLEFT", 12, -32)
 	frame.githubRow:SetPoint("RIGHT", -12, 0)
 
-	frame.navButtons = {}
-	local navDefs = {
-		{ key = "general", label = "TAB_GENERAL" },
-		{ key = "rotation", label = "TAB_ROTATION" },
-		{ key = "def", label = "TAB_DEFENSE" },
-		{ key = "extra", label = "TAB_EXTRA" },
-		{ key = "info", label = "TAB_INFO" },
-	}
-	for i, def in ipairs(navDefs) do
-		local btn = CreateFrame("Button", nil, nav)
-		btn:SetHeight(28)
-		btn:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -58 - ((i - 1) * 30))
-		btn:SetPoint("RIGHT", nav, "RIGHT", -10, 0)
-		btn:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-		local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		text:SetPoint("LEFT", 8, 0)
-		text:SetPoint("RIGHT", -6, 0)
-		text:SetJustifyH("LEFT")
-		btn.text = text
-		btn.labelKey = def.label
-		btn.tabKey = def.key
-		btn:SetScript("OnClick", function(self)
-			frame.ShowTab(self.tabKey)
-			if self.tabKey ~= "general" then
-				ns.RefreshOptions()
-			end
-		end)
-		frame.navButtons[def.key] = btn
-	end
 
 	function frame.RelocalizeChrome()
-		local ver = addonVersion()
-		local title = tostring(ns.T("TITLE") or "Know Your Rotation")
-		local sub = tostring(ns.T("TITLE_SUB") or "(Multi language)")
-		if ver ~= "" then
-			frame.windowTitle:SetText(title .. "  |cffbbbbbb" .. sub .. "|r  |cff66ccffv" .. ver .. "|r")
-		else
-			frame.windowTitle:SetText(title .. "  |cffbbbbbb" .. sub .. "|r")
-		end
-		frame.navTitle:SetText(ns.T("OPT_NAV_TITLE"))
 		if frame.hint then
 			frame.hint:SetText(ns.T("OPT_HINT"))
 		end
@@ -1068,9 +919,6 @@ local function ensureOptions()
 		end
 		if frame.shareHint then
 			frame.shareHint:SetText(ns.T("OPT_EXPORT_HINT"))
-		end
-		if frame.resetPos then
-			frame.resetPos:SetText(ns.T("OPT_RESET_POS"))
 		end
 		if frame.resetAll then
 			frame.resetAll:SetText(ns.T("OPT_RESET_ALL"))
@@ -1096,12 +944,6 @@ local function ensureOptions()
 		if frame.aboutSupport then
 			frame.aboutSupport:SetText(ns.T("INFO_SUPPORT"))
 		end
-		if frame.cmdHint then
-			frame.cmdHint:SetText(ns.T("INFO_CMD_HINT"))
-		end
-		if frame.cmdList then
-			frame.cmdList:SetText(ns.T("INFO_CMD_LIST"))
-		end
 		for _, row in ipairs({ frame.githubRow }) do
 			if row and row.label and row.labelKey then
 				row.label:SetText(ns.T(row.labelKey))
@@ -1115,13 +957,10 @@ local function ensureOptions()
 				label:SetText(ns.T(label.key))
 			end
 		end
-		for _, card in ipairs({ hudCard, winCard, displayCard, weaponCard, combatCard, autoCard, alertCard, colorCard, shareCard, aboutCard, cmdCard, linksCard }) do
+		for _, card in ipairs({ hudCard, winCard, displayCard, weaponCard, combatCard, autoCard, alertCard, colorCard, shareCard, aboutCard, linksCard }) do
 			if card and card.title and card.titleKey then
 				card.title:SetText(ns.T(card.titleKey))
 			end
-		end
-		for _, btn in pairs(frame.navButtons) do
-			btn.text:SetText(ns.T(btn.labelKey))
 		end
 	end
 
@@ -1130,27 +969,18 @@ local function ensureOptions()
 		listKind = which == "def" and "def" or "apl"
 		general:SetShown(which == "general")
 		rotation:SetShown(which == "rotation" or which == "def")
+		profiles:SetShown(which == "profiles")
 		extra:SetShown(which == "extra")
 		info:SetShown(which == "info")
 		local titles = {
 			general = "TAB_GENERAL",
 			rotation = "TAB_ROTATION",
 			def = "TAB_DEFENSE",
+			profiles = "TAB_PROFILES",
 			extra = "TAB_EXTRA",
 			info = "TAB_INFO",
 		}
 		frame.pageTitle:SetText(ns.T(titles[which] or "TAB_GENERAL"))
-		frame.navStatus:SetText(ns.T(titles[which] or "TAB_GENERAL"))
-		for key, btn in pairs(frame.navButtons) do
-			local selected = key == which
-			if selected then
-				btn:LockHighlight()
-				btn.text:SetTextColor(1, 0.82, 0.2)
-			else
-				btn:UnlockHighlight()
-				btn.text:SetTextColor(0.9, 0.9, 0.9)
-			end
-		end
 	end
 
 	frame.RelocalizeChrome()
@@ -1319,6 +1149,10 @@ function ns.DropSpellOnList(atIndex, mode)
 end
 
 function ns.RefreshOptions()
+	-- Nothing to refresh until the Settings panel is open; it rebuilds on show.
+	if not (ns.UI.options and ns.UI.options:IsVisible()) then
+		return
+	end
 	local frame = ensureOptions()
 	if frame.RelocalizeChrome then
 		pcall(frame.RelocalizeChrome)
@@ -1326,14 +1160,10 @@ function ns.RefreshOptions()
 	if frame.ShowTab and frame.activeTab then
 		frame.ShowTab(frame.activeTab)
 	end
-	if frame.optLock then
-		frame.optLock:SetChecked(ns.db.locked == true)
+	if frame.optGlow then
 		frame.optGlow:SetChecked(ns.db.glow ~= false)
 		if frame.optRotation then
 			frame.optRotation:SetChecked(ns.db.showRotation ~= false)
-		end
-		if frame.optModes then
-			frame.optModes:SetChecked(ns.db.showModes ~= false)
 		end
 		frame.optDef:SetChecked(ns.db.showDefense ~= false)
 		frame.optKick:SetChecked(ns.db.showInterrupt ~= false)
@@ -1341,9 +1171,6 @@ function ns.RefreshOptions()
 		if frame.optCleanse then
 			frame.optCleanse:SetChecked(ns.db.showCleanse ~= false)
 			frame.optWeapon:SetChecked(ns.db.showWeapon ~= false)
-		end
-		if frame.optHideIdle then
-			frame.optHideIdle:SetChecked(ns.db.hideIdle ~= false)
 		end
 		if frame.optPhysics then
 			frame.optPhysics:SetChecked(ns.db.showPhysics ~= false)
@@ -1372,13 +1199,6 @@ function ns.RefreshOptions()
 			local r, g, b = ns.Color(btn.colorKey)
 			btn:SetBackdropColor(r, g, b, 1)
 			btn:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
-		end
-	end
-	if frame.scaleLabel then
-		local pct = math.floor((ns.UIScale and ns.UIScale() or 1) * 100 + 0.5)
-		frame.scaleLabel:SetText(ns.T("OPT_SCALE"):format(pct))
-		if frame.scaleBar then
-			frame.scaleBar:SetValue(pct)
 		end
 	end
 	local choices = ns.WeaponChoices and ns.WeaponChoices() or {}
@@ -1607,93 +1427,42 @@ function ns.RefreshOptions()
 	child:SetHeight(math.max(40, y + 10))
 end
 
-function ns.RefreshLocale()
-	if ns.UI and ns.UI.RefreshTips then
-		ns.UI.RefreshTips()
-	end
-	if ns.UI and ns.UI.RefreshRoles then
-		ns.UI.RefreshRoles()
-	end
-	local shown = ns.UI and ns.UI.options and ns.UI.options:IsShown()
-	if ns.UI and ns.UI.options then
-		ns.UI.options:Hide()
-		ns.UI.options:SetParent(nil)
-		ns.UI.options = nil
-	end
-	if shown and ns.ToggleOptions then
-		ns.ToggleOptions()
-	end
-end
 
-function ns.ToggleOptions()
-	local frame = ensureOptions()
-	if frame:IsShown() then
-		frame:Hide()
+-- The options live in the game's Settings window, under AddOns: one category
+-- for Profiles (the main entry) and a sub-category (expandable with +) for every other page.
+local TABS = {
+	{ "profiles", "TAB_PROFILES" },
+	{ "general", "TAB_GENERAL" },
+	{ "rotation", "TAB_ROTATION" },
+	{ "def", "TAB_DEFENSE" },
+	{ "extra", "TAB_EXTRA" },
+	{ "info", "TAB_INFO" },
+}
+
+function ns.RegisterOptions()
+	if ns.optionsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory then
 		return
 	end
-	editSpec = ns.ActiveSpec()
-	ns.RefreshOptions()
-	frame:Show()
-end
-
-ns.ToggleSpellMenu = ns.ToggleOptions
-
-local function placeMinimap(btn)
-	local angle = (ns.db.minimapAngle or 210) * math.pi / 180
-	local radius = 80
-	btn:ClearAllPoints()
-	btn:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
-end
-
-function ns.CreateMinimap()
-	if ns.UI.minimap then
-		return
-	end
-	local btn = CreateFrame("Button", "KnowYourRotationMinimap", Minimap)
-	btn:SetSize(32, 32)
-	btn:SetFrameStrata("MEDIUM")
-	btn:SetFrameLevel(8)
-	btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-	btn:RegisterForDrag("LeftButton")
-	btn:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-	local icon = btn:CreateTexture(nil, "ARTWORK")
-	icon:SetTexture("Interface\\Icons\\Ability_Marksmanship")
-	icon:SetPoint("TOPLEFT", 6, -6)
-	icon:SetPoint("BOTTOMRIGHT", -6, 6)
-	local border = btn:CreateTexture(nil, "OVERLAY")
-	border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-	border:SetSize(54, 54)
-	border:SetPoint("TOPLEFT")
-	btn:SetScript("OnClick", function(_, button)
-		if button == "RightButton" then
-			ns.UI.SetLocked(not ns.db.locked)
-			return
-		end
-		ns.ToggleOptions()
-	end)
-	btn:SetScript("OnDragStart", function(self)
-		self:SetScript("OnUpdate", function(me)
-			local mx, my = Minimap:GetCenter()
-			local cx, cy = GetCursorPosition()
-			local scale = Minimap:GetEffectiveScale()
-			cx, cy = cx / scale, cy / scale
-			ns.db.minimapAngle = math.deg(math.atan2(cy - my, cx - mx))
-			placeMinimap(me)
+	local root
+	for index, tab in ipairs(TABS) do
+		local key, labelKey = tab[1], tab[2]
+		local panel = CreateFrame("Frame", "KnowYourRotationPanel" .. key)
+		panel:SetScript("OnShow", function(self)
+			editSpec = ns.ActiveSpec()
+			local frame = ensureOptions()
+			frame:SetParent(self)
+			frame:ClearAllPoints()
+			frame:SetAllPoints(self)
+			frame:Show()
+			frame.ShowTab(key)
+			ns.RefreshOptions()
 		end)
-	end)
-	btn:SetScript("OnDragStop", function(self)
-		self:SetScript("OnUpdate", nil)
-	end)
-	btn:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-		GameTooltip:AddLine(ns.T("TITLE"), 1, 0.82, 0)
-		GameTooltip:AddLine(ns.T("MINIMAP_L"), 1, 1, 1)
-		GameTooltip:AddLine(ns.T("MINIMAP_R"), 0.7, 0.7, 0.7)
-		GameTooltip:Show()
-	end)
-	btn:SetScript("OnLeave", function()
-		GameTooltip:Hide()
-	end)
-	placeMinimap(btn)
-	ns.UI.minimap = btn
+		if index == 1 then
+			root = Settings.RegisterCanvasLayoutCategory(panel, ns.T("TITLE"))
+			Settings.RegisterAddOnCategory(root)
+			ns.optionsCategory = root
+		else
+			Settings.RegisterCanvasLayoutSubcategory(root, panel, ns.T(labelKey))
+		end
+	end
 end

@@ -2,13 +2,11 @@
 
 Rotation helper for **WoW Forever** (Classic Era combat on the camelot / Midnight-family client, interface `16001`).
 
-It shows the next three abilities on a small HUD, highlights the matching action-bar button with a glow, and also tracks heals, long defense buffs, interrupts, purges, cleanses, and weapon imbues. It does **not** cast spells for you.
+It highlights the spell to press next with a glow on your action-bar button, and does the same for heals, long defense buffs, interrupts, purges, cleanses, and weapon imbues. There is no HUD window. It does **not** cast spells for you.
 
 Current version: **1.0.0**
 
-**Status:** open source (MIT). Source and forks: [github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
-
-Player-facing text is translated for `enUS`, `frFR`, `deDE`, `esES`, `esMX`, `ruRU`, `zhCN`, `zhTW`, `ptBR`, `itIT`, and `koKR`. Missing strings fall back to English.
+**Status:** open source (MIT). Source, issues and pull requests: [github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
 
 ## Requirements
 
@@ -29,20 +27,17 @@ Forever uses its own spell IDs for some abilities (for example Devotion Aura). T
 
 The folder must contain `KnowYourRotation.toc` and the `.lua` files.
 
-The CurseForge app often installs into official Classic. On Forever, unzip by hand into `_classic_beta_`.
-
 ## What it does
 
 | Surface | Role |
 | --- | --- |
-| **Rotation HUD** | Next 3 combat abilities from your checked list |
+| **Rotation** | The next combat ability from your checked list lights up on its action-bar button |
 | **Defense** | Missing long buffs / auras, plus emergency buttons when health is low |
 | **Weapon** | Missing weapon imbue (shaman / rogue poisons, etc.) |
 | **Interrupt / Purge / Cleanse** | Target interrupt, enemy magic purge, dispellable debuffs |
-| **Spellflash** | Glow on the action-bar button |
 | **Classic timing** | White-hit swing (main + off-hand), hunter auto-shot clip, energy tick |
 
-### Spellflash colors
+### Glow colors
 
 | Color | Meaning |
 | --- | --- |
@@ -74,14 +69,14 @@ Full health → no heal suggestion, damage rotation stays visible. Same idea for
 
 Four profiles, all saved independently:
 
-| Profile | Slash | Typical use |
-| --- | --- | --- |
-| Base | `/kyr base` | Default / shared |
-| PvE | `/kyr pve` | PvE |
-| PvP | `/kyr pvp` | PvP |
-| Customs | `/kyr custom` | Experiments |
+| Profile | Typical use |
+| --- | --- |
+| Base | Default / shared |
+| PvE | PvE |
+| PvP | PvP |
+| Customs | Experiments |
 
-Switch from the options window or the class-colored HUD button. **Reset** only wipes the **selected** profile. You can export / import a profile as text. Optional auto-switch uses PvE or PvP from the instance type.
+PvE or PvP is picked automatically (dungeons and raids = PvE; battlegrounds and arenas = PvP; in the open world your PvP flag or an attackable player as target = PvP); you can also switch in the options window. **Reset** only wipes the **selected** profile. You can export / import a profile as text. Optional auto-switch uses PvE or PvP from the instance type.
 
 ### Combat modes
 
@@ -89,36 +84,20 @@ Switch from the options window or the class-colored HUD button. **Reset** only w
 
 ### Roles
 
-Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). The HUD role button cycles the styles that exist for your class.
+Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). The role is picked automatically from your talents, stance and range; pick it by hand in the options to turn that off.
 
-### Extra options
+### Advanced options
 
-- Hide the HUD when dead, mounted, eating, or in town
+(Automatic role and PvE / PvP profile detection is on the Profiles page.)
+
 - Only suggest spells that are on your action bars
-- Auto PvE / PvP profile
 - Group dispel limited to types your class can remove
 - Classic combat timing (white hits, dual wield, auto-shot, energy)
 - Overlay colors and alert volume
 
-## Slash commands
+## Opening the options
 
-`/kyr`, `/knowyourrotation`, or `/knowyourrotation`
-
-| Command | Action |
-| --- | --- |
-| *(no argument)* | Print help |
-| `lock` / `unlock` | Lock or move the HUD |
-| `reset` | Reset HUD positions |
-| `resetall` | Reset the **current** profile lists |
-| `role` | Cycle playstyle |
-| `mode` | Cycle combat mode |
-| `profile` | Cycle profile |
-| `base` / `jce` / `jcj` / `custom` | Jump to that profile |
-| `menu` / `options` | Open the configuration window |
-
-Open options with `/kyr options` or a left-click on the minimap button. Right-click the minimap button to lock or unlock the windows.
-
-When locked, the mouse clicks through the HUD. The padlock stays clickable.
+There are no chat commands and no minimap button. Open the game menu → Options → AddOns → Know Your Rotation; expand it with + for General, Rotation, Defense, Advanced and Info. Role, combat mode and PvE / PvP profile are detected automatically.
 
 ## Files
 
@@ -131,11 +110,11 @@ Physics.lua                    # swing / auto-shot / energy timing
 Lists.lua                      # default APLs and defense lists
 APL.lua                        # saved lists, merge, add/remove
 Share.lua                      # profile import / export
-UI.lua                         # HUD
+UI.lua                         # shared ns.UI table (no HUD window)
 Options.lua                    # configuration
 Glow.lua                       # action-bar glow
-Rotations.lua                  # queue builders
-Core.lua                       # profiles, events, slash
+Rotations.lua                  # queue and cue builders
+Core.lua                       # profiles, events, auto role / profile
 ```
 
 Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per character).
@@ -158,4 +137,4 @@ Source (public): [https://github.com/attilavarga96/know-your-rotation](https://g
 
 ## License
 
-[MIT](LICENSE) — free to use, modify, fork, and redistribute. See the copyright notice in the license file; contributions and forks are welcome.
+[MIT](LICENSE) — free to use, modify, fork, and redistribute. See the copyright notice in the license file. Contributions are welcome: open an issue or a pull request.

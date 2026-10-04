@@ -2540,29 +2540,100 @@ function ns.API.CombatNotice()
 	return nil
 end
 
+-- Role from the talent trees (C_SpecializationInfo reports points spent per
+-- tree and, when the client knows it, the tree role). Cached for a few seconds.
+local TREE_ROLE = {
+	WARRIOR = { "damage", "damage", "tank" },
+	PALADIN = { "heal", "tank", "damage" },
+	PRIEST = { "heal", "heal", "damage" },
+	SHAMAN = { "damage", "damage", "heal" },
+	DRUID = { "damage", "damage", "heal" },
+}
+local ROLE_WORD = { TANK = "tank", HEALER = "heal", DAMAGER = "damage" }
+local specRoleCache, specRoleAt = nil, -10
+
+local function specRole(token)
+	local now = GetTime()
+	if specRoleAt > 0 and now - specRoleAt < 3 then
+		return specRoleCache
+	end
+	specRoleAt = now
+	specRoleCache = nil
+	local info = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo
+	if not info then
+		return nil
+	end
+	local bestPoints, bestRole = 0, nil
+	for index = 1, 4 do
+		local ok, specId, _, _, _, role, _, points = pcall(info, index)
+		if not ok or not specId or specId == 0 then
+			break
+		end
+		points = tonumber(safe(points, 0)) or 0
+		if points > bestPoints then
+			local word = type(role) == "string" and readable(role) and ROLE_WORD[role:upper()]
+			bestPoints = points
+			bestRole = word or (TREE_ROLE[token] and TREE_ROLE[token][index]) or "damage"
+		end
+	end
+	specRoleCache = bestRole
+	return bestRole
+end
+
+local function defensiveStance()
+	if not GetShapeshiftForm then
+		return false
+	end
+	local ok, index = pcall(GetShapeshiftForm)
+	return ok and safe(index, 0) == 2
+end
+
+-- Picks the playstyle from the character, no clicking needed: talent tree,
+-- defensive stance / Righteous Fury, and melee range for hunter / shaman.
 function ns.SyncAutoRole()
 	if not ns.db or ns.db.roleAuto == false then
 		return
 	end
 	local token = ns.ClassToken and ns.ClassToken()
-	if token ~= "HUNTER" and token ~= "SHAMAN" then
-		return
-	end
-	if not ns.API.Hostile() or not unitExists("target") then
-		return
-	end
-	local melee = ns.API.TargetInMelee()
 	local want
 	if token == "HUNTER" then
-		want = melee and "melee" or "range"
-	else
-		-- Shaman: only auto-switch between caster and melee, never heal.
-		local role = ns.db.role
-		if role == "heal" then
+		if not ns.API.Hostile() or not unitExists("target") then
 			return
 		end
-		want = melee and "melee" or "caster"
+		want = ns.API.TargetInMelee() and "melee" or "range"
+	elseif token == "WARRIOR" or token == "PALADIN" or token == "PRIEST" or token == "SHAMAN" or token == "DRUID" then
+		local spec = specRole(token)
+		if token == "WARRIOR" and defensiveStance() then
+			spec = "tank"
+		elseif token == "PALADIN" and ns.Spell.Paladin and ns.Spell.Paladin.RighteousFury and ns.API.Form(ns.Spell.Paladin.RighteousFury) then
+			spec = "tank"
+		end
+		if spec == nil and (token ~= "SHAMAN" or ns.db.role == "heal") then
+			-- No talent data and no stance signal: keep whatever is set.
+			return
+		end
+		if spec == "tank" or spec == "heal" then
+			want = spec
+		elseif token == "SHAMAN" then
+			-- Damage shaman: caster at range, melee when in reach of the target.
+			if not ns.API.Hostile() or not unitExists("target") then
+				if ns.db.role == "heal" then
+					want = "caster"
+				else
+					return
+				end
+			else
+				want = ns.API.TargetInMelee() and "melee" or "caster"
+			end
+		elseif token == "DRUID" then
+			want = "hybrid"
+		else
+			want = "damage"
+		end
+	else
+		return
 	end
+	want = ns.NormalizeRole and ns.NormalizeRole(want) or want
 	if ns.db.role == want then
 		return
 	end
@@ -2618,7 +2689,7 @@ function ns.API.IsEating()
 end
 
 function ns.API.ShouldHideIdle()
-	if not ns.db or ns.db.hideIdle ~= true then
+	if not ns.db then
 		return false
 	end
 	local function yes(fn, ...)

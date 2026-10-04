@@ -39,7 +39,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 | Windows, toolbar | `UI.lua` |
 | Options, spell drag | `Options.lua` |
 | Glow on action bars | `Glow.lua` |
-| Profiles, slash commands, migrations | `Core.lua` |
+| Profiles, auto role / profile, migrations | `Core.lua` |
 | Player text | `Locale.lua` |
 
 ## Pitfalls

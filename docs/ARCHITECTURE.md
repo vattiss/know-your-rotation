@@ -22,16 +22,14 @@ On `PLAYER_LOGIN` and `PLAYER_ENTERING_WORLD`:
 
 1. `defaults()` completes `KnowYourRotationDB` and calls `ns.BindProfile()`.
 2. `ns.API.InvalidateSpells()` clears the resolution cache.
-3. `ns.UI.Create()` builds the HUD once (`ns.UI.root`).
-4. `ns.CreateMinimap()` and `ns.GlowFetch()`.
-5. `ns.Tick()`.
+3. `ns.RegisterOptions()` and `ns.GlowFetch()`.
+4. `ns.Tick()` (sets `ns.booted` first; `Tick` does nothing before login).
 
 `ns.Tick` (`C_Timer` every 0.2 s like ConROC, plus target changes):
 
 ```
 BuildQueue → BuildDefense → BuildInterrupt → BuildPurge → BuildCleanse → BuildWeapon
-→ ns.UI.Update + glows only if the queue changed
-→ RangeUpdate (every 0.25 s) or RangeClear
+→ glows only if the result changed (rotation glow only when the first spell is pressable now)
 ```
 
 Each builder honors its `ns.db.show*` switch. A missing `show*` means shown (`~= false`).
@@ -51,11 +49,11 @@ Load order (single TOC): `Locale.lua` → `API.lua` → `Data.lua` → `Physics.
 | `Lists.lua` | `ns.APLDefaults`, `ns.APLModes`, `ns.DefDefaults`. |
 | `APL.lua` | Read / write of saved lists, merge with defaults. |
 | `Share.lua` | Export / import of the active profile (`WFR1` text). |
-| `UI.lua` | HUD, toolbar, positions, scale. |
-| `Options.lua` | Options window, editors, minimap. `ns.ToggleSpellMenu = ns.ToggleOptions`. |
+| `UI.lua` | Shared `ns.UI` table and refresh hooks (no HUD window). |
+| `Options.lua` | Options panel (Settings → AddOns) and the list editors. |
 | `Glow.lua` | Bar overlays. |
 | `Rotations.lua` | Queue builders. |
-| `Core.lua` | Profiles, roles, modes, events, slash `/kyr` and `/knowyourrotation`. |
+| `Core.lua` | Profiles, roles, modes, events, auto role and profile. |
 
 Namespace: `local addonName, ns = ...`. Do not create a second global state outside the declared SavedVariables.
 
@@ -63,7 +61,7 @@ Namespace: `local addonName, ns = ...`. Do not create a second global state outs
 
 `ns.CLASSES` and `ns.CLASS_BY_ID`: the 9 Classic classes. No DK.
 
-`ns.CLASS_ROLES` — HUD style buttons:
+`ns.CLASS_ROLES` — role styles:
 
 | Class | Roles |
 | --- | --- |
@@ -77,11 +75,11 @@ Namespace: `local addonName, ns = ...`. Do not create a second global state outs
 
 `ns.NormalizeRole` converts an old shaman `damage` to `caster`, hunter to `range`, druid to `hybrid`, otherwise the first allowed role.
 
-`ns.ActiveSpec` (in `APL.lua`) picks the **list key**, which is not always the HUD role:
+`ns.ActiveSpec` (in `APL.lua`) picks the **list key**, which is not always the selected role:
 
 - Druid `heal` → `heal`. Druid `tank` → `bear` if in bear form, otherwise `tank`.
 - Otherwise cat form → `cat`, bear form → `bear`, otherwise `damage`.
-- Other classes: the HUD role as is.
+- Other classes: the selected role as is.
 
 `ns.APLDefaults.DRUID.hybrid` aliases `damage`. The hunter `range`/`melee` and shaman `caster`/`melee` defenses alias `damage`. The editor uses `ns.SpecList` (for the druid: `damage`, `cat`, `bear`, `heal`, `tank`).
 
@@ -161,7 +159,7 @@ The camelot client often hides `GetSpellCooldown` in combat. On a successful cas
 
 Overpower, Revenge, Riposte, Counterattack and Mongoose Bite (`opt.proc`) are only suggested if `IsSpellUsable` answers true. A hidden answer skips the step. The combat log is not read.
 
-`Physics.lua` (Extra option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The next-swing window (Heroic Strike, Cleave, Raptor Strike, Maul) reads the main hand only. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
+`Physics.lua` (Advanced option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The next-swing window (Heroic Strike, Cleave, Raptor Strike, Maul) reads the main hand only. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
 
 A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through the power cost if `IsSpellUsable` is false or absent. A harmful spell with `usable == false` is refused.
 
@@ -177,7 +175,7 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 - the same spell appears only once in the queue (except `swing`): slots 2–3 show other spells;
 - `opt.hold` removes a spell after a cast for N seconds (DoT / snare) in addition to the "pass" marking;
 - slot 1 prefers `RangeState` `in`; otherwise `notOut`. `out` → slots 2–3;
-- `ns.ApplyRotationEdit` (Up / Down / Apply) clears the cache and refreshes the HUD without `/reload`;
+- `ns.ApplyRotationEdit` (Up / Down / Apply) clears the cache and re-evaluates the glows without `/reload`;
 - `IsSpellUsable` false during the GCD or a cast no longer prevents a shock from entering the queue;
 - if no heal made it into the 3 slots, the first `StepOk` heal is inserted at the head and the queue is trimmed back to 3.
 
@@ -226,8 +224,8 @@ Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`, `burst`.
 - `ns.SetCombatMode` remembers the last manual mode in `lastManualMode` (never `auto`).
 - `ns.ToggleAuto` switches between `auto` and `lastManualMode`.
 - `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those in combat. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
-- `roleAuto` (default true): Hunter/Shaman switch melee/ranged via `TargetInMelee`; clicking the HUD role → `roleAuto = false`.
-- `CombatNotice`: Hunter/Warlock in combat → "call pet" / "pet not attacking" under the HUD.
+- `roleAuto` (default true): Hunter/Shaman switch melee/ranged via `TargetInMelee`; the options role button → `roleAuto = false`.
+- `CombatNotice`: Hunter/Warlock in combat → "call pet" / "pet not attacking" as a screen message.
 - Deferred spellbook index (`RebuildSpellBookIndex`): warmed at login / lazy remap only. **No** `SPELLS_CHANGED` (ConROC neither) — learn / level-up = soft Invalidate + `ButtonFetch` 0.5 s. Glow without action tooltip.
 
 `ns.CoerceChecked` only accepts `true`, `1`, `"1"`. `ns.IsStepEnabled` refuses `false`, `0`, `"0"`.
@@ -242,42 +240,33 @@ The active profile is copied into `ns.db.profiles[key]` by `FlushProfile` (profi
 
 Migrations in `defaults()`:
 
-- `uiVersion ~= 6`: forgets the `toolbar` and `defense` positions.
 - `listVersion ~= 4`: clears the global `apl`, `aplDrop`, `def`, `defDrop` **and** those of each profile.
 
 Bump `listVersion` only when old saves must be discarded. Players then lose their reorderings.
 
-Other defaults: `glow`, `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `showCleanse`, `showWeapon`, `showModes` true; `uiScale` 1 (clamped 0.6–2, step 0.1); `role` `damage` then normalized; `autoEnemies` 3; `combatMode` `auto`; initial profile `pve` if the `profiles` table does not exist.
+Other defaults: `glow`, `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `showCleanse`, `showWeapon` true; `role` `damage` then normalized; `autoEnemies` 3; `combatMode` `auto`; initial profile `pve` if the `profiles` table does not exist.
 
 ## Interface
 
-HUD (`UI.lua`), anchored on `KnowYourRotationFrame`:
+There is no HUD window. Every cue is a glow on an action-bar button (`Glow.lua`):
 
-- 3 queue icons (the first one larger). Positions saved under `ns.db.pos.queue`. Physics gauge under the queue if `showPhysics`.
-- Interrupt (`pos.interrupt`) and purge (`pos.purge`) on the left, dispel (`pos.cleanse`) and weapon (`pos.weapon`) on the right. Each icon moves on its own.
-- Lock (`pos.lock`) under the queue. Left click locks or unlocks. Options open with `/kyr options` or the left click of the minimap button.
-- Toolbar (`pos.toolbar`): handle on the left, role, Auto, manual mode, profile. Drag the handle or a button. Class color. Its chrome is not modified.
-- Defense (`pos.defense`) under the toolbar.
-- Queue, defense, interrupt, purge, cleanse, weapon and lock share the toolbar chrome (ChatFrame background, tooltip border, class color).
-- Scale applied to root, toolbar, interrupt, purge, cleanse, weapon, defense, lockWrap.
+- rotation: the first queue spell, only if `ns.queueGlowOk` (ready, resources, not out of range);
+- defense, interrupt, purge, cleanse and weapon buff each have their own glow, switched by `show*`;
+- a Blizzard `ActionButtonSpellAlertTemplate` frame per button and cue, tinted by `ns.Color`; plain texture fallback;
+- no glow while the player is dead, on a taxi, mounted, eating, or resting in town (`ns.API.ShouldHideIdle`);
+- hunter / warlock pet reminders (`CombatNotice`) appear once as a screen message;
+- sounds (`alert volume`) still play for interrupt, cleanse and weapon.
 
-`/kyr reset` and the options button clear `ns.db.pos`.
+`UI.lua` only holds the shared `ns.UI` table and the `RefreshRoles` / `RefreshModes` hooks.
 
-Locked: the background is more transparent, dragging is ignored, and the mouse passes through the windows. The lock stays clickable and has a tooltip (`ns.db.locked`).
+Options (`KnowYourRotationOptions`, inside the Settings panel):
 
-`hideIdle` (default true): hides queue, defense, interrupt, purge, cleanse and weapon if the player is dead, on a taxi, mounted, eating / drinking, or resting (city / inn) out of combat. Toolbar and lock stay.
-
-HUD icons show the action bar binding (`ns.SpellBinding`) already known by GlowFetch.
-
-Options (`KnowYourRotationOptions`, 500×560, in `UISpecialFrames`):
-
-- tabs General / Rotation / Defense / Extra;
-- profile buttons Base, PvE (`pve`), PvP (`pvp`), Customs;
-- checkboxes for `show*`, glow, mode selector;
-- enchant choice, scale, AoE threshold (2–8), position reset, profile reset;
+- pages: Profiles (main entry), then sub-categories General, Rotation, Defense, Advanced, Info;
+- Profiles page: buttons Base, PvE (`pve`), PvP (`pvp`), Customs, the automatic detection switches (`autoProfile`, `roleAuto`), plus export / import;
+- checkboxes for `show*` and glow, mode selector;
+- enchant choice, AoE threshold (2–8), profile reset;
 - editor: `SpecList` specs, `auto/single/aoe/burst` modes, checkboxes, move up, move down, remove, drop zone.
 
-Minimap: angle `ns.db.minimapAngle` (default 210). Left click options, right click lock, drag to rotate around the minimap.
 
 
 ## Highlight (`Glow.lua`)
@@ -330,45 +319,23 @@ The queue imitates ConROC: the 1st spell is the one to cast now, the 2nd and 3rd
 
 Heals — unit: `opt.unit` if present, otherwise `mouseover`, `target`, `focus`, `targettarget`, otherwise `player`. `HealHealth` uses `LowestFriendly` (player, mouseover, target, focus, targettarget, pet, party1–4) when none of mouseover/target/focus is friendly. A dead or attackable unit is not friendly.
 
-## Commands
+## Opening the options
 
-`/kyr` or `/knowyourrotation`:
-
-| Argument | Action |
-| --- | --- |
-| *(empty)* | help (`ns.T("HELP")`) |
-| `lock` / `unlock` | `ns.UI.SetLocked` |
-| `reset` | forgets `pos` and `point` |
-| `resetall` | popup then reset of the active profile |
-| `role` | cycles `CLASS_ROLES` |
-| `mode` | cycles `single` → `aoe` → `burst` (leaves `auto`) |
-| `profile` | cycles base → pve → pvp → custom |
-| `base` | `base` profile |
-| `pve` | `pve` profile |
-| `pvp` | `pvp` profile |
-| `custom` or `customs` | `custom` profile |
-| `menu` / `options` / `opt` | `ns.ToggleOptions` |
+There are no slash commands and no minimap button. The options are a canvas category in the game Settings window (Options → AddOns): `ns.RegisterOptions` registers Profiles as the category and General, Rotation, Defense, Advanced and Info as sub-categories (`Settings.RegisterCanvasLayoutSubcategory`, expandable with +). One shared page host frame is moved into whichever panel is open; `ns.RefreshOptions` does nothing while it is closed.
 
 ## `KnowYourRotationDB` schema
 
 ```
-uiVersion            = 6
 listVersion          = 4
 profile              = "base" | "pve" | "pvp" | "custom"
-locked               = bool
 glow, showRotation, showDefense, showInterrupt, showPurge,
-showCleanse, showWeapon, showModes
-hideIdle, barOnly, autoProfile, cleanseGroup, showPhysics
+showCleanse, showWeapon
+barOnly, autoProfile, cleanseGroup, showPhysics
 soundVolume          = 0 .. 100
-colors.next / heal / def / weapon / range
-uiScale              = 0.6 .. 2
+colors.next / heal / def / weapon
 role, combatMode, lastManualMode, autoEnemies, weaponBuff
 apl, aplDrop, def, defDrop     -- mirror of the active profile
 profiles[key]        -- same list fields + role/mode/weapon
-pos.queue / pos.toolbar / pos.defense
-pos.interrupt / pos.purge / pos.cleanse / pos.weapon / pos.lock
-  = { point, relativePoint, x, y }  -- 2nd value = anchor name, currently UIParent via GetPoint
-minimapAngle
 ```
 
 ## Adding a spell

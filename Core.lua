@@ -41,13 +41,6 @@ local function defaults()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
-	if ns.db.uiVersion ~= 6 then
-		ns.db.uiVersion = 6
-		if ns.db.pos then
-			ns.db.pos.toolbar = nil
-			ns.db.pos.defense = nil
-		end
-	end
 	if ns.db.listVersion ~= 4 then
 		ns.db.listVersion = 4
 		ns.db.apl = nil
@@ -84,15 +77,6 @@ local function defaults()
 	if ns.db.showWeapon == nil then
 		ns.db.showWeapon = true
 	end
-	if ns.db.showModes == nil then
-		ns.db.showModes = true
-	end
-	if ns.db.idleSeen ~= 1 then
-		ns.db.idleSeen = 1
-		ns.db.hideIdle = false
-	elseif ns.db.hideIdle == nil then
-		ns.db.hideIdle = false
-	end
 	if ns.db.barOnly == nil then
 		ns.db.barOnly = true
 	end
@@ -119,10 +103,6 @@ local function defaults()
 		ns.db.soundVolume = 100
 	end
 	ns.db.colors = ns.db.colors or {}
-	if ns.db.uiScale == nil then
-		ns.db.uiScale = 1
-	end
-	ns.db.uiScale = ns.UIScale and ns.UIScale() or ns.db.uiScale
 	if not ns.db.role then
 		ns.db.role = "damage"
 	end
@@ -454,33 +434,6 @@ function ns.InvalidateTick()
 end
 
 function ns.ApplyFeatureFlags()
-	if ns.UI and ns.UI.SetLocked then
-		ns.UI.SetLocked(ns.db.locked == true)
-	end
-	local idle = ns.API.ShouldHideIdle and ns.API.ShouldHideIdle()
-	if ns.UI then
-		if ns.UI.root then
-			ns.UI.root:SetShown(ns.db.showRotation ~= false and not idle)
-		end
-		if ns.UI.defense then
-			ns.UI.defense:SetShown(ns.db.showDefense ~= false and not idle)
-		end
-		if ns.UI.interrupt then
-			ns.UI.interrupt:SetShown(ns.db.showInterrupt ~= false and not idle)
-		end
-		if ns.UI.purge then
-			ns.UI.purge:SetShown(ns.db.showPurge ~= false and not idle)
-		end
-		if ns.UI.cleanse then
-			ns.UI.cleanse:SetShown(ns.db.showCleanse ~= false and not idle)
-		end
-		if ns.UI.weapon then
-			ns.UI.weapon:SetShown(ns.db.showWeapon ~= false and not idle)
-		end
-		if ns.UI.RefreshModes then
-			ns.UI.RefreshModes()
-		end
-	end
 	if ns.db.glow == false or ns.db.showRotation == false then
 		if ns.GlowClear then
 			ns.GlowClear()
@@ -507,12 +460,9 @@ function ns.ApplyFeatureFlags()
 	if ns.Tick then
 		ns.Tick()
 	end
-	if ns.UI and ns.UI.FitFrame then
-		ns.UI.FitFrame()
-	end
 end
 
-local lastAlertKick, lastAlertCleanse, lastAlertWeapon
+local lastAlertKick, lastAlertCleanse, lastAlertWeapon, lastNotice
 
 local function playAlert(kind)
 	local vol = tonumber(ns.db and ns.db.soundVolume) or 0
@@ -541,11 +491,25 @@ function ns.ApplyAutoProfile()
 			itype = instanceType
 		end
 	end
+	-- Open world: being PvP flagged, or having an attackable player as target,
+	-- counts as PvP. Instances decide by their own type below.
+	local pvpTarget = false
+	local okF, flagged = pcall(UnitIsPVP, "player")
+	if okF and flagged == true then
+		pvpTarget = true
+	end
+	local okP, isPlayer = pcall(UnitIsPlayer, "target")
+	local okA, canAttack = pcall(UnitCanAttack, "player", "target")
+	if okP and okA and isPlayer == true and canAttack == true then
+		pvpTarget = true
+	end
 	local want
 	if itype == "pvp" or itype == "arena" then
 		want = "pvp"
 	elseif itype == "party" or itype == "raid" then
 		want = "pve"
+	elseif pvpTarget then
+		want = "pvp"
 	end
 	if want then
 		if ns.ProfileKey() ~= want then
@@ -557,6 +521,10 @@ function ns.ApplyAutoProfile()
 		return
 	end
 	local from = ns.db.autoProfileFrom
+	-- Do not swap lists back in the middle of a fight.
+	if from and ns.API.InCombat() then
+		return
+	end
 	if from and ns.ValidProfile(from) and ns.ProfileKey() ~= from then
 		ns.db.autoProfileFrom = nil
 		ns.SetProfile(from)
@@ -566,48 +534,49 @@ function ns.ApplyAutoProfile()
 end
 
 function ns.Tick()
-	if not ns.UI or not ns.UI.root then
+	if not ns.booted then
 		return
 	end
 	if ns.SyncAutoRole then
 		ns.SyncAutoRole()
 	end
-	local idle = ns.API.ShouldHideIdle and ns.API.ShouldHideIdle()
-	local queue = (ns.db.showRotation ~= false and not idle) and ns.BuildQueue() or {}
-	local defense = (ns.db.showDefense ~= false and not idle) and ns.BuildDefense() or nil
-	local interrupt = (ns.db.showInterrupt ~= false and not idle) and ns.BuildInterrupt() or nil
-	local purge = (ns.db.showPurge ~= false and not idle) and ns.BuildPurge() or nil
-	local cleanse = (ns.db.showCleanse ~= false and not idle) and ns.BuildCleanse() or nil
+
+	-- No glow while dead, mounted, eating, or resting in town.
+	local idle = ns.API.ShouldHideIdle()
+	local queue = ns.db.showRotation ~= false and not idle and ns.BuildQueue() or {}
+	local defense = ns.db.showDefense ~= false and not idle and ns.BuildDefense() or nil
+	local interrupt = ns.db.showInterrupt ~= false and not idle and ns.BuildInterrupt() or nil
+	local purge = ns.db.showPurge ~= false and not idle and ns.BuildPurge() or nil
+	local cleanse = ns.db.showCleanse ~= false and not idle and ns.BuildCleanse() or nil
 	local weapon, weaponNeed
 	if ns.db.showWeapon ~= false and not idle then
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
-	local noticeKey = (not idle and ns.API.CombatNotice and ns.API.CombatNotice()) or nil
-	local notice = noticeKey and ns.T(noticeKey) or nil
-	if idle then
-		lastAlertKick, lastAlertCleanse, lastAlertWeapon = nil, nil, nil
-	else
-		if interrupt and interrupt ~= lastAlertKick then
-			playAlert("kick")
-		end
-		lastAlertKick = interrupt
-		if cleanse and cleanse ~= lastAlertCleanse then
-			playAlert("cleanse")
-		end
-		lastAlertCleanse = cleanse
-		if weaponNeed and weapon and weapon ~= lastAlertWeapon then
-			playAlert("weapon")
-		end
-		if not weaponNeed then
-			lastAlertWeapon = nil
-		else
-			lastAlertWeapon = weapon
-		end
+	-- Pet reminders (hunter / warlock) show once as a screen message.
+	local noticeKey = not idle and ns.API.CombatNotice and ns.API.CombatNotice() or nil
+	if noticeKey and noticeKey ~= lastNotice and UIErrorsFrame then
+		UIErrorsFrame:AddMessage(ns.T(noticeKey), 1, 0.82, 0)
 	end
-	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. (noticeKey or "") .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(ns.db.glow) .. flagBit(ns.db.showModes) .. (ns.db.locked == true and "1" or "0") .. flagBit(not idle)
+	lastNotice = noticeKey
+	if interrupt and interrupt ~= lastAlertKick then
+		playAlert("kick")
+	end
+	lastAlertKick = interrupt
+	if cleanse and cleanse ~= lastAlertCleanse then
+		playAlert("cleanse")
+	end
+	lastAlertCleanse = cleanse
+	if weaponNeed and weapon and weapon ~= lastAlertWeapon then
+		playAlert("weapon")
+	end
+	if not weaponNeed then
+		lastAlertWeapon = nil
+	else
+		lastAlertWeapon = weapon
+	end
+	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(ns.db.glow) .. flagBit(not idle)
 	if sig ~= lastTickSig then
 		lastTickSig = sig
-		ns.UI.Update(queue, defense, interrupt, purge, cleanse, weapon, weaponNeed, notice)
 		if ns.GlowSpell then
 			ns.GlowSpell(ns.db.showRotation ~= false and ns.queueGlowOk and queue[1] or nil)
 		end
@@ -656,6 +625,8 @@ pcall(frame.RegisterEvent, frame, "PLAYER_ALIVE")
 pcall(frame.RegisterEvent, frame, "PLAYER_UNGHOST")
 pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
 pcall(frame.RegisterEvent, frame, "PLAYER_MOUNT_DISPLAY_CHANGED")
+pcall(frame.RegisterEvent, frame, "PLAYER_FLAGS_CHANGED")
+pcall(frame.RegisterEvent, frame, "UNIT_FACTION")
 pcall(frame.RegisterEvent, frame, "ZONE_CHANGED_NEW_AREA")
 pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
 
@@ -809,18 +780,15 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 		defaults()
 		if not booted then
 			booted = true
+			ns.booted = true
 			if ns.API and ns.API.InvalidateSpells then
 				ns.API.InvalidateSpells(true)
 			end
 			if ns.API and ns.API.RebuildSpellBookIndex then
 				ns.API.RebuildSpellBookIndex(false)
 			end
-			local okCreate, errCreate = pcall(ns.UI.Create)
-			if not okCreate then
-				ns.Print(errCreate)
-			end
-			if ns.CreateMinimap then
-				local okMini, errMini = pcall(ns.CreateMinimap)
+			if ns.RegisterOptions then
+				local okMini, errMini = pcall(ns.RegisterOptions)
 				if not okMini then
 					ns.Print(errMini)
 				end
@@ -849,6 +817,9 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 	elseif event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
 		forceTick()
 	elseif event == "PLAYER_TARGET_CHANGED" then
+		if ns.ApplyAutoProfile then
+			ns.ApplyAutoProfile()
+		end
 		ns.API.castTarget = false
 		if ns.API and ns.API.ClearTargetDebuffs then
 			ns.API.ClearTargetDebuffs()
@@ -858,10 +829,17 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 		end
 		forceTick()
 	elseif event == "PLAYER_REGEN_ENABLED" then
+		if ns.ApplyAutoProfile then
+			ns.ApplyAutoProfile()
+		end
 		if ns.ClearRotationSpent then
 			ns.ClearRotationSpent()
 		end
 		forceTick()
+	elseif event == "PLAYER_FLAGS_CHANGED" or (event == "UNIT_FACTION" and unit == "player") then
+		if ns.ApplyAutoProfile then
+			ns.ApplyAutoProfile()
+		end
 	elseif event == "UNIT_AURA" then
 		if liveAuraUnit(unit) then
 			if ns.API and ns.API.WipeAuraScan then
@@ -952,39 +930,3 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 	end
 end)
 
-SLASH_KYR1 = "/kyr"
-SLASH_KYR2 = "/knowyourrotation"
-SlashCmdList.KYR = function(msg)
-	msg = strtrim(strlower(msg or ""))
-	if msg == "unlock" then
-		ns.UI.SetLocked(false)
-		ns.Print(ns.T("UNLOCKED"))
-	elseif msg == "lock" then
-		ns.UI.SetLocked(true)
-		ns.Print(ns.T("LOCKED"))
-	elseif msg == "reset" then
-		ns.db.pos = nil
-		ns.db.point = nil
-		ns.UI.ApplyPosition()
-	elseif msg == "resetall" then
-		ns.ConfirmResetAll()
-	elseif msg == "role" then
-		ns.CycleRole()
-	elseif msg == "mode" then
-		ns.CycleCombatMode()
-	elseif msg == "profile" then
-		ns.CycleProfile()
-	elseif msg == "pve" then
-		ns.SetProfile("pve")
-	elseif msg == "pvp" then
-		ns.SetProfile("pvp")
-	elseif msg == "base" then
-		ns.SetProfile("base")
-	elseif msg == "custom" or msg == "customs" then
-		ns.SetProfile("custom")
-	elseif msg == "menu" or msg == "options" or msg == "opt" then
-		ns.ToggleOptions()
-	else
-		ns.Print(ns.T("HELP"))
-	end
-end
