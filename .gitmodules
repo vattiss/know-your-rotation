@@ -1,0 +1,5 @@
+[submodule "ref/wow-ui-source"]
+	path = ref/wow-ui-source
+	url = https://github.com/Gethe/wow-ui-source.git
+	branch = forever
+	shallow = true

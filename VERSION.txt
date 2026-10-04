@@ -1,0 +1,12 @@
+1.0.0
+
+# 1.0.0
+
+First release of Know Your Rotation.
+
+A rotation helper for WoW Forever. It shows the next three spells on a small HUD and highlights the matching action-bar button. It never casts for you and never reads the combat log.
+
+- English only, WoW Forever (camelot client) only.
+- Highlight uses the client's own spell-alert glow, and only for a spell you can press right now.
+- All artwork is built-in client art; no texture files ship with the addon.
+- Profiles with import / export, per-spell hold times, Single / AoE / Burst / Auto modes.

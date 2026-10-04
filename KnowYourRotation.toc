@@ -1,0 +1,23 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cffd4a017Know Your|r |cff66ccffRotation|r
+## Notes: Rotation helper for WoW Forever Classic. HUD, action-bar glow, heals, defense, interrupts. Not a bot.
+## Version: 1.0.0
+## IconTexture: Interface\Icons\Ability_Marksmanship
+## Category: WoW Forever
+## SavedVariables: KnowYourRotationDB
+## SavedVariablesPerCharacter: KnowYourRotationCharDB
+## DefaultState: enabled
+
+Locale.lua
+API.lua
+Data.lua
+Physics.lua
+Lists.lua
+APL.lua
+Share.lua
+UI.lua
+Options.lua
+Glow.lua
+Rotations.lua
+Core.lua
