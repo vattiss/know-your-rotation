@@ -93,7 +93,7 @@ Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee,
 - Only suggest spells that are on your action bars
 - Group dispel limited to types your class can remove
 - Classic combat timing (white hits, dual wield, auto-shot, energy)
-- Overlay colors and alert volume
+- Overlay colors and a separate alert sound (or none) for interrupt, cleanse and weapon buff
 
 ## Opening the options
 

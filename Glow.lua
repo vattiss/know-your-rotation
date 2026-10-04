@@ -3,8 +3,6 @@ local API = ns.API
 
 -- Built-in client art only: no texture files ship with the addon.
 local GLOW_ART = "Interface\\Cooldown\\star4" -- fallback if the spell-alert glow template is missing
-local KICK_ART = "Interface\\Icons\\Ability_Kick"
-local PURGE_ART = "Interface\\Icons\\Spell_Nature_Purge"
 local BARS = {
 	"Action",
 	"MultiBarBottomLeft",
@@ -342,7 +340,7 @@ local function hideDefense(button)
 end
 
 local function showKick(button)
-	overlay(button, "kick", KICK_ART, 1, 1, 0.35, 1.2, 0.75):Show()
+	overlay(button, "kick", GLOW_ART, 1, 1, 0.35, 1.3, 0.9):Show()
 	kickGlowing[button] = true
 end
 
@@ -354,7 +352,7 @@ local function hideKick(button)
 end
 
 local function showPurge(button)
-	overlay(button, "purge", PURGE_ART, 0.85, 0.35, 1, 1.2, 0.75):Show()
+	overlay(button, "purge", GLOW_ART, 0.85, 0.35, 1, 1.3, 0.9):Show()
 	purgeGlowing[button] = true
 end
 
@@ -859,7 +857,7 @@ local cleanseGlowing, weaponGlowing = {}, {}
 local lastCleanse, lastWeapon
 
 local function showCleanse(button)
-	overlay(button, "cleanse", "Interface\\Buttons\\UI-ActionButton-Border", 0.35, 1, 0.45, 1.2, 0.8):Show()
+	overlay(button, "cleanse", GLOW_ART, 0.35, 1, 0.45, 1.3, 0.9):Show()
 	cleanseGlowing[button] = true
 end
 

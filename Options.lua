@@ -347,81 +347,6 @@ local function addSwitch(card, key, label)
 	return row
 end
 
-local function makeBarSlider(parent, width, minV, maxV, step)
-	local bar = CreateFrame("Button", nil, parent, "BackdropTemplate")
-	bar:SetSize(width, 16)
-	bar:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	bar:SetBackdropColor(0.08, 0.08, 0.08, 0.95)
-	bar:SetBackdropBorderColor(0.42, 0.42, 0.42, 1)
-	local fill = bar:CreateTexture(nil, "ARTWORK")
-	fill:SetTexture("Interface\\Buttons\\WHITE8x8")
-	fill:SetVertexColor(1, 0.82, 0.2, 0.85)
-	fill:SetPoint("TOPLEFT", 3, -3)
-	fill:SetPoint("BOTTOMLEFT", 3, 3)
-	bar.fill = fill
-	bar._min, bar._max, bar._step, bar._value = minV, maxV, step, minV
-	function bar:Render()
-		local span = self._max - self._min
-		local p = span > 0 and (self._value - self._min) / span or 0
-		self.fill:SetWidth(math.max(2, (self:GetWidth() - 6) * p))
-	end
-	function bar:SetValue(value)
-		self._value = tonumber(value) or self._min
-		self:Render()
-	end
-	function bar:GetValue()
-		return self._value
-	end
-	local function applyFromCursor(self)
-		local okLeft, left = pcall(self.GetLeft, self)
-		local okScale, scale = pcall(self.GetEffectiveScale, self)
-		local okCur, cx = pcall(GetCursorPosition)
-		left, scale, cx = tonumber(okLeft and left), tonumber(okScale and scale) or 1, tonumber(okCur and cx)
-		if not left or not cx then
-			return
-		end
-		local p = (cx / scale - left) / math.max(1, self:GetWidth())
-		p = math.min(1, math.max(0, p))
-		local raw = self._min + p * (self._max - self._min)
-		local snapped = math.floor(raw / self._step + 0.5) * self._step
-		snapped = math.min(self._max, math.max(self._min, snapped))
-		self._value = snapped
-		self:Render()
-		if self.OnValueChanged then
-			self:OnValueChanged(snapped)
-		end
-	end
-	bar:SetScript("OnMouseDown", function(self)
-		self._drag = true
-		applyFromCursor(self)
-	end)
-	bar:SetScript("OnMouseUp", function(self)
-		self._drag = nil
-	end)
-	bar:SetScript("OnLeave", function(self)
-		if not self._drag then
-			return
-		end
-	end)
-	bar:SetScript("OnUpdate", function(self)
-		if self._drag and not IsMouseButtonDown("LeftButton") then
-			self._drag = nil
-		end
-		if self._drag then
-			applyFromCursor(self)
-		end
-	end)
-	bar:Render()
-	return bar
-end
-
 local function modeLabel(mode)
 	return ns.T("MODE_" .. (mode or "single"):upper())
 end
@@ -764,22 +689,50 @@ local function ensureOptions()
 	frame.optBarOnly = addSwitch(combatCard, "barOnly", ns.T("OPT_BAR_ONLY"))
 	frame.optCleanseGroup = addSwitch(combatCard, "cleanseGroup", ns.T("OPT_CLEANSE_GROUP"))
 
-	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -134, 318, 132)
-	local soundLabel = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	soundLabel:SetPoint("TOPLEFT", 12, -32)
-	soundLabel:SetTextColor(0.92, 0.92, 0.92)
-	frame.soundLabel = soundLabel
-	local soundBar = makeBarSlider(alertCard, 200, 0, 100, 10)
-	soundBar:SetPoint("TOPLEFT", 12, -52)
-	soundBar.OnValueChanged = function(_, value)
-		ns.db.soundVolume = value
-		if frame.soundLabel then
-			frame.soundLabel:SetText(ns.T("OPT_SOUND"):format(value))
-		end
+	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -134, 318, 160)
+	frame.soundButtons = {}
+	frame.soundLabels = {}
+	local soundRows = {
+		{ "soundKick", "OPT_SOUND_KICK" },
+		{ "soundCleanse", "OPT_SOUND_CLEANSE" },
+		{ "soundWeapon", "OPT_SOUND_WEAPON" },
+	}
+	for i, def in ipairs(soundRows) do
+		local y = -32 - (i - 1) * 28
+		local label = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		label:SetPoint("TOPLEFT", 12, y - 4)
+		label:SetTextColor(0.92, 0.92, 0.92)
+		label:SetText(ns.T(def[2]))
+		label.key = def[2]
+		local btn = makeGoldBtn(alertCard, 112, 22, "")
+		btn:SetPoint("TOPRIGHT", -40, y)
+		btn.dbKey = def[1]
+		btn:SetScript("OnClick", function(self)
+			ns.db[self.dbKey] = ns.NextSound(ns.db[self.dbKey])
+			self:SetText(ns.T(ns.SoundLabelKey(ns.db[self.dbKey])))
+		end)
+		frame.soundButtons[i] = btn
+		-- Speaker button: plays the selected sound.
+		local play = CreateFrame("Button", nil, alertCard)
+		play:SetSize(22, 22)
+		play:SetPoint("TOPRIGHT", -12, y)
+		local icon = play:CreateTexture(nil, "ARTWORK")
+		icon:SetAllPoints()
+		icon:SetAtlas("voicechat-icon-speaker")
+		icon:SetAlpha(0.75)
+		play:SetScript("OnEnter", function()
+			icon:SetAlpha(1)
+		end)
+		play:SetScript("OnLeave", function()
+			icon:SetAlpha(0.75)
+		end)
+		play:SetScript("OnClick", function()
+			ns.PlayAlertSound(ns.db[def[1]])
+		end)
+		frame.soundLabels[i] = label
 	end
-	frame.soundBar = soundBar
 	local soundHint = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	soundHint:SetPoint("TOPLEFT", 12, -78)
+	soundHint:SetPoint("TOPLEFT", 12, -120)
 	soundHint:SetPoint("RIGHT", -12, 0)
 	soundHint:SetJustifyH("LEFT")
 	soundHint:SetTextColor(0.65, 0.65, 0.65)
@@ -1188,10 +1141,10 @@ function ns.RefreshOptions()
 			frame.optCleanseGroup:SetChecked(ns.db.cleanseGroup ~= false)
 		end
 	end
-	if frame.soundLabel then
-		frame.soundLabel:SetText(ns.T("OPT_SOUND"):format(tonumber(ns.db.soundVolume) or 60))
-		if frame.soundBar then
-			frame.soundBar:SetValue(tonumber(ns.db.soundVolume) or 60)
+	if frame.soundButtons then
+		for i, btn in ipairs(frame.soundButtons) do
+			btn:SetText(ns.T(ns.SoundLabelKey(ns.db[btn.dbKey])))
+			frame.soundLabels[i]:SetText(ns.T(frame.soundLabels[i].key))
 		end
 	end
 	if frame.colorButtons then

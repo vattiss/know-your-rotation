@@ -92,15 +92,14 @@ local function defaults()
 	if ns.db.roleAuto == nil then
 		ns.db.roleAuto = true
 	end
-	if ns.db.soundVolume == nil then
-		ns.db.soundVolume = 60
+	if ns.db.soundKick == nil then
+		ns.db.soundKick = "raidwarning"
 	end
-	ns.db.soundVolume = tonumber(ns.db.soundVolume) or 60
-	if ns.db.soundVolume < 0 then
-		ns.db.soundVolume = 0
+	if ns.db.soundCleanse == nil then
+		ns.db.soundCleanse = "ping"
 	end
-	if ns.db.soundVolume > 100 then
-		ns.db.soundVolume = 100
+	if ns.db.soundWeapon == nil then
+		ns.db.soundWeapon = "alarm"
 	end
 	ns.db.colors = ns.db.colors or {}
 	if not ns.db.role then
@@ -464,20 +463,58 @@ end
 
 local lastAlertKick, lastAlertCleanse, lastAlertWeapon, lastNotice
 
-local function playAlert(kind)
-	local vol = tonumber(ns.db and ns.db.soundVolume) or 0
-	if vol <= 0 then
+-- Alert sounds the player can pick per alert (Advanced page). The first entry
+-- is "no sound". Numbers are the fallback sound IDs.
+ns.SOUNDS = {
+	{ key = "none", label = "SND_NONE" },
+	{ key = "ping", label = "SND_PING", kit = "MAP_PING", id = 3175 },
+	{ key = "ready", label = "SND_READY", kit = "READY_CHECK", id = 8960 },
+	{ key = "raidwarning", label = "SND_RAID", kit = "RAID_WARNING", id = 8959 },
+	{ key = "alarm", label = "SND_ALARM", kit = "ALARM_CLOCK_WARNING_3", id = 12889 },
+	{ key = "whisper", label = "SND_WHISPER", kit = "TELL_MESSAGE", id = 3081 },
+	{ key = "quest", label = "SND_QUEST", kit = "IG_QUEST_LIST_COMPLETE", id = 878 },
+	{ key = "toast", label = "SND_TOAST", kit = "UI_BNET_TOAST", id = 18019 },
+	{ key = "click", label = "SND_CLICK", kit = "IG_MAINMENU_OPTION_CHECKBOX_ON", id = 856 },
+}
+
+local function soundEntry(key)
+	for _, entry in ipairs(ns.SOUNDS) do
+		if entry.key == key then
+			return entry
+		end
+	end
+	return ns.SOUNDS[1]
+end
+
+function ns.SoundLabelKey(key)
+	return soundEntry(key).label
+end
+
+function ns.NextSound(key)
+	for index, entry in ipairs(ns.SOUNDS) do
+		if entry.key == key then
+			return (ns.SOUNDS[index + 1] or ns.SOUNDS[1]).key
+		end
+	end
+	return ns.SOUNDS[1].key
+end
+
+function ns.PlayAlertSound(key)
+	local entry = soundEntry(key)
+	if not entry.id then
 		return
 	end
-	local kit
-	if vol < 34 then
-		kit = (SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) or 856
-	elseif vol < 67 then
-		kit = (SOUNDKIT and SOUNDKIT.MAP_PING) or 5274
-	else
-		kit = (SOUNDKIT and SOUNDKIT.READY_CHECK) or 8960
-	end
+	local kit = (SOUNDKIT and SOUNDKIT[entry.kit]) or entry.id
 	pcall(PlaySound, kit, "Master", true)
+end
+
+local ALERT_SOUND_KEY = { kick = "soundKick", cleanse = "soundCleanse", weapon = "soundWeapon" }
+
+local function playAlert(kind)
+	local key = ALERT_SOUND_KEY[kind]
+	if key and ns.db then
+		ns.PlayAlertSound(ns.db[key])
+	end
 end
 
 function ns.ApplyAutoProfile()

@@ -255,7 +255,7 @@ There is no HUD window. Every cue is a glow on an action-bar button (`Glow.lua`)
 - a Blizzard `ActionButtonSpellAlertTemplate` frame per button and cue, tinted by `ns.Color`; plain texture fallback;
 - no glow while the player is dead, on a taxi, mounted, eating, or resting in town (`ns.API.ShouldHideIdle`);
 - hunter / warlock pet reminders (`CombatNotice`) appear once as a screen message;
-- sounds (`alert volume`) still play for interrupt, cleanse and weapon.
+- optional alert sounds (`ns.SOUNDS`, picked per alert on the Advanced page; the first choice is no sound) for interrupt, cleanse and weapon.
 
 `UI.lua` only holds the shared `ns.UI` table and the `RefreshRoles` / `RefreshModes` hooks.
 
@@ -331,7 +331,7 @@ profile              = "base" | "pve" | "pvp" | "custom"
 glow, showRotation, showDefense, showInterrupt, showPurge,
 showCleanse, showWeapon
 barOnly, autoProfile, cleanseGroup, showPhysics
-soundVolume          = 0 .. 100
+soundKick, soundCleanse, soundWeapon = sound key from `ns.SOUNDS` ("none" = off)
 colors.next / heal / def / weapon
 role, combatMode, lastManualMode, autoEnemies, weaponBuff
 apl, aplDrop, def, defDrop     -- mirror of the active profile
