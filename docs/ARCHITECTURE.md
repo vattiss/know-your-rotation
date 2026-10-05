@@ -104,7 +104,7 @@ Namespace: `local addonName, ns = ...`. Do not create a second global state outs
 A step is `{ key, id, opt, on = true }`, created by `step(key, id, opt)`.
 
 - `ns.APLDefaults[class][spec]`: single-target list, also used by `auto` mode.
-- `ns.APLModes[class][spec].aoe` and `.burst`: variants. If there is no variant, `defaultsFor` falls back to `APLDefaults`.
+- `ns.APLModes[class][spec].aoe`: AoE variant. If there is no variant, `defaultsFor` falls back to `APLDefaults`.
 - `ns.DefDefaults[class][spec]`: long buffs and emergency buttons (low `hp`).
 
 At the end of the file, `stripMaintFromApl` removes from `APLDefaults` and `APLModes` any step whose ID is in `MAINTENANCE_BUFF_IDS`. Add a long buff only in `DefDefaults` and in `MAINTENANCE_BUFF_IDS`.
@@ -159,7 +159,7 @@ The camelot client often hides `GetSpellCooldown` in combat. On a successful cas
 
 Overpower, Revenge, Riposte, Counterattack and Mongoose Bite (`opt.proc`) are only suggested if `IsSpellUsable` answers true. A hidden answer skips the step. The combat log is not read.
 
-`Physics.lua` (Advanced option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The next-swing window (Heroic Strike, Cleave, Raptor Strike, Maul) reads the main hand only. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
+`Physics.lua` (Behavior option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The next-swing window (Heroic Strike, Cleave, Raptor Strike, Maul) reads the main hand only. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
 
 A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through the power cost if `IsSpellUsable` is false or absent. A harmful spell with `usable == false` is refused.
 
@@ -200,13 +200,13 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 
 Save keys: `ns.db.apl[CLASS][spec][mode]` and `ns.db.def[CLASS][spec]`.
 
-A mode bucket is a table with `auto` / `single` / `aoe` / `burst` and **no** `[1]` index. An old flat list (`[1]` index) is migrated to `{ single = legacy }` on first write (`ensureModeBucket`). On read, a flat list only counts for the `single` mode.
+A mode bucket is a table with `auto` / `single` / `aoe` and **no** `[1]` index. An old flat list (`[1]` index) is migrated to `{ single = legacy }` on first write (`ensureModeBucket`). On read, a flat list only counts for the `single` mode.
 
 `ns.GetAPL(class, spec, mode)`:
 
 - explicit mode, otherwise `ns.ResolveCombatMode()`;
 - `auto` and `single` read `APLDefaults`;
-- `aoe` and `burst` read `APLModes`, otherwise the single default;
+- `aoe` reads `APLModes`, otherwise the single default;
 - racials are appended at the end, unchecked;
 - with no save and no removal, the defaults are returned as is;
 - otherwise `mergeSteps(..., skipMaint = true)`: the saved order wins, new default steps are added if they are not in `aplDrop` and not already present (same ID or same name).
@@ -217,14 +217,14 @@ Removing a non-`custom_*` step writes its key to `aplDrop` / `defDrop`, so a def
 
 `ns.AddAPL` refuses a maintenance buff. `ns.DropSpellOnList` sends those spells to `ns.AddDef`. The names `TEST`, `(OLD)`, `(PT)` do not come out of `ns.API.CursorSpell`.
 
-Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`, `burst`.
+Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`. There is no burst mode: the addon targets leveling and learning.
 
 - `ns.CombatMode()` is the player's choice.
 - `ns.ResolveCombatMode()`: if `auto` and `EnemyCount() >= autoEnemies` (floor 2), returns `aoe`, otherwise `auto`.
 - `ns.SetCombatMode` remembers the last manual mode in `lastManualMode` (never `auto`).
-- `ns.ToggleAuto` switches between `auto` and `lastManualMode`.
+- The Behavior page sets the mode with a dropdown (`ns.SetCombatMode`).
 - `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those in combat. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
-- `roleAuto` (default true): Hunter/Shaman switch melee/ranged via `TargetInMelee`; the options role button → `roleAuto = false`.
+- `roleAuto` (default true): `ns.SyncAutoRole` picks the role from talents, stance and range. The Behavior page role dropdown calls `ns.SetRoleChoice`: `auto` sets `roleAuto = true`, any role sets it false and pins that role (`ns.RoleChoice` reads it back).
 - `CombatNotice`: Hunter/Warlock in combat → "call pet" / "pet not attacking" as a screen message.
 - Deferred spellbook index (`RebuildSpellBookIndex`): warmed at login / lazy remap only. **No** `SPELLS_CHANGED` (ConROC neither) — learn / level-up = soft Invalidate + `ButtonFetch` 0.5 s. Glow without action tooltip.
 
@@ -232,7 +232,9 @@ Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`, `burst`.
 
 ## Profiles (`Core.lua`)
 
-`ns.PROFILE_ORDER = { "base", "pve", "pvp", "custom" }`.
+`ns.PROFILE_ORDER = { "pve", "pvp" }`. Old `base` / `custom` profiles are dropped at login.
+
+`autoProfile` (default true): `ns.ApplyAutoProfile` picks PvP in battlegrounds and arenas, when PvP flagged in the open world or targeting an attackable player, PvE otherwise (never back to PvE in combat). The Behavior page profile dropdown calls `ns.SetProfileChoice` (`auto`, `pve`, `pvp`; a fixed profile sets `autoProfile = false`).
 
 The active profile is copied into `ns.db.profiles[key]` by `FlushProfile` (profile change, options, logout) and reloaded by `BindProfile`. Profile fields: `apl`, `aplDrop`, `def`, `defDrop`, `role`, `combatMode`, `lastManualMode`, `autoEnemies`, `weaponBuff`.
 
@@ -255,17 +257,17 @@ There is no HUD window. Every cue is a glow on an action-bar button (`Glow.lua`)
 - a Blizzard `ActionButtonSpellAlertTemplate` frame per button and cue, tinted by `ns.Color`; plain texture fallback;
 - no glow while the player is dead, on a taxi, mounted, eating, or resting in town (`ns.API.ShouldHideIdle`);
 - hunter / warlock pet reminders (`CombatNotice`) appear once as a screen message;
-- optional alert sounds (`ns.SOUNDS`, picked per alert on the Advanced page; the first choice is no sound) for interrupt, cleanse and weapon.
+- optional alert sounds (`ns.SOUNDS`, picked per alert on the Highlights page; the first choice is no sound) for interrupt, cleanse and weapon.
 
 `UI.lua` only holds the shared `ns.UI` table and the `RefreshRoles` / `RefreshModes` hooks.
 
 Options (`KnowYourRotationOptions`, inside the Settings panel):
 
-- pages: a landing page, then sub-categories Profiles, General, Rotation, Defense, Advanced, Info;
-- Profiles page: buttons Base, PvE (`pve`), PvP (`pvp`), Customs, the automatic detection switches (`autoProfile`, `roleAuto`), plus export / import;
-- checkboxes for the `show*` highlights and the per-character disable switch, mode selector;
-- enchant choice, AoE threshold (2–8), profile reset;
-- editor: `SpecList` specs, `auto/single/aoe/burst` modes, checkboxes, move up, move down, remove, drop zone.
+- landing page (canvas), then sub-categories in this order:
+- **Highlights** and **Behavior**: native vertical Settings layouts (`registerHighlights`, `registerBehavior`). Every control is a `Settings.RegisterProxySetting` that reads / writes `ns.db` (checkboxes, dropdowns, the AoE slider, color swatches). Highlights lists only the cues the class has;
+- **Rotation**, **Defense**, **Profiles**: canvas pages sharing one host frame, built from Blizzard templates (`UIPanelButtonTemplate`, `InsetFrameTemplate`, `WowStyle1DropdownTemplate`, `UICheckButtonTemplate`);
+- editor: one list at a time, picked with a spec dropdown (`SpecList`) and, for the rotation, a mode dropdown (`auto`/`single`/`aoe`); rows with checkbox, Up, Down, Remove and an optional delay box (`showHoldColumn`); a drop zone at the end;
+- Profiles page: reset this profile, export / import.
 
 
 
@@ -321,13 +323,13 @@ Heals — unit: `opt.unit` if present, otherwise `mouseover`, `target`, `focus`,
 
 ## Opening the options
 
-There are no slash commands and no minimap button. The options are a canvas category in the game Settings window (Options → AddOns): `ns.RegisterOptions` registers a text-only landing page as the category and Profiles, General, Rotation, Defense, Advanced and Info as sub-categories (`Settings.RegisterCanvasLayoutSubcategory`, expandable with +). One shared page host frame is moved into whichever panel is open; `ns.RefreshOptions` does nothing while it is closed.
+There are no slash commands and no minimap button. The options live in the game Settings window (Options → AddOns). `ns.RegisterOptions` registers a text-only landing page as the category, then Highlights and Behavior (native) and Rotation, Defense and Profiles (canvas) as sub-categories. The landing page shows the detected role, mode and profile and the GitHub links, expandable with +. The canvas pages share one host frame moved into whichever panel is open; panels are created hidden so Settings' first `Show()` fires `OnShow`. `ns.RefreshOptions` does nothing while they are closed.
 
 ## `KnowYourRotationDB` schema
 
 ```
 listVersion          = 4
-profile              = "base" | "pve" | "pvp" | "custom"
+profile              = "pve" | "pvp"
 showRotation, showDefense, showInterrupt, showPurge,
 showCleanse, showWeapon
 barOnly, autoProfile, cleanseGroup, showPhysics
@@ -343,7 +345,7 @@ profiles[key]        -- same list fields + role/mode/weapon
 1. ID in `ns.Spell.<Class>` (`Data.lua`).
 2. If heal or HoT: `ns.HEAL_SPELL_IDS`, including useful ranks.
 3. If long buff or aura: `ns.MAINTENANCE_BUFF_IDS` and a `step` in `DefDefaults` only.
-4. Otherwise a `step` in `APLDefaults`, and in `APLModes` if AoE or burst differs.
+4. Otherwise a `step` in `APLDefaults`, and in `APLModes` if AoE differs.
 5. Weapon enchant: `WEAPON_BUFFS` entry (ranks, enchant IDs, tokens). No combat step.
 6. Interrupt / purge / cleanse: the dedicated tables, not the queue.
 7. New text: add the English string to `Locale.lua`.
@@ -373,3 +375,7 @@ Check in game: `/reload`, checked spell, unchecked spell, removed spell (it must
 ## Options load time
 
 The page host and the spell-list rows are built by `ns.PrebuildOptions` / `ns.WarmOptionsList` 4 and 6 seconds after login (out of combat), so the first click in Settings is not slow. `ns.RefreshOptions` rebuilds the spell list only on the Rotation and Defense pages.
+
+## Weapon buff pick
+
+`ns.SelectedWeaponBuff` returns the player's pick (`weaponBuff`, per profile) only if a rank of it is learned, otherwise `ns.AutoWeaponBuff`: the first learned entry of a role priority list (shaman melee: Windfury, Flametongue, Rockbiter, Frostbrand; other shaman roles: Flametongue first), or of `ns.WEAPON_BUFFS` order for other classes. With nothing learned it returns nothing and no weapon cue is shown. The Highlights dropdown lists Automatic plus the learned buffs only.

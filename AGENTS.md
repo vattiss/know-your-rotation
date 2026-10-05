@@ -30,14 +30,14 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 | Need | File |
 | --- | --- |
 | New spell, racial, interrupt, purge, cleanse, weapon enchant | `Data.lua` (`ns.Spell`, then derived tables) |
-| Default single / AoE / burst / defense order | `Lists.lua` |
+| Default single / AoE / defense order | `Lists.lua` |
 | Save, merge, add, remove a spell | `APL.lua` |
 | Profile import / export | `Share.lua` |
 | "Is this spell offered" conditions | `API.lua` (`StepOk`, `Ready`, `Resolve`) |
 | Classic timing (swing, auto shot, energy) | `Physics.lua` |
-| HUD queue, defense, interrupt, weapon | `Rotations.lua` |
-| Windows, toolbar | `UI.lua` |
-| Options, spell drag | `Options.lua` |
+| Rotation queue, defense, interrupt, weapon cues | `Rotations.lua` |
+| Shared `ns.UI` table and refresh hooks | `UI.lua` |
+| Options pages (native and canvas), spell drag | `Options.lua` |
 | Glow on action bars | `Glow.lua` |
 | Profiles, auto role / profile, migrations | `Core.lua` |
 | Player text | `Locale.lua` |
@@ -49,7 +49,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Buffs in `ns.MAINTENANCE_BUFF_IDS` are stripped from combat lists at load (`stripMaintFromApl`) and refused by `AddAPL`.
 - A spell with its own cooldown is removed by `NoteSpellCast` until the cooldown ends. The GCD does not count. Do not bypass `ns.API.Cooldown` with `filler`. `filler` is still blocked by `ns.Physics.Blocks`.
 - `opt.hold` / `ns.SPELL_HOLD`: after a cast the spell is not offered for N seconds. `0` means no aura delay. Harmful holds are tied to the target GUID. For `nodebuff` / `nobuff` spells a readable aura wins over the hold.
-- `roleAuto` (default true): Hunter/Shaman switch melee/ranged by range. A manual HUD role click turns it off.
+- `roleAuto` (default true): role from talents, stance and range. Picking a role on the Behavior page turns it off.
 - Hunter stings do not apply to Mechanical / Elemental targets (`CreatureBlocked`).
 - Rotation pass: a listed spell already cast is marked used for this pass; when nothing is usable the queue restarts. Reset on target change and leaving combat.
 - `IsRotationAction`: a filler yields slot 1 to a ready shock / DoT / CD / proc listed lower. Do not use `require` / `requireAny` to hide a filler: list order wins.
@@ -57,4 +57,4 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - `listVersion` is 4: saved lists are replaced once by the default order on next login.
 - `auto` mode uses the single list until `ns.API.EnemyCount()` reaches `autoEnemies` (default 3, minimum 2), then the `aoe` list.
 - The druid HUD `hybrid` button is not a list key. `ns.ActiveSpec()` picks `cat`, `bear`, `heal`, `tank` or `damage`.
-- `ns.ResetCurrentProfile` only resets the active profile (`base`, `pve`, `pvp`, `custom`).
+- `ns.ResetCurrentProfile` only resets the active profile (`pve` or `pvp`).

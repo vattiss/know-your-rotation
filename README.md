@@ -67,42 +67,30 @@ Full health → no heal suggestion, damage rotation stays visible. Same idea for
 
 ### Profiles
 
-Four profiles, all saved independently:
-
-| Profile | Typical use |
-| --- | --- |
-| Base | Default / shared |
-| PvE | PvE |
-| PvP | PvP |
-| Customs | Experiments |
-
-PvE or PvP is picked automatically (dungeons and raids = PvE; battlegrounds and arenas = PvP; in the open world your PvP flag or an attackable player as target = PvP); you can also switch in the options window. **Reset** only wipes the **selected** profile. You can export / import a profile as text. Optional auto-switch uses PvE or PvP from the instance type.
+Two profiles, PvE and PvP, each with its own rotation and defense lists. With **Profile: Automatic** (Behavior page) dungeons and raids use PvE; battlegrounds, arenas, being PvP flagged in the open world, or targeting an enemy player use PvP; everything else uses PvE. Picking PvE or PvP by hand keeps that profile. On the Profiles page you can reset the active profile and export / import it as text.
 
 ### Disabling on one character
 
-The General page has a "Disable on this character" switch: while it is on, the addon shows no glows and plays no sounds or messages on the current character. The setting is stored per character.
+The Highlights page has a "Disable on this character" switch: while it is on, the addon shows no glows and plays no sounds or messages on the current character. The setting is stored per character.
 
 ### Combat modes
 
-`Auto` / `Single` / `AoE` / `Burst`. Add, remove, and reorder are **per mode**. Auto uses the single-target list until enough enemies are nearby (default: 3).
+`Automatic`, `Single` and `AoE`. Add, remove, and reorder are **per mode**. Automatic uses the single-target list until enough enemies are nearby (default 3, set on the Behavior page). The addon is tuned for leveling and learning a class, so there is no burst or raid mode.
 
 ### Roles
 
-Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). The role is picked automatically from your talents, stance and range; pick it by hand in the options to turn that off.
+Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). With **Role: Automatic** (Behavior page) the role comes from your talents, stance and range; pick a role to keep it fixed.
 
-### Advanced options
+### Options pages
 
-(Automatic role and PvE / PvP profile detection is on the Profiles page.)
-
-- Only suggest spells that are on your action bars
-- Group dispel limited to types your class can remove
-- Classic combat timing (white hits, dual wield, auto-shot, energy)
-- Smart heal threshold: a heal is offered once the missing health roughly equals what the spell restores (heal size read from the spell text, max health remembered out of combat); emergency steps below 50% keep their own value
-- Overlay colors and a separate alert sound (or none) for interrupt, cleanse and weapon buff
+- **Highlights**: disable on this character; one section per cue (rotation, defense, interrupt, purge, cleanse, weapon buff) with its switch, sound and color. Only the cues your class can use are listed. The weapon buff is Automatic by default: the best one you have learned (for example Rockbiter at level 1, then Flametongue, then Windfury for a melee shaman); you can also pick one of the learned buffs.
+- **Behavior**: role, combat mode, AoE threshold and profile (each can be Automatic); only suggest spells on your action bars; smart heal threshold (a heal is offered once the missing health is about the heal size; emergency steps below 50% keep their own value); Classic swing and auto-shot timing.
+- **Rotation** and **Defense**: the spell lists. Pick the list with the two dropdowns at the top (role and, for the rotation, the mode), then reorder, switch off, remove, or drag in spells. "Show the delay column" adds the per-spell re-suggest delay.
+- **Profiles**: reset, export, import.
 
 ## Opening the options
 
-There are no chat commands and no minimap button. Open the game menu → Options → AddOns → Know Your Rotation; expand it with + and pick Profiles, General, Rotation, Defense, Advanced or Info (the main entry is only a short landing page). Role, combat mode and PvE / PvP profile are detected automatically.
+There are no chat commands and no minimap button. Open the game menu → Options → AddOns → Know Your Rotation and expand it with +. The main entry is a landing page: what the addon is for, what it detected right now (role, mode, profile), and the GitHub and issue links.
 
 ## Files
 
@@ -140,7 +128,7 @@ The git repository is the source of truth. The copy under `World of Warcraft\_cl
 
 Source (public): [https://github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
 
-Bugs and ideas: [github.com/attilavarga96/know-your-rotation/issues](https://github.com/attilavarga96/know-your-rotation/issues). The Info page in the game has the same link to copy.
+Bugs and ideas: [github.com/attilavarga96/know-your-rotation/issues](https://github.com/attilavarga96/know-your-rotation/issues). The landing page of the options has the same link to copy.
 
 ## License
 

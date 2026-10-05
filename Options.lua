@@ -30,218 +30,24 @@ local PANEL = {
 	insets = { left = 3, right = 3, top = 3, bottom = 3 },
 }
 
-local function addonVersion()
-	local ver
-	if C_AddOns and C_AddOns.GetAddOnMetadata then
-		local ok, value = pcall(C_AddOns.GetAddOnMetadata, addonName, "Version")
-		if ok then
-			ver = value
-		end
-	end
-	if (not ver or ver == "") and GetAddOnMetadata then
-		local ok, value = pcall(GetAddOnMetadata, addonName, "Version")
-		if ok then
-			ver = value
-		end
-	end
-	return ver or ""
-end
-
-local function makeListBtn(parent, width, label)
-	local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
-	btn:SetSize(width, 18)
-	btn:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	btn:SetBackdropColor(0.06, 0.06, 0.06, 0.95)
-	btn:SetBackdropBorderColor(0.55, 0.45, 0.18, 0.85)
-	local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	text:SetPoint("CENTER", 0, 0)
-	text:SetText(label)
-	text:SetTextColor(0.92, 0.92, 0.92)
-	btn.label = text
-	function btn:SetText(value)
-		self.label:SetText(value)
-	end
-	btn:SetScript("OnEnter", function(self)
-		self:SetBackdropBorderColor(1, 0.82, 0.2, 1)
-		self.label:SetTextColor(1, 0.82, 0.2)
-	end)
-	btn:SetScript("OnLeave", function(self)
-		self:SetBackdropBorderColor(0.55, 0.45, 0.18, 0.85)
-		self.label:SetTextColor(0.92, 0.92, 0.92)
-	end)
-	return btn
-end
 
 local function makeGoldBtn(parent, width, height, label)
-	local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
+	local btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	btn:SetSize(width, height)
-	btn:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 10,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	text:SetPoint("CENTER", 0, 0)
-	text:SetText(label or "")
-	btn.label = text
-	function btn:SetText(value)
-		self.label:SetText(value)
-	end
-	function btn:SetSelected(on)
-		self._selected = on and true or false
-		if self._selected then
-			self:SetBackdropColor(0.28, 0.20, 0.04, 0.95)
-			self:SetBackdropBorderColor(1, 0.82, 0.2, 1)
-			self.label:SetTextColor(1, 0.82, 0.2)
-		else
-			self:SetBackdropColor(0.06, 0.06, 0.06, 0.95)
-			self:SetBackdropBorderColor(0.55, 0.45, 0.18, 1)
-			self.label:SetTextColor(0.92, 0.92, 0.92)
-		end
-	end
-	function btn:SetNormalFontObject(font)
-		self:SetSelected(font == "GameFontNormalSmall" or font == GameFontNormalSmall)
-	end
-	btn:SetSelected(false)
-	btn:SetScript("OnEnter", function(self)
-		self:SetBackdropBorderColor(1, 0.82, 0.2, 1)
-		self.label:SetTextColor(1, 0.82, 0.2)
-	end)
-	btn:SetScript("OnLeave", function(self)
-		self:SetSelected(self._selected)
-	end)
+	btn:SetText(label or "")
 	return btn
 end
 
 local function makeCard(parent, titleKey, x, y, width, height)
-	local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+	local card = CreateFrame("Frame", nil, parent, "InsetFrameTemplate")
 	card:SetSize(width, height)
 	card:SetPoint("TOPLEFT", x, y)
-	card:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	card:SetBackdropColor(0, 0, 0, 0.55)
-	card:SetBackdropBorderColor(0.5, 0.42, 0.28, 0.9)
 	local title = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	title:SetPoint("TOP", 0, -8)
+	title:SetPoint("TOPLEFT", 12, -10)
 	title:SetText(ns.T(titleKey))
-	title:SetTextColor(1, 0.82, 0.2)
 	card.title = title
 	card.titleKey = titleKey
-	card._y = -30
-	card:SetScript("OnEnter", function(self)
-		self:SetBackdropColor(0.35, 0.30, 0.09, 0.55)
-		self:SetBackdropBorderColor(1, 0.94, 0.23, 0.95)
-	end)
-	card:SetScript("OnLeave", function(self)
-		self:SetBackdropColor(0, 0, 0, 0.55)
-		self:SetBackdropBorderColor(0.5, 0.42, 0.28, 0.9)
-	end)
 	return card
-end
-
-local function featureOn(key)
-	if key == "muted" then
-		return ns.db.muted == true
-	end
-	return ns.db[key] ~= false
-end
-
-local function paintSwitch(sw, on)
-	if on then
-		sw:SetBackdropColor(0.38, 0.25, 0.02, 0.95)
-		sw:SetBackdropBorderColor(1, 0.82, 0.2, 1)
-		sw.knob:ClearAllPoints()
-		sw.knob:SetPoint("RIGHT", sw, "RIGHT", -3, 0)
-		sw.knob:SetVertexColor(1, 0.82, 0.2, 1)
-		sw.state:SetText(ns.T("SWITCH_ON"))
-		sw.state:SetTextColor(1, 0.92, 0.45)
-		sw.state:ClearAllPoints()
-		sw.state:SetPoint("CENTER", sw, "CENTER", -10, 0)
-	else
-		sw:SetBackdropColor(0.08, 0.08, 0.08, 0.95)
-		sw:SetBackdropBorderColor(0.42, 0.42, 0.42, 1)
-		sw.knob:ClearAllPoints()
-		sw.knob:SetPoint("LEFT", sw, "LEFT", 3, 0)
-		sw.knob:SetVertexColor(0.48, 0.48, 0.48, 1)
-		sw.state:SetText(ns.T("SWITCH_OFF"))
-		sw.state:SetTextColor(0.65, 0.65, 0.65)
-		sw.state:ClearAllPoints()
-		sw.state:SetPoint("CENTER", sw, "CENTER", 10, 0)
-	end
-end
-
-local function makeSwitch(parent, key, label)
-	local row = CreateFrame("Frame", nil, parent)
-	row:SetHeight(24)
-	local txt = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	txt:SetPoint("LEFT", 0, 0)
-	txt:SetPoint("RIGHT", -66, 0)
-	txt:SetJustifyH("LEFT")
-	txt:SetText(label)
-	txt:SetTextColor(0.92, 0.92, 0.92)
-	local sw = CreateFrame("Button", nil, row, "BackdropTemplate")
-	sw:SetSize(58, 22)
-	sw:SetPoint("RIGHT", 0, 0)
-	sw:SetBackdrop({
-		bgFile = "Interface\\Buttons\\WHITE8x8",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	local knob = sw:CreateTexture(nil, "ARTWORK")
-	knob:SetTexture("Interface\\Buttons\\WHITE8x8")
-	knob:SetSize(16, 16)
-	sw.knob = knob
-	local state = sw:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	sw.state = state
-	local function current()
-		return featureOn(key)
-	end
-	sw:SetScript("OnClick", function()
-		local on = not current()
-		ns.db[key] = on
-		paintSwitch(sw, on)
-		if ns.ApplyFeatureFlags then
-			ns.ApplyFeatureFlags()
-		elseif ns.Tick then
-			ns.Tick()
-		end
-	end)
-	row:SetScript("OnEnter", function()
-		txt:SetTextColor(1, 0.82, 0.2)
-	end)
-	row:SetScript("OnLeave", function()
-		txt:SetTextColor(0.92, 0.92, 0.92)
-	end)
-	function row:SetChecked(on)
-		paintSwitch(sw, on and true or false)
-	end
-	function row:GetChecked()
-		return current()
-	end
-	row.Text = txt
-	row.dbKey = key
-	row.switch = sw
-	paintSwitch(sw, current())
-	return row
 end
 
 local function copyText(text)
@@ -343,14 +149,6 @@ local function makeLinkRow(parent, labelKey, url)
 	return row
 end
 
-local function addSwitch(card, key, label)
-	local row = makeSwitch(card, key, label)
-	row:SetPoint("TOPLEFT", card, "TOPLEFT", 12, card._y)
-	row:SetPoint("TOPRIGHT", card, "TOPRIGHT", -12, card._y)
-	card._y = card._y - 26
-	return row
-end
-
 local function modeLabel(mode)
 	return ns.T("MODE_" .. (mode or "single"):upper())
 end
@@ -396,24 +194,8 @@ local function ensureOptions()
 		end
 		return page
 	end
-	local general = newPage(false)
-	local rotation = newPage(true)
+	local rotation = newPage(false)
 	local profiles = newPage(true)
-	local extra = newPage(true)
-	local info = newPage(true)
-
-	frame.profileButtons = {}
-	for i, key in ipairs({ "base", "pve", "pvp", "custom" }) do
-		local btn = makeGoldBtn(profiles, 88, 22, ns.T("PROFILE_" .. key:upper()))
-		btn:SetPoint("TOPLEFT", 8 + (i - 1) * 94, -4)
-		btn.profile = key
-		btn:SetScript("OnClick", function(self)
-			if ns.SetProfile then
-				ns.SetProfile(self.profile)
-			end
-		end)
-		frame.profileButtons[i] = btn
-	end
 
 	-- Resets the lists of the profile in use, so it belongs next to the profiles.
 	local resetAll = makeGoldBtn(profiles, 150, 22, ns.T("OPT_RESET_ALL"))
@@ -423,129 +205,47 @@ local function ensureOptions()
 	end)
 	frame.resetAll = resetAll
 
-	frame.general = general
 	frame.rotation = rotation
 	frame.profiles = profiles
-	frame.extra = extra
-	frame.info = info
 	frame.content = content
 
-	local hudCard = makeCard(general, "OPT_CARD_HUD", 8, -4, 318, 172)
-	frame.optMute = addSwitch(hudCard, "muted", ns.T("OPT_MUTE"))
-	frame.optRotation = addSwitch(hudCard, "showRotation", ns.T("OPT_ROTATION"))
+	-- List editor (Rotation and Defense pages): pick one list, then edit it.
+	local editLabel = rotation:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	editLabel:SetPoint("TOPLEFT", 8, -12)
+	frame.editLabel = editLabel
 
-	local winCard = makeCard(general, "OPT_CARD_WINDOWS", 338, -4, 318, 172)
-	frame.optDef = addSwitch(winCard, "showDefense", ns.T("OPT_DEFENSE"))
-	frame.optKick = addSwitch(winCard, "showInterrupt", ns.T("OPT_INTERRUPT"))
-	frame.optPurge = addSwitch(winCard, "showPurge", ns.T("OPT_PURGE"))
-	frame.optCleanse = addSwitch(winCard, "showCleanse", ns.T("OPT_CLEANSE"))
-	frame.optWeapon = addSwitch(winCard, "showWeapon", ns.T("OPT_WEAPON"))
-
-
-	local weaponCard = makeCard(general, "OPT_CARD_WEAPON", 8, -188, 318, 196)
-	frame.weaponCard = weaponCard
-	frame.weaponLabel = weaponCard.title
-	frame.weaponBoxes = {}
-
-	local hint = general:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	hint:SetPoint("BOTTOMLEFT", 12, 8)
-	hint:SetPoint("BOTTOMRIGHT", -12, 8)
-	hint:SetJustifyH("LEFT")
-	hint:SetTextColor(0.65, 0.65, 0.65)
-	frame.hint = hint
-
-	local specText = rotation:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	specText:SetPoint("TOPLEFT", 8, -2)
-	specText:SetTextColor(1, 0.82, 0.2)
-	frame.specText = specText
-
-	frame.specButtons = {}
-	for i = 1, 5 do
-		local btn = makeGoldBtn(rotation, 86, 22, "")
-		btn:SetPoint("TOPLEFT", 8 + (i - 1) * 92, -22)
-		btn:SetScript("OnClick", function(self)
-			if self.spec then
-				editSpec = self.spec
+	local specDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
+	specDrop:SetPoint("LEFT", editLabel, "RIGHT", 10, 0)
+	specDrop:SetWidth(150)
+	specDrop:SetupMenu(function(_, root)
+		for _, spec in ipairs(ns.SpecList()) do
+			root:CreateRadio(specLabel(spec), function(value)
+				return editSpec == value
+			end, function(value)
+				editSpec = value
 				ns.RefreshOptions()
-			end
-		end)
-		btn:Hide()
-		frame.specButtons[i] = btn
-	end
-
-	frame.modeButtons = {}
-	for i, mode in ipairs({ "auto", "single", "aoe", "burst" }) do
-		local btn = makeGoldBtn(rotation, 80, 22, modeLabel(mode))
-		btn:SetPoint("TOPLEFT", 8 + (i - 1) * 86, -48)
-		btn.mode = mode
-		btn:SetScript("OnClick", function(self)
-			editMode = self.mode
-			ns.RefreshOptions()
-			local header = ns.UI.options and ns.UI.options.modeHeaders and ns.UI.options.modeHeaders[self.mode]
-			local scroll = ns.UI.options and ns.UI.options.aplScroll
-			if header and scroll and header._scrollY then
-				scroll:SetVerticalScroll(header._scrollY)
-			end
-		end)
-		frame.modeButtons[i] = btn
-	end
-
-	local autoHint = rotation:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	autoHint:SetPoint("TOPLEFT", 8, -76)
-	autoHint:SetWidth(420)
-	autoHint:SetJustifyH("LEFT")
-	autoHint:SetTextColor(0.72, 0.72, 0.72)
-	frame.autoHint = autoHint
-
-	local autoLess = makeGoldBtn(rotation, 24, 20, "-")
-	autoLess:SetPoint("TOPRIGHT", rotation, "TOPRIGHT", -54, -74)
-	autoLess:SetScript("OnClick", function()
-		local n = tonumber(ns.db.autoEnemies) or 3
-		ns.db.autoEnemies = math.max(2, n - 1)
-		if ns.FlushProfile then
-			ns.FlushProfile()
-		end
-		ns.RefreshOptions()
-		if ns.Tick then
-			ns.Tick()
+			end, spec)
 		end
 	end)
-	frame.autoLess = autoLess
+	frame.specDrop = specDrop
 
-	local autoMore = makeGoldBtn(rotation, 24, 20, "+")
-	autoMore:SetPoint("TOPRIGHT", rotation, "TOPRIGHT", -8, -74)
-	autoMore:SetScript("OnClick", function()
-		local n = tonumber(ns.db.autoEnemies) or 3
-		ns.db.autoEnemies = math.min(8, n + 1)
-		if ns.FlushProfile then
-			ns.FlushProfile()
-		end
-		ns.RefreshOptions()
-		if ns.Tick then
-			ns.Tick()
+	local modeDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
+	modeDrop:SetPoint("LEFT", specDrop, "RIGHT", 8, 0)
+	modeDrop:SetWidth(120)
+	modeDrop:SetupMenu(function(_, root)
+		for _, mode in ipairs({ "auto", "single", "aoe" }) do
+			root:CreateRadio(modeLabel(mode), function(value)
+				return editMode == value
+			end, function(value)
+				editMode = value
+				ns.RefreshOptions()
+			end, mode)
 		end
 	end)
-	frame.autoMore = autoMore
+	frame.modeDrop = modeDrop
 
-	local autoCount = rotation:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	autoCount:SetPoint("RIGHT", autoLess, "LEFT", -6, 0)
-	autoCount:SetTextColor(1, 0.82, 0.2)
-	frame.autoCount = autoCount
-
-	local resetApl = makeGoldBtn(rotation, 120, 22, ns.T("OPT_RESET_APL"))
-	resetApl:SetPoint("TOPRIGHT", rotation, "TOPRIGHT", -8, -22)
-	frame.resetApl = resetApl
-	local applyApl = makeGoldBtn(rotation, 100, 22, ns.T("OPT_APPLY"))
-	applyApl:SetPoint("RIGHT", resetApl, "LEFT", -6, 0)
-	frame.applyApl = applyApl
-	applyApl:SetScript("OnClick", function()
-		if ns.ApplyRotationEdit then
-			ns.ApplyRotationEdit()
-		end
-		if ns.Print then
-			ns.Print(ns.T("OPT_APPLY_DONE"))
-		end
-	end)
+	local resetApl = makeGoldBtn(rotation, 110, 22, ns.T("OPT_RESET_APL"))
+	resetApl:SetPoint("TOPRIGHT", -8, -8)
 	resetApl:SetScript("OnClick", function()
 		if listKind == "def" then
 			ns.ResetDef(nil, editSpec)
@@ -554,232 +254,60 @@ local function ensureOptions()
 		end
 		ns.RefreshOptions()
 	end)
+	bindSimpleTip(resetApl, ns.T("OPT_RESET_APL"), ns.T("OPT_RESET_APL_TIP"))
+	frame.resetApl = resetApl
 
-	local listCard = CreateFrame("Frame", nil, rotation, "BackdropTemplate")
-	listCard:SetPoint("TOPLEFT", 4, -100)
-	listCard:SetPoint("BOTTOMRIGHT", -4, 4)
-	listCard:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		tile = true,
-		tileSize = 8,
-		edgeSize = 8,
-		insets = { left = 2, right = 2, top = 2, bottom = 2 },
-	})
-	listCard:SetBackdropColor(0, 0, 0, 0.45)
-	listCard:SetBackdropBorderColor(0.5, 0.42, 0.28, 0.9)
-	frame.listCard = listCard
+	local holdToggle = CreateFrame("CheckButton", nil, rotation, "UICheckButtonTemplate")
+	holdToggle:SetSize(24, 24)
+	holdToggle:SetPoint("TOPLEFT", 4, -36)
+	holdToggle:SetScript("OnClick", function(self)
+		ns.db.showHoldColumn = self:GetChecked() and true or nil
+		ns.RefreshOptions()
+	end)
+	bindSimpleTip(holdToggle, ns.T("OPT_HOLD"), ns.T("OPT_HOLD_TIP"))
+	frame.holdToggle = holdToggle
+	local holdLabel = rotation:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	holdLabel:SetPoint("LEFT", holdToggle, "RIGHT", 2, 0)
+	holdLabel:SetText(ns.T("OPT_SHOW_HOLD"))
+	frame.holdLabel = holdLabel
 
-	local scroll = CreateFrame("ScrollFrame", "KnowYourRotationAPLScroll", listCard, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOPLEFT", 6, -8)
-	scroll:SetPoint("BOTTOMRIGHT", -28, 8)
+	local listHint = rotation:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	listHint:SetPoint("LEFT", holdLabel, "RIGHT", 16, 0)
+	listHint:SetPoint("RIGHT", rotation, "RIGHT", -8, 0)
+	listHint:SetJustifyH("LEFT")
+	frame.listHint = listHint
+
+	local listInset = CreateFrame("Frame", nil, rotation, "InsetFrameTemplate")
+	listInset:SetPoint("TOPLEFT", 4, -64)
+	listInset:SetPoint("BOTTOMRIGHT", -4, 4)
+
+	local scroll = CreateFrame("ScrollFrame", "KnowYourRotationAPLScroll", listInset, "UIPanelScrollFrameTemplate")
+	scroll:SetPoint("TOPLEFT", 6, -6)
+	scroll:SetPoint("BOTTOMRIGHT", -28, 6)
 	local child = CreateFrame("Frame", nil, scroll)
 	child:SetSize(600, 10)
 	scroll:SetScrollChild(child)
 	frame.aplScroll = scroll
 	frame.aplChild = child
 	frame.aplRows = {}
-	frame.modeHeaders = {}
-	frame.modeDrops = {}
 
-	local function makeDropZone(name)
-		local addBtn = CreateFrame("Button", name, child, "BackdropTemplate")
-		addBtn:SetSize(560, 32)
-		addBtn:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8",
-			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-			tile = true,
-			tileSize = 8,
-			edgeSize = 12,
-			insets = { left = 3, right = 3, top = 3, bottom = 3 },
-		})
-		addBtn:SetBackdropColor(0.04, 0.08, 0.05, 0.9)
-		addBtn:SetBackdropBorderColor(0.83, 0.63, 0.09, 0.85)
-		local addText = addBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		addText:SetPoint("CENTER")
-		addText:SetText(ns.T("OPT_ADD_SPELL"))
-		addBtn.label = addText
-		addBtn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-		addBtn:SetScript("OnReceiveDrag", function(self)
-			ns.DropSpellOnList(nil, self.mode)
-		end)
-		addBtn:SetScript("OnMouseUp", function(self)
-			if ns.API.CursorSpell and ns.API.CursorSpell() then
-				ns.DropSpellOnList(nil, self.mode)
-			end
-		end)
-		addBtn:SetScript("OnEnter", function(self)
-			self:SetBackdropBorderColor(1, 0.82, 0.2, 1)
-			GameTooltip:SetOwner(self, "ANCHOR_TOP")
-			GameTooltip:AddLine(ns.T("OPT_ADD_SPELL"), 1, 0.82, 0)
-			GameTooltip:AddLine(ns.T("OPT_DROP_SPELL"), 1, 1, 1, true)
-			GameTooltip:Show()
-		end)
-		addBtn:SetScript("OnLeave", function(self)
-			self:SetBackdropBorderColor(0.83, 0.63, 0.09, 0.85)
-			GameTooltip:Hide()
-		end)
-		addBtn:Hide()
-		return addBtn
-	end
-
-	frame.addSpell = makeDropZone("KnowYourRotationAddSpell")
-	for _, mode in ipairs({ "auto", "single", "aoe", "burst" }) do
-		local header = CreateFrame("Frame", nil, child)
-		header:SetSize(580, 22)
-		local text = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		text:SetPoint("LEFT", 4, 0)
-		text:SetTextColor(1, 0.82, 0.2)
-		header.label = text
-		local reset = makeGoldBtn(header, 90, 18, ns.T("OPT_RESET_APL"))
-		reset:SetPoint("RIGHT", 0, 0)
-		reset:SetScript("OnClick", function(self)
-			if self.mode then
-				ns.ResetAPL(nil, editSpec, self.mode)
-				ns.RefreshOptions()
-			end
-		end)
-		header.reset = reset
-		header:Hide()
-		frame.modeHeaders[mode] = header
-		local drop = makeDropZone("KnowYourRotationAddSpell_" .. mode)
-		drop.mode = mode
-		frame.modeDrops[mode] = drop
-	end
-
-	local function pickColor(key)
-		local r, g, b = ns.Color(key)
-		local function apply(nr, ng, nb)
-			ns.db.colors = ns.db.colors or {}
-			ns.db.colors[key] = { nr, ng, nb }
-			if ns.GlowInvalidate then
-				ns.GlowInvalidate()
-			end
-			if ns.ApplyFeatureFlags then
-				ns.ApplyFeatureFlags()
-			end
-			ns.RefreshOptions()
+	-- Drop target at the end of the list: drag a spell from the spellbook here.
+	local addSpell = makeGoldBtn(child, 560, 26, ns.T("OPT_ADD_SPELL"))
+	addSpell:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	addSpell:SetScript("OnReceiveDrag", function()
+		ns.DropSpellOnList(nil, listKind ~= "def" and editMode or nil)
+	end)
+	addSpell:SetScript("OnClick", function()
+		if ns.API.CursorSpell and ns.API.CursorSpell() then
+			ns.DropSpellOnList(nil, listKind ~= "def" and editMode or nil)
 		end
-		if ColorPickerFrame and ColorPickerFrame.SetupColorPickerAndShow then
-			ColorPickerFrame:SetupColorPickerAndShow({
-				r = r,
-				g = g,
-				b = b,
-				hasOpacity = false,
-				swatchFunc = function()
-					local cr, cg, cb = ColorPickerFrame:GetColorRGB()
-					apply(cr, cg, cb)
-				end,
-				cancelFunc = function()
-					apply(r, g, b)
-				end,
-			})
-		elseif ColorPickerFrame then
-			ColorPickerFrame.func = function()
-				local cr, cg, cb = ColorPickerFrame:GetColorRGB()
-				apply(cr, cg, cb)
-			end
-			ColorPickerFrame.cancelFunc = function()
-				apply(r, g, b)
-			end
-			if ColorPickerFrame.SetColorRGB then
-				ColorPickerFrame:SetColorRGB(r, g, b)
-			end
-			ColorPickerFrame:Show()
-		end
-	end
+	end)
+	bindSimpleTip(addSpell, ns.T("OPT_ADD_SPELL"), ns.T("OPT_DROP_SPELL"))
+	frame.addSpell = addSpell
 
-	local combatCard = makeCard(extra, "OPT_CARD_COMBAT", 8, -4, 318, 144)
-	frame.optPhysics = addSwitch(combatCard, "showPhysics", ns.T("OPT_PHYSICS"))
-	frame.optBarOnly = addSwitch(combatCard, "barOnly", ns.T("OPT_BAR_ONLY"))
-	frame.optAutoHeal = addSwitch(combatCard, "autoHeal", ns.T("OPT_AUTO_HEAL"))
-	frame.optCleanseGroup = addSwitch(combatCard, "cleanseGroup", ns.T("OPT_CLEANSE_GROUP"))
 
-	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -160, 318, 160)
-	frame.soundButtons = {}
-	frame.soundLabels = {}
-	local soundRows = {
-		{ "soundKick", "OPT_SOUND_KICK" },
-		{ "soundCleanse", "OPT_SOUND_CLEANSE" },
-		{ "soundWeapon", "OPT_SOUND_WEAPON" },
-	}
-	for i, def in ipairs(soundRows) do
-		local y = -32 - (i - 1) * 28
-		local label = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-		label:SetPoint("TOPLEFT", 12, y - 4)
-		label:SetTextColor(0.92, 0.92, 0.92)
-		label:SetText(ns.T(def[2]))
-		label.key = def[2]
-		local btn = makeGoldBtn(alertCard, 112, 22, "")
-		btn:SetPoint("TOPRIGHT", -40, y)
-		btn.dbKey = def[1]
-		btn:SetScript("OnClick", function(self)
-			ns.db[self.dbKey] = ns.NextSound(ns.db[self.dbKey])
-			self:SetText(ns.T(ns.SoundLabelKey(ns.db[self.dbKey])))
-		end)
-		frame.soundButtons[i] = btn
-		-- Speaker button: plays the selected sound.
-		local play = CreateFrame("Button", nil, alertCard)
-		play:SetSize(22, 22)
-		play:SetPoint("TOPRIGHT", -12, y)
-		local icon = play:CreateTexture(nil, "ARTWORK")
-		icon:SetAllPoints()
-		icon:SetAtlas("voicechat-icon-speaker")
-		icon:SetAlpha(0.75)
-		play:SetScript("OnEnter", function()
-			icon:SetAlpha(1)
-		end)
-		play:SetScript("OnLeave", function()
-			icon:SetAlpha(0.75)
-		end)
-		play:SetScript("OnClick", function()
-			ns.PlayAlertSound(ns.db[def[1]])
-		end)
-		frame.soundLabels[i] = label
-	end
-	local soundHint = alertCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	soundHint:SetPoint("TOPLEFT", 12, -120)
-	soundHint:SetPoint("RIGHT", -12, 0)
-	soundHint:SetJustifyH("LEFT")
-	soundHint:SetTextColor(0.65, 0.65, 0.65)
-	frame.soundHint = soundHint
 
-	local colorCard = makeCard(extra, "OPT_COLORS", 338, -4, 318, 150)
-	frame.colorButtons = {}
-	frame.colorLabels = {}
-	local colorKeys = { "next", "heal", "def", "weapon" }
-	local colorLabels = { "OPT_COLOR_NEXT", "OPT_COLOR_HEAL", "OPT_COLOR_DEF", "OPT_COLOR_WEAPON" }
-	for i, key in ipairs(colorKeys) do
-		local row = CreateFrame("Frame", nil, colorCard)
-		row:SetHeight(24)
-		row:SetPoint("TOPLEFT", 12, -28 - (i - 1) * 28)
-		row:SetPoint("RIGHT", -12, 0)
-		local label = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-		label:SetPoint("LEFT", 0, 0)
-		label:SetTextColor(0.92, 0.92, 0.92)
-		label:SetText(ns.T(colorLabels[i]))
-		label.key = colorLabels[i]
-		local btn = CreateFrame("Button", nil, row, "BackdropTemplate")
-		btn:SetSize(22, 22)
-		btn:SetPoint("RIGHT", 0, 0)
-		btn:SetBackdrop({
-			bgFile = "Interface\\Buttons\\WHITE8x8",
-			edgeFile = "Interface\\Buttons\\WHITE8x8",
-			edgeSize = 1,
-		})
-		btn.colorKey = key
-		btn:SetScript("OnClick", function()
-			pickColor(key)
-		end)
-		frame.colorButtons[i] = btn
-		frame.colorLabels[i] = label
-	end
-
-	local autoCard = makeCard(profiles, "OPT_CARD_AUTOMATION", 8, -36, 648, 90)
-	frame.optAutoProfile = addSwitch(autoCard, "autoProfile", ns.T("OPT_AUTO_PROFILE"))
-	frame.optRoleAuto = addSwitch(autoCard, "roleAuto", ns.T("OPT_ROLE_AUTO"))
-
-	local shareCard = makeCard(profiles, "OPT_CARD_SHARE", 8, -138, 648, 248)
+	local shareCard = makeCard(profiles, "OPT_CARD_SHARE", 8, -36, 648, 248)
 	local shareHint = shareCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	shareHint:SetPoint("TOPLEFT", 12, -28)
 	shareHint:SetPoint("RIGHT", -12, 0)
@@ -836,49 +364,9 @@ local function ensureOptions()
 	end)
 	frame.importBtn = importBtn
 
-	local aboutCard = makeCard(info, "OPT_CARD_ABOUT", 8, -4, 648, 196)
-	local aboutBody = aboutCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	aboutBody:SetPoint("TOPLEFT", 12, -30)
-	aboutBody:SetPoint("TOPRIGHT", -12, -30)
-	aboutBody:SetHeight(48)
-	aboutBody:SetJustifyH("LEFT")
-	aboutBody:SetJustifyV("TOP")
-	aboutBody:SetWordWrap(true)
-	aboutBody:SetTextColor(0.92, 0.92, 0.92)
-	frame.aboutBody = aboutBody
-	local aboutPoints = aboutCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	aboutPoints:SetPoint("TOPLEFT", 12, -82)
-	aboutPoints:SetPoint("TOPRIGHT", -12, -82)
-	aboutPoints:SetHeight(56)
-	aboutPoints:SetJustifyH("LEFT")
-	aboutPoints:SetJustifyV("TOP")
-	aboutPoints:SetWordWrap(true)
-	aboutPoints:SetTextColor(0.78, 0.86, 0.96)
-	frame.aboutPoints = aboutPoints
-	local aboutSupport = aboutCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	aboutSupport:SetPoint("TOPLEFT", 12, -162)
-	aboutSupport:SetPoint("RIGHT", -12, 0)
-	aboutSupport:SetJustifyH("LEFT")
-	aboutSupport:SetTextColor(0.72, 0.72, 0.72)
-	frame.aboutSupport = aboutSupport
-
-
-	local linksCard = makeCard(info, "OPT_CARD_LINKS", 8, -212, 648, 98)
-	frame.githubRow = makeLinkRow(linksCard, "INFO_GITHUB", GITHUB_URL)
-	frame.githubRow:SetPoint("TOPLEFT", 12, -32)
-	frame.githubRow:SetPoint("RIGHT", -12, 0)
-	frame.issuesRow = makeLinkRow(linksCard, "INFO_ISSUES", ISSUES_URL)
-	frame.issuesRow:SetPoint("TOPLEFT", 12, -60)
-	frame.issuesRow:SetPoint("RIGHT", -12, 0)
 
 
 	function frame.RelocalizeChrome()
-		if frame.hint then
-			frame.hint:SetText(ns.T("OPT_HINT"))
-		end
-		if frame.soundHint then
-			frame.soundHint:SetText(ns.T("OPT_SOUND_HINT"))
-		end
 		if frame.shareHint then
 			frame.shareHint:SetText(ns.T("OPT_EXPORT_HINT"))
 		end
@@ -888,38 +376,13 @@ local function ensureOptions()
 		if frame.resetApl then
 			frame.resetApl:SetText(ns.T("OPT_RESET_APL"))
 		end
-		if frame.applyApl then
-			frame.applyApl:SetText(ns.T("OPT_APPLY"))
-		end
 		if frame.exportBtn then
 			frame.exportBtn:SetText(ns.T("OPT_EXPORT"))
 		end
 		if frame.importBtn then
 			frame.importBtn:SetText(ns.T("OPT_IMPORT"))
 		end
-		if frame.aboutBody then
-			frame.aboutBody:SetText(ns.T("INFO_ABOUT"))
-		end
-		if frame.aboutPoints then
-			frame.aboutPoints:SetText(ns.T("INFO_ABOUT_POINTS"))
-		end
-		if frame.aboutSupport then
-			frame.aboutSupport:SetText(ns.T("INFO_SUPPORT"))
-		end
-		for _, row in ipairs({ frame.githubRow, frame.issuesRow }) do
-			if row and row.label and row.labelKey then
-				row.label:SetText(ns.T(row.labelKey))
-			end
-			if row and row.copy then
-				row.copy:SetText(ns.T("INFO_COPY"))
-			end
-		end
-		if frame.colorLabels then
-			for _, label in ipairs(frame.colorLabels) do
-				label:SetText(ns.T(label.key))
-			end
-		end
-		for _, card in ipairs({ hudCard, winCard, weaponCard, combatCard, autoCard, alertCard, colorCard, shareCard, aboutCard, linksCard }) do
+		for _, card in ipairs({ shareCard }) do
 			if card and card.title and card.titleKey then
 				card.title:SetText(ns.T(card.titleKey))
 			end
@@ -929,24 +392,18 @@ local function ensureOptions()
 	function frame.ShowTab(which)
 		frame.activeTab = which
 		listKind = which == "def" and "def" or "apl"
-		general:SetShown(which == "general")
 		rotation:SetShown(which == "rotation" or which == "def")
 		profiles:SetShown(which == "profiles")
-		extra:SetShown(which == "extra")
-		info:SetShown(which == "info")
 		local titles = {
-			general = "TAB_GENERAL",
 			rotation = "TAB_ROTATION",
 			def = "TAB_DEFENSE",
 			profiles = "TAB_PROFILES",
-			extra = "TAB_EXTRA",
-			info = "TAB_INFO",
 		}
-		frame.pageTitle:SetText(ns.T(titles[which] or "TAB_GENERAL"))
+		frame.pageTitle:SetText(ns.T(titles[which] or "TAB_ROTATION"))
 	end
 
 	frame.RelocalizeChrome()
-	frame.ShowTab("general")
+	frame.ShowTab("rotation")
 	ns.UI.options = frame
 	return frame
 end
@@ -957,9 +414,8 @@ local function aplRow(parent, index)
 		return rows[index]
 	end
 	local row = CreateFrame("Frame", nil, parent)
-	row:SetSize(580, 28)
+	row:SetSize(580, 26)
 	row:EnableMouse(true)
-	row:SetPoint("TOPLEFT", parent, "TOPLEFT", 2, -2 - (index - 1) * 30)
 	row:SetScript("OnReceiveDrag", function(self)
 		ns.DropSpellOnList(self.index, self.mode)
 	end)
@@ -974,7 +430,7 @@ local function aplRow(parent, index)
 	num:SetWidth(18)
 	row.num = num
 
-	local box = CreateFrame("CheckButton", "KnowYourRotationAPLCheck" .. index, row, "UICheckButtonTemplate")
+	local box = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
 	box:SetPoint("LEFT", 20, 0)
 	box:SetSize(24, 24)
 	row.box = box
@@ -984,41 +440,40 @@ local function aplRow(parent, index)
 	icon:SetPoint("LEFT", 48, 0)
 	row.icon = icon
 
-	local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	local name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	name:SetPoint("LEFT", 74, 0)
-	name:SetWidth(200)
+	name:SetWidth(240)
 	name:SetJustifyH("LEFT")
 	row.label = name
 
-	local hold = CreateFrame("EditBox", "KnowYourRotationAPLHold" .. index, row, "InputBoxTemplate")
-	hold:SetSize(34, 18)
-	hold:SetPoint("RIGHT", -152, 0)
+	local del = makeGoldBtn(row, 64, 20, ns.T("OPT_REMOVE_SPELL"))
+	del:SetPoint("RIGHT", 0, 0)
+	bindSimpleTip(del, ns.T("OPT_REMOVE_SPELL"), ns.T("OPT_REMOVE_SPELL_TIP"))
+	row.del = del
+
+	local down = makeGoldBtn(row, 52, 20, ns.T("OPT_MOVE_DOWN"))
+	down:SetPoint("RIGHT", del, "LEFT", -4, 0)
+	bindSimpleTip(down, ns.T("OPT_MOVE_DOWN"), ns.T("OPT_MOVE_DOWN_TIP"))
+	row.down = down
+
+	local up = makeGoldBtn(row, 44, 20, ns.T("OPT_MOVE_UP"))
+	up:SetPoint("RIGHT", down, "LEFT", -4, 0)
+	bindSimpleTip(up, ns.T("OPT_MOVE_UP"), ns.T("OPT_MOVE_UP_TIP"))
+	row.up = up
+
+	-- Optional "delay" column (Show delay column switch above the list).
+	local hold = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+	hold:SetSize(30, 18)
+	hold:SetPoint("RIGHT", up, "LEFT", -18, 0)
 	hold:SetAutoFocus(false)
 	hold:SetNumeric(true)
 	hold:SetMaxLetters(3)
 	hold:SetJustifyH("CENTER")
-	hold:SetTextInsets(2, 2, 0, 0)
 	row.hold = hold
-
 	local holdUnit = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	holdUnit:SetPoint("LEFT", hold, "RIGHT", 2, 0)
 	holdUnit:SetText("s")
 	row.holdUnit = holdUnit
-
-	local up = makeListBtn(row, 44, ns.T("OPT_MOVE_UP"))
-	up:SetPoint("RIGHT", -96, 0)
-	bindSimpleTip(up, ns.T("OPT_MOVE_UP"), ns.T("OPT_MOVE_UP_TIP"))
-	row.up = up
-
-	local down = makeListBtn(row, 44, ns.T("OPT_MOVE_DOWN"))
-	down:SetPoint("RIGHT", -50, 0)
-	bindSimpleTip(down, ns.T("OPT_MOVE_DOWN"), ns.T("OPT_MOVE_DOWN_TIP"))
-	row.down = down
-
-	local del = makeListBtn(row, 46, ns.T("OPT_REMOVE_SPELL"))
-	del:SetPoint("RIGHT", 0, 0)
-	bindSimpleTip(del, ns.T("OPT_REMOVE_SPELL"), ns.T("OPT_REMOVE_SPELL_TIP"))
-	row.del = del
 
 	local function commitHold(self)
 		if not self.stepKey then
@@ -1122,89 +577,9 @@ function ns.RefreshOptions()
 	if frame.ShowTab and frame.activeTab then
 		frame.ShowTab(frame.activeTab)
 	end
-	if frame.optRotation then
-		frame.optRotation:SetChecked(ns.db.showRotation ~= false)
-		frame.optDef:SetChecked(ns.db.showDefense ~= false)
-		frame.optKick:SetChecked(ns.db.showInterrupt ~= false)
-		frame.optPurge:SetChecked(ns.db.showPurge ~= false)
-		if frame.optCleanse then
-			frame.optCleanse:SetChecked(ns.db.showCleanse ~= false)
-			frame.optWeapon:SetChecked(ns.db.showWeapon ~= false)
-		end
-		if frame.optPhysics then
-			frame.optPhysics:SetChecked(ns.db.showPhysics ~= false)
-			if frame.optRoleAuto then
-				frame.optRoleAuto:SetChecked(ns.db.roleAuto ~= false)
-			end
-		end
-		if frame.optMute then
-			frame.optMute:SetChecked(ns.db.muted == true)
-		end
-		if frame.optAutoHeal then
-			frame.optAutoHeal:SetChecked(ns.db.autoHeal ~= false)
-		end
-		if frame.optBarOnly then
-			frame.optBarOnly:SetChecked(ns.db.barOnly ~= false)
-		end
-		if frame.optAutoProfile then
-			frame.optAutoProfile:SetChecked(ns.db.autoProfile ~= false)
-		end
-		if frame.optCleanseGroup then
-			frame.optCleanseGroup:SetChecked(ns.db.cleanseGroup ~= false)
-		end
-	end
-	if frame.soundButtons then
-		for i, btn in ipairs(frame.soundButtons) do
-			btn:SetText(ns.T(ns.SoundLabelKey(ns.db[btn.dbKey])))
-			frame.soundLabels[i]:SetText(ns.T(frame.soundLabels[i].key))
-		end
-	end
-	if frame.colorButtons then
-		for _, btn in ipairs(frame.colorButtons) do
-			local r, g, b = ns.Color(btn.colorKey)
-			btn:SetBackdropColor(r, g, b, 1)
-			btn:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
-		end
-	end
-	local choices = ns.WeaponChoices and ns.WeaponChoices() or {}
-	if frame.weaponCard then
-		frame.weaponCard:SetShown(#choices > 0)
-		for i, entry in ipairs(choices) do
-			local box = frame.weaponBoxes[i]
-			if not box then
-				box = CreateFrame("CheckButton", "KnowYourRotationWep" .. i, frame.weaponCard, "UICheckButtonTemplate")
-				local text = box:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-				text:SetPoint("LEFT", box, "RIGHT", 4, 0)
-				text:SetTextColor(0.92, 0.92, 0.92)
-				box.label = text
-				box:SetScript("OnClick", function(self)
-					if self.wepKey then
-						ns.db.weaponBuff = self.wepKey
-						if ns.FlushProfile then
-							ns.FlushProfile()
-						end
-						ns.RefreshOptions()
-						if ns.Tick then
-							ns.Tick()
-						end
-					end
-				end)
-				frame.weaponBoxes[i] = box
-			end
-			box:ClearAllPoints()
-			box:SetPoint("TOPLEFT", 12, -28 - (i - 1) * 24)
-			box.wepKey = entry.key
-			box.label:SetText(API.SpellLabel(entry.id) or entry.key)
-			box:SetChecked(ns.db.weaponBuff == entry.key or (not ns.db.weaponBuff and i == 1))
-			box:Show()
-		end
-		for i = #choices + 1, #frame.weaponBoxes do
-			frame.weaponBoxes[i]:Hide()
-		end
-	end
 	editSpec = editSpec or ns.ActiveSpec()
 	editMode = editMode or (ns.CombatMode and ns.CombatMode()) or "auto"
-	if editMode ~= "auto" and editMode ~= "aoe" and editMode ~= "burst" then
+	if editMode ~= "auto" and editMode ~= "aoe" then
 		editMode = "single"
 	end
 	local specs = ns.SpecList()
@@ -1219,193 +594,88 @@ function ns.RefreshOptions()
 	end
 	local profileKey = ns.ProfileKey and ns.ProfileKey() or "pve"
 	local profile = ns.T("PROFILE_" .. profileKey:upper())
-	if listKind == "def" then
-		frame.specText:SetText(ns.T("DEF_FOR"):format(specLabel(editSpec) .. " — " .. profile))
+	frame.editLabel:SetText(ns.T(listKind == "def" and "EDIT_DEF_FOR" or "EDIT_ROT_FOR"):format(profile))
+	frame.specDrop:GenerateMenu()
+	frame.modeDrop:SetShown(listKind ~= "def")
+	if listKind ~= "def" then
+		frame.modeDrop:GenerateMenu()
+	end
+	frame.holdToggle:SetChecked(ns.db.showHoldColumn == true)
+	if listKind ~= "def" and editMode == "auto" then
+		frame.listHint:SetText(ns.T("OPT_AUTO_HINT"))
 	else
-		frame.specText:SetText(ns.T("ROT_FOR"):format(specLabel(editSpec) .. " — " .. profile))
-	end
-	if frame.profileButtons then
-		for _, btn in ipairs(frame.profileButtons) do
-			btn:SetText(ns.T("PROFILE_" .. btn.profile:upper()))
-			if btn.profile == profileKey then
-				btn:SetNormalFontObject("GameFontNormalSmall")
-			else
-				btn:SetNormalFontObject("GameFontHighlightSmall")
-			end
-		end
-	end
-	if frame.resetApl then
-		frame.resetApl:SetShown(listKind == "def")
-	end
-	for i = 1, 5 do
-		local btn = frame.specButtons[i]
-		local spec = specs[i]
-		if spec then
-			btn.spec = spec
-			btn:SetText(specLabel(spec))
-			btn:Show()
-		else
-			btn:Hide()
-		end
-	end
-	if frame.modeButtons then
-		for _, btn in ipairs(frame.modeButtons) do
-			btn:SetText(modeLabel(btn.mode))
-			btn:SetShown(listKind ~= "def")
-			if btn.mode == editMode then
-				btn:SetNormalFontObject("GameFontNormalSmall")
-			else
-				btn:SetNormalFontObject("GameFontHighlightSmall")
-			end
-		end
-	end
-	local showAuto = listKind ~= "def" and editMode == "auto"
-	if frame.autoHint then
-		frame.autoHint:SetText(ns.T("OPT_AUTO_HINT"))
-		frame.autoHint:SetShown(showAuto)
-	end
-	if frame.autoCount then
-		local n = tonumber(ns.db.autoEnemies) or 3
-		frame.autoCount:SetText(ns.T("OPT_AUTO_COUNT"):format(n))
-		frame.autoCount:SetShown(showAuto)
-	end
-	if frame.autoLess then
-		frame.autoLess:SetShown(showAuto)
-		frame.autoMore:SetShown(showAuto)
+		frame.listHint:SetText(ns.T("OPT_LIST_HINT"))
 	end
 	-- The spell list is the slow part: only rebuild it on the pages that show it.
 	if frame.activeTab ~= "rotation" and frame.activeTab ~= "def" then
 		return
 	end
 	local child = frame.aplChild
+	local showHold = ns.db.showHoldColumn == true
+	local mode = listKind ~= "def" and editMode or nil
+	local steps = listKind == "def" and ns.GetDef(nil, editSpec) or ns.GetAPL(nil, editSpec, editMode)
 	local y = 2
-	local rowIndex = 0
-
-	local function bindRow(row, step, index, mode)
+	for i, step in ipairs(steps) do
+		local row = aplRow(child, i)
+		row:ClearAllPoints()
+		row:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
 		row:Show()
 		row.mode = mode
-		row.index = index
-		row.num:SetText(tostring(index))
+		row.index = i
+		row.num:SetText(tostring(i))
 		row.box.stepKey = step.key
 		row.box.mode = mode
 		row.box:SetChecked(ns.IsStepEnabled(step))
-		row.up.index = index
+		row.up.index = i
 		row.up.mode = mode
-		row.down.index = index
+		row.down.index = i
 		row.down.mode = mode
-		if row.del then
-			row.del.stepKey = step.key
-			row.del.index = index
-			row.del.mode = mode
-		end
-		row.icon:SetTexture(API.SpellIcon(step.id) or ("Interface\\Icons\\INV_Misc_QuestionMark"))
+		row.del.stepKey = step.key
+		row.del.mode = mode
+		row.icon:SetTexture(API.SpellIcon(step.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
 		local name = API.SpellLabel(step.id) or step.key
 		if step.racial then
 			name = ns.T("RACIAL_PREFIX"):format(name)
 		end
 		row.label:SetText(name)
 		local known = API.Known(step.id)
-		row.label:SetTextColor(known and 1 or 0.55, known and 1 or 0.55, known and 1 or 0.55)
-		if row.hold then
-			row.hold.stepKey = step.key
-			row.hold.mode = mode
+		local shade = known and 1 or 0.55
+		row.label:SetTextColor(shade, shade, shade)
+		row.hold:SetShown(showHold)
+		row.holdUnit:SetShown(showHold)
+		row.hold.stepKey = step.key
+		row.hold.mode = mode
+		if showHold and not row.hold:HasFocus() then
 			local hold = step.opt and tonumber(step.opt.hold)
 			if hold == nil and ns.SPELL_HOLD and step.id then
 				hold = ns.SPELL_HOLD[step.id]
 			end
-			if not row.hold:HasFocus() then
-				row.hold:SetText(tostring(hold or 0))
-			end
+			row.hold:SetText(tostring(hold or 0))
 		end
+		y = y + 28
 	end
-
-	local function renderSteps(steps, mode)
-		for i, step in ipairs(steps) do
-			rowIndex = rowIndex + 1
-			local row = aplRow(child, rowIndex)
-			row:ClearAllPoints()
-			row:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
-			bindRow(row, step, i, mode)
-			y = y + 30
-		end
+	for i = #steps + 1, #frame.aplRows do
+		local row = frame.aplRows[i]
+		row:Hide()
+		row.index = nil
+		row.mode = nil
+		row.box.stepKey = nil
+		row.del.stepKey = nil
+		row.hold.stepKey = nil
 	end
-
-	if listKind == "def" then
-		if frame.modeHeaders then
-			for _, header in pairs(frame.modeHeaders) do
-				header:Hide()
-			end
-		end
-		if frame.modeDrops then
-			for _, drop in pairs(frame.modeDrops) do
-				drop:Hide()
-			end
-		end
-		renderSteps(ns.GetDef(nil, editSpec), nil)
-		if frame.addSpell then
-			frame.addSpell:ClearAllPoints()
-			frame.addSpell:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
-			frame.addSpell.mode = nil
-			if frame.addSpell.label then
-				frame.addSpell.label:SetText(ns.T("OPT_ADD_SPELL"))
-			end
-			frame.addSpell:Show()
-			y = y + 40
-		end
-	else
-		if frame.addSpell then
-			frame.addSpell:Hide()
-		end
-		for _, mode in ipairs({ "auto", "single", "aoe", "burst" }) do
-			local header = frame.modeHeaders and frame.modeHeaders[mode]
-			if header then
-				header:Show()
-				header:ClearAllPoints()
-				header:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
-				header._scrollY = y
-				header.label:SetText(modeLabel(mode))
-				header.reset.mode = mode
-				y = y + 24
-			end
-			renderSteps(ns.GetAPL(nil, editSpec, mode), mode)
-			local drop = frame.modeDrops and frame.modeDrops[mode]
-			if drop then
-				drop:Show()
-				drop:ClearAllPoints()
-				drop:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -y)
-				drop.mode = mode
-				if drop.label then
-					drop.label:SetText(ns.T("OPT_ADD_SPELL"))
-				end
-				y = y + 40
-			end
-			y = y + 8
-		end
-	end
-
-	for i = rowIndex + 1, #frame.aplRows do
-		frame.aplRows[i]:Hide()
-		frame.aplRows[i].box.stepKey = nil
-		frame.aplRows[i].index = nil
-		frame.aplRows[i].mode = nil
-		if frame.aplRows[i].del then
-			frame.aplRows[i].del.stepKey = nil
-			frame.aplRows[i].del.mode = nil
-		end
-	end
-	child:SetHeight(math.max(40, y + 10))
+	frame.addSpell:ClearAllPoints()
+	frame.addSpell:SetPoint("TOPLEFT", child, "TOPLEFT", 2, -(y + 4))
+	frame.addSpell:Show()
+	child:SetHeight(math.max(40, y + 40))
 end
 
 
 -- The options live in the game's Settings window, under AddOns: one category
 -- for a landing page, with one sub-category (expandable with +) per page.
 local TABS = {
-	{ "profiles", "TAB_PROFILES" },
-	{ "general", "TAB_GENERAL" },
 	{ "rotation", "TAB_ROTATION" },
 	{ "def", "TAB_DEFENSE" },
-	{ "extra", "TAB_EXTRA" },
-	{ "info", "TAB_INFO" },
+	{ "profiles", "TAB_PROFILES" },
 }
 
 -- Build the heavy page host a few seconds after login, out of combat, so the
@@ -1437,6 +707,225 @@ function ns.WarmOptionsList()
 	ns.optionsWarm = false
 end
 
+-- Native Settings pages (Highlights, Behavior): Blizzard checkboxes, dropdowns,
+-- sliders and color swatches. Proxy settings read and write ns.db directly.
+local function afterChange()
+	if ns.FlushProfile then
+		ns.FlushProfile()
+	end
+	if ns.InvalidateAPLCache then
+		ns.InvalidateAPLCache()
+	end
+	if ns.ApplyFeatureFlags then
+		ns.ApplyFeatureFlags()
+	elseif ns.Tick then
+		ns.Tick()
+	end
+end
+
+local function proxy(category, variable, varType, labelKey, default, get, set)
+	return Settings.RegisterProxySetting(category, "KnowYourRotation_" .. variable, varType, ns.T(labelKey), default, get, set)
+end
+
+local function header(layout, labelKey)
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(ns.T(labelKey)))
+end
+
+local function checkbox(category, variable, labelKey, tipKey, default, get, set)
+	local setting = proxy(category, variable, Settings.VarType.Boolean, labelKey, default, get, set)
+	Settings.CreateCheckbox(category, setting, tipKey and ns.T(tipKey) or nil)
+end
+
+-- A switch stored as ns.db[key], on unless set to false.
+local function featureCheckbox(category, key, labelKey, tipKey)
+	checkbox(category, key, labelKey, tipKey, true, function()
+		return ns.db[key] ~= false
+	end, function(value)
+		ns.db[key] = value and true or false
+		afterChange()
+	end)
+end
+
+-- items() returns { { value, label }, ... }
+local function dropdown(category, variable, labelKey, tipKey, default, get, set, items)
+	local setting = proxy(category, variable, Settings.VarType.String, labelKey, default, get, set)
+	local function options()
+		local container = Settings.CreateControlTextContainer()
+		for _, item in ipairs(items()) do
+			container:Add(item[1], item[2])
+		end
+		return container:GetData()
+	end
+	Settings.CreateDropdown(category, setting, options, tipKey and ns.T(tipKey) or nil)
+end
+
+local function soundDropdown(category, dbKey, labelKey)
+	dropdown(category, dbKey, labelKey, "TIP_SOUND", ns.db[dbKey] or "none", function()
+		return ns.db[dbKey] or "none"
+	end, function(value)
+		ns.db[dbKey] = value
+		ns.PlayAlertSound(value)
+	end, function()
+		local list = {}
+		for _, entry in ipairs(ns.SOUNDS or {}) do
+			list[#list + 1] = { entry.key, ns.T(entry.label) }
+		end
+		return list
+	end)
+end
+
+local function colorSwatch(category, key, labelKey)
+	if not Settings.CreateColorSwatch or not CreateColor or not CreateColorFromHexString then
+		return
+	end
+	local d = ns.COLOR_DEFAULTS[key] or ns.COLOR_DEFAULTS.next
+	local default = CreateColor(d[1], d[2], d[3]):GenerateHexColor()
+	local setting = proxy(category, "color_" .. key, Settings.VarType.String, labelKey, default, function()
+		local r, g, b = ns.Color(key)
+		return CreateColor(r, g, b):GenerateHexColor()
+	end, function(value)
+		local color = CreateColorFromHexString(value)
+		if color then
+			ns.db.colors = ns.db.colors or {}
+			ns.db.colors[key] = { color.r, color.g, color.b }
+			if ns.GlowInvalidate then
+				ns.GlowInvalidate()
+			end
+			afterChange()
+		end
+	end)
+	Settings.CreateColorSwatch(category, setting, nil)
+end
+
+local function registerHighlights(root)
+	local category, layout = Settings.RegisterVerticalLayoutSubcategory(root, ns.T("TAB_HIGHLIGHTS"))
+	local token = ns.ClassToken and ns.ClassToken()
+
+	header(layout, "HDR_CHARACTER")
+	checkbox(category, "muted", "OPT_MUTE", "TIP_MUTE", false, function()
+		return ns.db.muted == true
+	end, function(value)
+		ns.db.muted = value and true or nil
+		afterChange()
+	end)
+
+	header(layout, "HDR_ROTATION")
+	featureCheckbox(category, "showRotation", "OPT_ROTATION", "TIP_ROTATION")
+	colorSwatch(category, "next", "OPT_COLOR_NEXT")
+	colorSwatch(category, "heal", "OPT_COLOR_HEAL")
+
+	header(layout, "HDR_DEFENSE")
+	featureCheckbox(category, "showDefense", "OPT_DEFENSE", "TIP_DEFENSE")
+	colorSwatch(category, "def", "OPT_COLOR_DEF")
+
+	-- Only the cues this class can use.
+	if token and ns.INTERRUPTS and ns.INTERRUPTS[token] then
+		header(layout, "HDR_INTERRUPT")
+		featureCheckbox(category, "showInterrupt", "OPT_INTERRUPT", "TIP_INTERRUPT")
+		soundDropdown(category, "soundKick", "OPT_SOUND")
+	end
+	if token and ns.PURGES and ns.PURGES[token] then
+		header(layout, "HDR_PURGE")
+		featureCheckbox(category, "showPurge", "OPT_PURGE", "TIP_PURGE")
+	end
+	if token and ns.CLEANSE and ns.CLEANSE[token] then
+		header(layout, "HDR_CLEANSE")
+		featureCheckbox(category, "showCleanse", "OPT_CLEANSE", "TIP_CLEANSE")
+		featureCheckbox(category, "cleanseGroup", "OPT_CLEANSE_GROUP", nil)
+		soundDropdown(category, "soundCleanse", "OPT_SOUND")
+	end
+	local choices = ns.WeaponChoices and ns.WeaponChoices() or {}
+	if #choices > 0 then
+		header(layout, "HDR_WEAPON")
+		featureCheckbox(category, "showWeapon", "OPT_WEAPON", "TIP_WEAPON")
+		dropdown(category, "weaponBuff", "OPT_WEAPON_PICK", "TIP_WEAPON_PICK", "auto", function()
+			local key = ns.db.weaponBuff
+			for _, entry in ipairs(ns.WeaponChoices() or {}) do
+				if entry.key == key and ns.WeaponBuffLearned(entry) then
+					return key
+				end
+			end
+			return "auto"
+		end, function(value)
+			ns.db.weaponBuff = value ~= "auto" and value or nil
+			afterChange()
+		end, function()
+			local auto = ns.AutoWeaponBuff()
+			local label = ns.T("OPT_AUTOMATIC")
+			if auto then
+				label = label .. " (" .. (API.SpellLabel(auto.id) or auto.key) .. ")"
+			end
+			local list = { { "auto", label } }
+			for _, entry in ipairs(ns.WeaponChoices() or {}) do
+				if ns.WeaponBuffLearned(entry) then
+					list[#list + 1] = { entry.key, API.SpellLabel(entry.id) or entry.key }
+				end
+			end
+			return list
+		end)
+		soundDropdown(category, "soundWeapon", "OPT_SOUND")
+		colorSwatch(category, "weapon", "OPT_COLOR_WEAPON")
+	end
+end
+
+local function registerBehavior(root)
+	local category, layout = Settings.RegisterVerticalLayoutSubcategory(root, ns.T("TAB_BEHAVIOR"))
+
+	header(layout, "HDR_DETECTION")
+	dropdown(category, "role", "OPT_ROLE", "TIP_ROLE", "auto", function()
+		return ns.RoleChoice()
+	end, function(value)
+		ns.SetRoleChoice(value)
+	end, function()
+		local list = { { "auto", ns.T("OPT_AUTOMATIC") } }
+		local token = ns.ClassToken and ns.ClassToken()
+		for _, role in ipairs(token and ns.CLASS_ROLES[token] or { "damage" }) do
+			list[#list + 1] = { role, ns.T("ROLE_" .. role:upper()) }
+		end
+		return list
+	end)
+	dropdown(category, "combatMode", "OPT_COMBAT_MODE", "TIP_COMBAT_MODE", "auto", function()
+		return ns.CombatMode()
+	end, function(value)
+		ns.SetCombatMode(value)
+	end, function()
+		return {
+			{ "auto", ns.T("OPT_AUTOMATIC") },
+			{ "single", ns.T("MODE_SINGLE") },
+			{ "aoe", ns.T("MODE_AOE") },
+		}
+	end)
+	local aoe = proxy(category, "autoEnemies", Settings.VarType.Number, "OPT_AOE_FROM", 3, function()
+		return tonumber(ns.db.autoEnemies) or 3
+	end, function(value)
+		ns.db.autoEnemies = math.floor((tonumber(value) or 3) + 0.5)
+		afterChange()
+	end)
+	local sliderOptions = Settings.CreateSliderOptions(2, 8, 1)
+	if MinimalSliderWithSteppersMixin and MinimalSliderWithSteppersMixin.Label then
+		sliderOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+			return string.format("%d", value)
+		end)
+	end
+	Settings.CreateSlider(category, aoe, sliderOptions, ns.T("TIP_AOE_FROM"))
+	dropdown(category, "profile", "OPT_PROFILE", "TIP_PROFILE", "auto", function()
+		return ns.ProfileChoice()
+	end, function(value)
+		ns.SetProfileChoice(value)
+	end, function()
+		return {
+			{ "auto", ns.T("OPT_AUTOMATIC") },
+			{ "pve", ns.T("PROFILE_PVE") },
+			{ "pvp", ns.T("PROFILE_PVP") },
+		}
+	end)
+
+	header(layout, "HDR_SUGGESTIONS")
+	featureCheckbox(category, "barOnly", "OPT_BAR_ONLY", "TIP_BAR_ONLY")
+	featureCheckbox(category, "autoHeal", "OPT_AUTO_HEAL", "TIP_AUTO_HEAL")
+	featureCheckbox(category, "showPhysics", "OPT_PHYSICS", "TIP_PHYSICS")
+end
+
 function ns.RegisterOptions()
 	if ns.optionsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory then
 		return
@@ -1459,9 +948,62 @@ function ns.RegisterOptions()
 	homeText:SetJustifyH("LEFT")
 	homeText:SetWordWrap(true)
 	homeText:SetText(ns.T("OPT_HOME_TEXT"))
+	local homeStatus = home:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	homeStatus:SetPoint("TOPLEFT", homeText, "BOTTOMLEFT", 0, -20)
+	homeStatus:SetPoint("RIGHT", home, "RIGHT", -24, 0)
+	homeStatus:SetJustifyH("LEFT")
+	homeStatus:SetWordWrap(true)
+	local homeSupport = home:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	homeSupport:SetPoint("TOPLEFT", homeStatus, "BOTTOMLEFT", 0, -24)
+	homeSupport:SetPoint("RIGHT", home, "RIGHT", -24, 0)
+	homeSupport:SetJustifyH("LEFT")
+	homeSupport:SetText(ns.T("INFO_SUPPORT"))
+	local githubRow = makeLinkRow(home, "INFO_GITHUB", GITHUB_URL)
+	githubRow:SetPoint("TOPLEFT", homeSupport, "BOTTOMLEFT", 0, -8)
+	githubRow:SetPoint("RIGHT", home, "RIGHT", -24, 0)
+	local issuesRow = makeLinkRow(home, "INFO_ISSUES", ISSUES_URL)
+	issuesRow:SetPoint("TOPLEFT", githubRow, "BOTTOMLEFT", 0, -4)
+	issuesRow:SetPoint("RIGHT", home, "RIGHT", -24, 0)
+
+	-- "Right now: Shaman · Caster (automatic) · Single (automatic) · PvE (automatic)"
+	local function statusText()
+		local _, _, className = ns.ClassToken()
+		local auto = " " .. ns.T("HOME_AUTO_SUFFIX")
+		local role = ns.T("ROLE_" .. tostring(ns.db.role or "damage"):upper())
+		if ns.db.roleAuto ~= false then
+			role = role .. auto
+		end
+		local mode = ns.CombatMode()
+		local modeText
+		if mode == "auto" then
+			local now = ns.ResolveCombatMode and ns.ResolveCombatMode() or "single"
+			modeText = ns.T(now == "aoe" and "MODE_AOE" or "MODE_SINGLE") .. auto
+		else
+			modeText = ns.T(mode == "aoe" and "MODE_AOE" or "MODE_SINGLE")
+		end
+		local profile = ns.T("PROFILE_" .. ns.ProfileKey():upper())
+		if ns.db.autoProfile ~= false then
+			profile = profile .. auto
+		end
+		local line = ns.T("HOME_STATUS"):format(className or "?", role, modeText, profile)
+		if ns.db.muted == true then
+			line = line .. "\n" .. ns.T("HOME_DISABLED")
+		end
+		return line
+	end
+	-- New frames start shown; hide so Settings' first Show() fires OnShow.
+	home:Hide()
+	home:SetScript("OnShow", function()
+		pcall(function()
+			homeStatus:SetText(statusText())
+		end)
+	end)
 	local root = Settings.RegisterCanvasLayoutCategory(home, ns.T("TITLE"))
 	Settings.RegisterAddOnCategory(root)
 	ns.optionsCategory = root
+
+	registerHighlights(root)
+	registerBehavior(root)
 
 	for _, tab in ipairs(TABS) do
 		local key, labelKey = tab[1], tab[2]

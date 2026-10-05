@@ -263,7 +263,7 @@ end
 
 function ns.CombatMode()
 	local mode = ns.db and ns.db.combatMode or "auto"
-	if mode == "auto" or mode == "aoe" or mode == "burst" or mode == "single" then
+	if mode == "auto" or mode == "aoe" or mode == "single" then
 		return mode
 	end
 	return "auto"
@@ -298,7 +298,7 @@ local function modePack(classFile, spec, mode)
 	return specModes and specModes[mode]
 end
 
-local VALID_MODES = { auto = true, single = true, aoe = true, burst = true }
+local VALID_MODES = { auto = true, single = true, aoe = true }
 
 local function validMode(mode)
 	if type(mode) == "string" and VALID_MODES[mode] then

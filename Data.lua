@@ -25,7 +25,7 @@ ns.CLASS_ROLES = {
 	DRUID = { "hybrid", "heal", "tank" },
 }
 
-ns.COMBAT_MODES = { "auto", "single", "aoe", "burst" }
+ns.COMBAT_MODES = { "auto", "single", "aoe" }
 
 -- Couleurs officielles WoW, lues en dur (Forever peut cacher RAID_CLASS_COLORS).
 ns.CLASS_COLORS = {

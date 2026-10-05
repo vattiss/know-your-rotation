@@ -4,9 +4,29 @@
 
 First release of Know Your Rotation.
 
-A rotation helper for WoW Forever. It shows the next three spells on a small HUD and highlights the matching action-bar button. It never casts for you and never reads the combat log.
+A rotation helper for WoW Forever, made for learning a class from level 1: instead of digging through guides while you level, follow the addon. The spell to press next lights up on your action bars. There is no extra window to watch.
 
-- English only, WoW Forever (camelot client) only.
-- Highlight uses the client's own spell-alert glow, and only for a spell you can press right now.
-- All artwork is built-in client art; no texture files ship with the addon.
-- Profiles with import / export, per-spell hold times, Single / AoE / Burst / Auto modes.
+## What it shows
+- The next rotation spell glows on its action-bar button, only when you can actually press it.
+- Heals light up once your missing health is about the size of the heal, also in combat when the client hides health values.
+- Defense buffs, interrupts, purges, cleanses and weapon buffs (imbues, poisons, stones) each get their own glow, with an optional sound.
+- A screen message when a cue spell is not on your action bars, and pet reminders for hunters and warlocks.
+
+## What it does on its own
+- Role from your talents, stance and the distance to your target.
+- Single-target or AoE list from the number of nearby enemies.
+- PvE or PvP profile from the instance type, your PvP flag or an enemy player as target.
+- Each of these can be fixed by hand on the Behavior page.
+
+## Options
+- Game menu → Options → AddOns → Know Your Rotation, built from the game's own settings controls.
+- Highlights: per-cue switch, sound and color, and a switch to disable the addon on one character.
+- Behavior: role, combat mode, AoE threshold, profile, smart heal threshold, action-bar-only suggestions, Classic swing and auto-shot timing.
+- Rotation and Defense: edit one list at a time, drag spells in from the spellbook, optional per-spell delay.
+- Profiles: reset, export and import.
+
+## Scope
+- WoW Forever (camelot client) only, English only.
+- Tuned for leveling and learning: no burst or raid modes.
+- No chat commands, no minimap button, no texture files; all artwork is built into the client.
+- It never reads the combat log.

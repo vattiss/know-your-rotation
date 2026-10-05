@@ -109,12 +109,10 @@ local function defaults()
 	if ns.db.autoEnemies == nil then
 		ns.db.autoEnemies = 3
 	end
-	if ns.db.lastManualMode ~= "aoe" and ns.db.lastManualMode ~= "burst" then
-		if ns.db.lastManualMode ~= "single" then
-			ns.db.lastManualMode = "single"
-		end
+	if ns.db.lastManualMode ~= "aoe" then
+		ns.db.lastManualMode = "single"
 	end
-	if ns.db.combatMode ~= "auto" and ns.db.combatMode ~= "single" and ns.db.combatMode ~= "aoe" and ns.db.combatMode ~= "burst" then
+	if ns.db.combatMode ~= "auto" and ns.db.combatMode ~= "single" and ns.db.combatMode ~= "aoe" then
 		ns.db.combatMode = "auto"
 	end
 	if not ns.db.profiles then
@@ -131,24 +129,26 @@ local function defaults()
 				weaponBuff = ns.db.weaponBuff,
 			},
 			pvp = {},
-			custom = {},
-			base = {},
 		}
 		ns.db.profile = "pve"
 	end
 	for _, key in ipairs(ns.PROFILE_ORDER) do
 		ns.db.profiles[key] = ns.db.profiles[key] or {}
 	end
+	-- Only PvE and PvP profiles exist now.
+	ns.db.profiles.base = nil
+	ns.db.profiles.custom = nil
+	ns.db.autoProfileFrom = nil
 	if not ns.ValidProfile(ns.db.profile) then
 		ns.db.profile = "pve"
 	end
 	ns.BindProfile()
 end
 
-ns.PROFILE_ORDER = { "base", "pve", "pvp", "custom" }
+ns.PROFILE_ORDER = { "pve", "pvp" }
 
 function ns.ValidProfile(key)
-	return key == "base" or key == "pve" or key == "pvp" or key == "custom"
+	return key == "pve" or key == "pvp"
 end
 
 function ns.ProfileKey()
@@ -190,7 +190,7 @@ function ns.BindProfile()
 	ns.db.defDrop = p.defDrop
 	ns.db.role = ns.NormalizeRole(p.role)
 	local mode = p.combatMode or "auto"
-	if mode ~= "auto" and mode ~= "single" and mode ~= "aoe" and mode ~= "burst" then
+	if mode ~= "auto" and mode ~= "single" and mode ~= "aoe" then
 		mode = "auto"
 	end
 	ns.db.combatMode = mode
@@ -227,16 +227,26 @@ function ns.SetProfile(key)
 	end
 end
 
-function ns.CycleProfile()
-	local current = ns.ProfileKey()
-	local nextKey = ns.PROFILE_ORDER[1]
-	for i, key in ipairs(ns.PROFILE_ORDER) do
-		if key == current then
-			nextKey = ns.PROFILE_ORDER[i + 1] or ns.PROFILE_ORDER[1]
-			break
-		end
+-- Profile picked in the options: "auto" follows instance type / PvP flag,
+-- "pve" or "pvp" pins that profile and turns the automatic switch off.
+function ns.SetProfileChoice(choice)
+	if choice == "auto" then
+		ns.db.autoProfile = true
+		ns.ApplyAutoProfile()
+	elseif ns.ValidProfile(choice) then
+		ns.db.autoProfile = false
+		ns.SetProfile(choice)
 	end
-	ns.SetProfile(nextKey)
+	if ns.RefreshOptions then
+		ns.RefreshOptions()
+	end
+end
+
+function ns.ProfileChoice()
+	if ns.db.autoProfile ~= false then
+		return "auto"
+	end
+	return ns.ProfileKey()
 end
 
 function ns.ResetCurrentProfile()
@@ -355,7 +365,7 @@ function ns.SetRole(role)
 end
 
 function ns.SetCombatMode(mode)
-	if mode ~= "auto" and mode ~= "aoe" and mode ~= "burst" then
+	if mode ~= "auto" and mode ~= "aoe" then
 		mode = "single"
 	end
 	if mode ~= "auto" then
@@ -377,49 +387,32 @@ function ns.SetCombatMode(mode)
 	ns.Tick()
 end
 
-function ns.ToggleAuto()
-	if (ns.db.combatMode or "auto") == "auto" then
-		ns.SetCombatMode(ns.db.lastManualMode or "single")
+-- Role picked in the options: "auto" detects it (talents, stance, range),
+-- any other value pins that role.
+function ns.SetRoleChoice(choice)
+	if choice == "auto" then
+		ns.db.roleAuto = true
+		if ns.SyncAutoRole then
+			ns.SyncAutoRole()
+		end
+		if ns.FlushProfile then
+			ns.FlushProfile()
+		end
+		if ns.RefreshOptions then
+			ns.RefreshOptions()
+		end
+		ns.Tick()
 		return
 	end
-	ns.SetCombatMode("auto")
+	ns.db.roleAuto = false
+	ns.SetRole(choice)
 end
 
-function ns.CycleCombatMode()
-	local order = { "single", "aoe", "burst" }
-	local current = ns.db.combatMode
-	if current == "auto" then
-		current = ns.db.lastManualMode or "single"
-	end
-	local nextMode = order[1]
-	for i, mode in ipairs(order) do
-		if mode == current then
-			nextMode = order[i + 1] or order[1]
-			break
-		end
-	end
-	ns.SetCombatMode(nextMode)
-end
-
-function ns.CycleRole()
-	local token = ns.ClassToken()
-	local order = token and ns.CLASS_ROLES[token] or { "damage" }
-	local current = ns.db.role or "damage"
-	local nextRole = order[1]
-	for i, role in ipairs(order) do
-		if role == current then
-			nextRole = order[i + 1] or order[1]
-			break
-		end
-	end
-	-- Manual role pick disables auto melee/range switching until re-enabled in Extra.
+function ns.RoleChoice()
 	if ns.db.roleAuto ~= false then
-		ns.db.roleAuto = false
-		if ns.Print and ns.T then
-			ns.Print(ns.T("MSG_ROLE_AUTO_OFF"))
-		end
+		return "auto"
 	end
-	ns.SetRole(nextRole)
+	return ns.db.role or "damage"
 end
 
 local lastTickSig
@@ -554,27 +547,17 @@ function ns.ApplyAutoProfile()
 		want = "pve"
 	elseif pvpTarget then
 		want = "pvp"
+	else
+		want = "pve"
 	end
-	if want then
-		if ns.ProfileKey() ~= want then
-			if not ns.db.autoProfileFrom then
-				ns.db.autoProfileFrom = ns.ProfileKey()
-			end
-			ns.SetProfile(want)
-		end
+	if ns.ProfileKey() == want then
 		return
 	end
-	local from = ns.db.autoProfileFrom
-	-- Do not swap lists back in the middle of a fight.
-	if from and ns.API.InCombat() then
+	-- Do not swap lists back to PvE in the middle of a fight.
+	if want == "pve" and ns.API.InCombat() then
 		return
 	end
-	if from and ns.ValidProfile(from) and ns.ProfileKey() ~= from then
-		ns.db.autoProfileFrom = nil
-		ns.SetProfile(from)
-		return
-	end
-	ns.db.autoProfileFrom = nil
+	ns.SetProfile(want)
 end
 
 function ns.Tick()

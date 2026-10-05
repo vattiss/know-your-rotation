@@ -477,41 +477,84 @@ function ns.WeaponChoices()
 	return token and ns.WEAPON_BUFFS[token] or {}
 end
 
-local function knownWeaponID(entry)
+-- Highest rank of this weapon buff the character has learned, or nil.
+local function learnedWeaponID(entry)
 	if not entry then
-		return
+		return nil
+	end
+	if entry.ranks then
+		for i = #entry.ranks, 1, -1 do
+			if API.Known(entry.ranks[i]) then
+				return entry.ranks[i]
+			end
+		end
 	end
 	if API.Known(entry.id) then
 		return entry.id
 	end
-	if entry.ranks then
-		for i = #entry.ranks, 1, -1 do
-			local id = entry.ranks[i]
-			if API.Known(id) then
-				return id
+	return nil
+end
+
+function ns.WeaponBuffLearned(entry)
+	return learnedWeaponID(entry) ~= nil
+end
+
+-- Automatic pick: the best weapon buff already learned, by role where it
+-- matters (melee shaman: Windfury first; caster / healer: Flametongue first).
+-- At low level this is simply the only one known, e.g. Rockbiter.
+local WEAPON_PRIORITY = {
+	SHAMAN = {
+		melee = { "Windfury", "Flametongue", "Rockbiter", "Frostbrand" },
+		default = { "Flametongue", "Rockbiter", "Frostbrand", "Windfury" },
+	},
+}
+
+function ns.AutoWeaponBuff()
+	local choices = ns.WeaponChoices()
+	local token = ns.ClassToken and ns.ClassToken()
+	local pack = token and WEAPON_PRIORITY[token]
+	local order = pack and (pack[ns.db.role] or pack.default)
+	if order then
+		local byKey = {}
+		for _, entry in ipairs(choices) do
+			byKey[entry.key] = entry
+		end
+		for _, key in ipairs(order) do
+			local id = learnedWeaponID(byKey[key])
+			if id then
+				return byKey[key], id
 			end
 		end
 	end
-	return entry.id
+	for _, entry in ipairs(choices) do
+		local id = learnedWeaponID(entry)
+		if id then
+			return entry, id
+		end
+	end
+	return nil
 end
 
+-- The player's pick if it is learned, otherwise the automatic one. Returns
+-- nothing while no weapon buff is learned yet, so nothing is suggested.
 function ns.SelectedWeaponBuff()
 	local choices = ns.WeaponChoices()
 	if #choices == 0 then
 		return
 	end
 	local key = ns.db.weaponBuff
-	for _, entry in ipairs(choices) do
-		if entry.key == key then
-			return entry, knownWeaponID(entry)
+	if key and key ~= "auto" then
+		for _, entry in ipairs(choices) do
+			if entry.key == key then
+				local id = learnedWeaponID(entry)
+				if id then
+					return entry, id
+				end
+				break
+			end
 		end
 	end
-	for _, entry in ipairs(choices) do
-		if knownWeaponID(entry) and API.Known(knownWeaponID(entry)) then
-			return entry, knownWeaponID(entry)
-		end
-	end
-	return choices[1], knownWeaponID(choices[1])
+	return ns.AutoWeaponBuff()
 end
 
 local function rememberWeaponApply(entry)

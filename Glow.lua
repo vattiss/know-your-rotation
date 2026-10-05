@@ -224,8 +224,8 @@ end
 local function overlay(button, key, texture, r, g, b, scale, alpha)
 	scale = scale or 1.25
 	alpha = alpha or 0.85
-	button.WFROverlays = button.WFROverlays or {}
-	local frame = button.WFROverlays[key]
+	button.KYROverlays = button.KYROverlays or {}
+	local frame = button.KYROverlays[key]
 	-- The default highlight uses Blizzard's own spell-alert glow (the retail
 	-- "proc" animation). Our own instance, never the one the action-bar manager
 	-- drives, so real procs are unaffected. Falls back to a plain texture.
@@ -251,7 +251,7 @@ local function overlay(button, key, texture, r, g, b, scale, alpha)
 					frame.ProcAltGlow:Hide()
 				end
 				frame:Hide()
-				button.WFROverlays[key] = frame
+				button.KYROverlays[key] = frame
 			end
 		end
 		if not frame then
@@ -263,7 +263,7 @@ local function overlay(button, key, texture, r, g, b, scale, alpha)
 			tex:SetAllPoints(frame)
 			frame.texture = tex
 			frame:Hide()
-			button.WFROverlays[key] = frame
+			button.KYROverlays[key] = frame
 		end
 	end
 	local w = button.GetWidth and button:GetWidth() or 36
@@ -294,14 +294,14 @@ end
 
 local function showDamage(button, isHeal)
 	if isHeal then
-		if button.WFROverlays and button.WFROverlays.next then
-			button.WFROverlays.next:Hide()
+		if button.KYROverlays and button.KYROverlays.next then
+			button.KYROverlays.next:Hide()
 		end
 		local r, g, b = ns.Color("heal")
 		overlay(button, "heal", GLOW_ART, r, g, b, 1.45, 0.95):Show()
 	else
-		if button.WFROverlays and button.WFROverlays.heal then
-			button.WFROverlays.heal:Hide()
+		if button.KYROverlays and button.KYROverlays.heal then
+			button.KYROverlays.heal:Hide()
 		end
 		local r, g, b = ns.Color("next")
 		overlay(button, "next", GLOW_ART, r, g, b, 1.45, 0.9):Show()
@@ -310,12 +310,12 @@ local function showDamage(button, isHeal)
 end
 
 local function hideDamage(button)
-	if button.WFROverlays then
-		if button.WFROverlays.next then
-			button.WFROverlays.next:Hide()
+	if button.KYROverlays then
+		if button.KYROverlays.next then
+			button.KYROverlays.next:Hide()
 		end
-		if button.WFROverlays.heal then
-			button.WFROverlays.heal:Hide()
+		if button.KYROverlays.heal then
+			button.KYROverlays.heal:Hide()
 		end
 	end
 	damageGlowing[button] = nil
@@ -333,8 +333,8 @@ local function showDefense(button, isHeal)
 end
 
 local function hideDefense(button)
-	if button.WFROverlays and button.WFROverlays.def then
-		button.WFROverlays.def:Hide()
+	if button.KYROverlays and button.KYROverlays.def then
+		button.KYROverlays.def:Hide()
 	end
 	defenseGlowing[button] = nil
 end
@@ -345,8 +345,8 @@ local function showKick(button)
 end
 
 local function hideKick(button)
-	if button.WFROverlays and button.WFROverlays.kick then
-		button.WFROverlays.kick:Hide()
+	if button.KYROverlays and button.KYROverlays.kick then
+		button.KYROverlays.kick:Hide()
 	end
 	kickGlowing[button] = nil
 end
@@ -357,8 +357,8 @@ local function showPurge(button)
 end
 
 local function hidePurge(button)
-	if button.WFROverlays and button.WFROverlays.purge then
-		button.WFROverlays.purge:Hide()
+	if button.KYROverlays and button.KYROverlays.purge then
+		button.KYROverlays.purge:Hide()
 	end
 	purgeGlowing[button] = nil
 end
@@ -862,8 +862,8 @@ local function showCleanse(button)
 end
 
 local function hideCleanse(button)
-	if button.WFROverlays and button.WFROverlays.cleanse then
-		button.WFROverlays.cleanse:Hide()
+	if button.KYROverlays and button.KYROverlays.cleanse then
+		button.KYROverlays.cleanse:Hide()
 	end
 	cleanseGlowing[button] = nil
 end
@@ -875,8 +875,8 @@ local function showWeapon(button)
 end
 
 local function hideWeapon(button)
-	if button.WFROverlays and button.WFROverlays.weapon then
-		button.WFROverlays.weapon:Hide()
+	if button.KYROverlays and button.KYROverlays.weapon then
+		button.KYROverlays.weapon:Hide()
 	end
 	weaponGlowing[button] = nil
 end
@@ -936,8 +936,8 @@ end
 
 local function clearHiddenHeal()
 	for button in pairs(hiddenHealButtons) do
-		if button.WFROverlays and button.WFROverlays.hphide then
-			button.WFROverlays.hphide:Hide()
+		if button.KYROverlays and button.KYROverlays.hphide then
+			button.KYROverlays.hphide:Hide()
 		end
 		hiddenHealButtons[button] = nil
 	end
@@ -980,8 +980,8 @@ function ns.GlowHiddenHeal(spellID, threshold)
 	end
 	for button in pairs(hiddenHealButtons) do
 		if not keep[button] then
-			if button.WFROverlays and button.WFROverlays.hphide then
-				button.WFROverlays.hphide:Hide()
+			if button.KYROverlays and button.KYROverlays.hphide then
+				button.KYROverlays.hphide:Hide()
 			end
 			hiddenHealButtons[button] = nil
 		end

@@ -52,7 +52,7 @@ local function writeApl(lines, prefix, root)
 					else
 						for mode, rows in pairs(bucket) do
 							if type(mode) == "string" and type(rows) == "table" then
-								if mode == "auto" or mode == "single" or mode == "aoe" or mode == "burst" then
+								if mode == "auto" or mode == "single" or mode == "aoe" then
 									lines[#lines + 1] = prefix .. class .. "." .. spec .. "." .. mode .. "=" .. packSteps(rows)
 								end
 							end
@@ -192,10 +192,10 @@ function ns.ImportProfile(text)
 					class, spec = string.match(path, "^([%w_]+)%.([%w_]+)$")
 				end
 				if class and spec then
-					if kind == "APL" and (mode == "auto" or mode == "single" or mode == "aoe" or mode == "burst") then
+					if kind == "APL" and (mode == "auto" or mode == "single" or mode == "aoe") then
 						putNested(apl, class, spec, mode, parseSteps(payload))
 					elseif kind == "DEF" then
-						if mode and (mode == "auto" or mode == "single" or mode == "aoe" or mode == "burst") then
+						if mode and (mode == "auto" or mode == "single" or mode == "aoe") then
 							putNested(def, class, spec, mode, parseSteps(payload))
 						else
 							putNested(def, class, spec, nil, parseSteps(payload))
@@ -220,10 +220,10 @@ function ns.ImportProfile(text)
 	if meta.R ~= "" then
 		ns.db.role = ns.NormalizeRole and ns.NormalizeRole(meta.R) or meta.R
 	end
-	if meta.M == "auto" or meta.M == "single" or meta.M == "aoe" or meta.M == "burst" then
+	if meta.M == "auto" or meta.M == "single" or meta.M == "aoe" then
 		ns.db.combatMode = meta.M
 	end
-	if meta.L == "single" or meta.L == "aoe" or meta.L == "burst" then
+	if meta.L == "single" or meta.L == "aoe" then
 		ns.db.lastManualMode = meta.L
 	end
 	ns.db.autoEnemies = tonumber(meta.A) or 3
