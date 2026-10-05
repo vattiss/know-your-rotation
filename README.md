@@ -6,9 +6,9 @@ It highlights the spell to press next with a glow on your action-bar button, and
 
 Current version: **1.0.0-beta.1** (beta)
 
-**Beta:** the addon works, but not every class and level range has been played through yet, and the default spell lists are still being tuned for WoW Forever. Please report wrong suggestions, missing glows or Lua errors in the [issues](https://github.com/attilavarga96/know-your-rotation/issues).
+**Beta:** the addon works, but not every class and level range has been played through yet, and the default spell lists are still being tuned for WoW Forever. Please report wrong suggestions, missing glows or Lua errors in the [issues](https://github.com/vattiss/know-your-rotation/issues).
 
-**Status:** open source (MIT). Source, issues and pull requests: [github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
+**Status:** open source (MIT). Source, issues and pull requests: [github.com/vattiss/know-your-rotation](https://github.com/vattiss/know-your-rotation).
 
 ## Requirements
 
@@ -132,9 +132,9 @@ The git repository is the source of truth. The copy under `World of Warcraft\_cl
 
 ## Support
 
-Source (public): [https://github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
+Source (public): [https://github.com/vattiss/know-your-rotation](https://github.com/vattiss/know-your-rotation).
 
-Bugs and ideas: [github.com/attilavarga96/know-your-rotation/issues](https://github.com/attilavarga96/know-your-rotation/issues). The landing page of the options has the same link to copy.
+Bugs and ideas: [github.com/vattiss/know-your-rotation/issues](https://github.com/vattiss/know-your-rotation/issues). The landing page of the options has the same link to copy.
 
 ## License
 

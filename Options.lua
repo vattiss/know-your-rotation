@@ -1,6 +1,6 @@
 local addonName, ns = ...
 local API = ns.API
-local GITHUB_URL = "https://github.com/attilavarga96/know-your-rotation"
+local GITHUB_URL = "https://github.com/vattiss/know-your-rotation"
 local ISSUES_URL = GITHUB_URL .. "/issues"
 
 local editSpec

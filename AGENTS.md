@@ -2,7 +2,7 @@
 
 Rotation helper addon for **WoW Forever** (Classic Era combat, camelot client, interface `16001`). It shows the next spells and highlights action buttons. It never casts anything.
 
-Repo: https://github.com/attilavarga96/know-your-rotation (public, branch `main`, MIT). The local folder and the AddOns folder stay named `KnowYourRotation`.
+Repo: https://github.com/vattiss/know-your-rotation (public, branch `main`, MIT). The local folder and the AddOns folder stay named `KnowYourRotation`.
 
 The full code map is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). This file only says where to start.
 
