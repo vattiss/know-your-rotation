@@ -6,6 +6,17 @@ Repo: https://github.com/vattiss/know-your-rotation (public, branch `main`, MIT)
 
 The full code map is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). This file only says where to start.
 
+## Before you start any change
+
+Always start by reading the docs for the part you work on, before you edit code:
+
+1. **Project docs:** read the section of [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for that part (the table below names the file; the doc has a section per file and topic, e.g. *Step options*, *Queues*, *Self-buffs in combat*).
+2. **API docs:** look up every Blizzard function, event and field you call or read in `ref/wow-ui-source/Interface/AddOns/Blizzard_APIDocumentationGenerated` (git submodule, `forever` branch). Check the name, the argument and **return order**, `Nilable`, and the `Secret*` flags (secret values cannot be compared). Example: `notInterruptible` is return 8 of `UnitCastingInfo` but return 7 of `UnitChannelInfo`.
+3. **Blizzard UI code:** for filter strings, constants and CVars, check how the Blizzard UI in `ref/wow-ui-source/Interface/AddOns` uses them (e.g. aura filters in `Blizzard_FrameXMLUtil/AuraUtil.lua`, `"HARMFUL|PLAYER"`).
+4. After the change, update that ARCHITECTURE section (and `README.md` if players see the change).
+
+If the docs do not answer a question, say so instead of guessing; it can only be checked in game.
+
 ## Scope
 
 - Supports **WoW Forever only**. No other client or version.

@@ -389,9 +389,9 @@ function ns.Physics.Blocks(spellID)
 	if ns.Physics.IsClip(spellID) and ns.Physics.WouldClip() then
 		return true
 	end
-	if ns.Physics.IsSwing(spellID) and not ns.Physics.SwingWindow() then
-		return true
-	end
+	-- Next-swing attacks (Heroic Strike, Maul, Raptor Strike) are not held
+	-- back: UNIT_ATTACK is not a per-swing event (the Blizzard paper doll
+	-- refreshes its stats on it), so the swing timer is only a rough guess.
 	return false
 end
 

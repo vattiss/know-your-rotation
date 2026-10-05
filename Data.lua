@@ -875,6 +875,32 @@ end
 -- Seconds to wait after a successful cast before suggesting the spell again.
 -- Values from Forever 1.60 lab tooltips (Classic Era aura / DoT / HoT / snare
 -- durations). Players can override per row in options (opt.hold). 0 disables.
+-- Totem slot (FIRE_TOTEM_SLOT = 1, EARTH = 2, WATER = 3, AIR = 4 in the
+-- Blizzard constants) and rank-1 duration. Used while GetTotemInfo is secret
+-- (combat); readable reads replace the duration with the real one.
+ns.TOTEM_INFO = {}
+do
+	local Sh = ns.Spell.Shaman
+	local info = {
+		{ Sh.SearingTotem, 1, 30 },
+		{ Sh.MagmaTotem, 1, 20 },
+		{ Sh.StrengthofEarth, 2, 120 },
+		{ Sh.Stoneskin, 2, 120 },
+		{ Sh.Stoneclaw, 2, 15 },
+		{ Sh.TremorTotem, 2, 120 },
+		{ Sh.HealingStream, 3, 60 },
+		{ Sh.ManaSpring, 3, 60 },
+		{ Sh.WindfuryTotem, 4, 120 },
+		{ Sh.GraceofAir, 4, 120 },
+		{ Sh.GroundingTotem, 4, 45 },
+	}
+	for _, row in ipairs(info) do
+		if row[1] then
+			ns.TOTEM_INFO[row[1]] = { slot = row[2], seconds = row[3] }
+		end
+	end
+end
+
 -- Target debuffs one per target, whoever applied them: another player's
 -- counts as yours. Every other target debuff only counts when it is yours
 -- (two warlocks each keep their own Corruption on the same mob).

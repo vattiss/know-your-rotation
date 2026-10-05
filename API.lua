@@ -1658,11 +1658,8 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			return reject("target has no mana")
 		end
 	end
-	if opt.ifTargeting then
-		local ok, onMe = pcall(UnitIsUnit, "targettarget", "player")
-		if not ok or not onMe then
-			return reject("only when the target attacks you")
-		end
+	if opt.ifTargeting and ns.API.TargetAttacksYou() ~= true then
+		return reject("only when the target attacks you")
 	end
 	-- Backstab / Shred: only from behind. A mob faces whoever it attacks, so
 	-- not while it attacks you; after a "must be behind" error, wait a moment.
@@ -1670,11 +1667,8 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		if ns.API.NotBehindRecently() then
 			return reject("you were not behind the target")
 		end
-		if unitExists("targettarget") then
-			local ok, onMe = pcall(UnitIsUnit, "targettarget", "player")
-			if not ok or not readable(onMe) or onMe then
-				return reject("the target is facing you")
-			end
+		if ns.API.TargetAttacksYou() ~= false then
+			return reject("the target is facing you")
 		end
 	end
 	-- Cast-time spells a melee build only uses to pull.
@@ -2811,8 +2805,10 @@ local function targetCreatureCanon()
 	if not unitExists("target") then
 		return nil
 	end
+	-- Secret when the unit is not player-controlled or in your group
+	-- (SecretWhenUnitIdentityRestricted): then the type is unknown.
 	local ok, ctype = pcall(UnitCreatureType, "target")
-	if not ok or type(ctype) ~= "string" or ctype == "" then
+	if not ok or not readable(ctype) or type(ctype) ~= "string" or ctype == "" then
 		return nil
 	end
 	return creatureCanon(ctype)
@@ -2851,7 +2847,9 @@ function ns.API.CreatureMatch(list)
 	end
 	local canon = targetCreatureCanon()
 	if not canon then
-		return false
+		-- Unknown type: let the step through; Exorcism's own "usable" check
+		-- still refuses a wrong target.
+		return true
 	end
 	return creatureListHas(list, canon)
 end
@@ -2876,6 +2874,147 @@ function ns.API.IsRaidmob()
 	return false
 end
 
+-- Totems. GetTotemInfo is secret in combat (SecretWhenTotemSlotSecret), so
+-- readable reads teach each totem's slot and duration and our own casts
+-- stand in during combat (one totem per slot: a new one replaces the old).
+-- A totem you walked away from (UnitPosition, more than TOTEM_RANGE yards)
+-- counts as gone, so a new pull gets a new one.
+local TOTEM_RANGE = 20
+local totemSlotOf, totemSecondsOf = {}, {}
+local totemOut = {}
+local totemInfoByName
+
+local function totemFamily(key)
+	return (key:gsub("%s+totem$", ""):gsub("^totem%s+", ""))
+end
+
+local function totemMatches(key, wantKey, wantFamily)
+	if key == wantKey then
+		return true
+	end
+	local family = totemFamily(key)
+	return family == wantFamily or key:find(wantFamily, 1, true) ~= nil
+end
+
+local function totemInfo(spellID, key)
+	local map = ns.TOTEM_INFO
+	if not map then
+		return nil
+	end
+	local resolved = ns.API.Resolve(spellID) or spellID
+	if map[resolved] or map[spellID] then
+		return map[resolved] or map[spellID]
+	end
+	if not totemInfoByName or not next(totemInfoByName) then
+		totemInfoByName = {}
+		for id, row in pairs(map) do
+			local name = ns.API.SpellName(id)
+			if type(name) == "string" and name ~= "" then
+				totemInfoByName[normName(name)] = row
+			end
+		end
+	end
+	return key and totemInfoByName[key] or nil
+end
+
+local function playerSpot()
+	local ok, x, y, _, map = pcall(UnitPosition, "player")
+	if not ok then
+		return nil
+	end
+	x, y, map = safe(x, nil), safe(y, nil), safe(map, nil)
+	if type(x) ~= "number" or type(y) ~= "number" then
+		return nil
+	end
+	return x, y, map
+end
+
+local function walkedAway(entry)
+	if not entry or not entry.x then
+		return false
+	end
+	local x, y, map = playerSpot()
+	if not x then
+		return false
+	end
+	if map ~= entry.map then
+		return true
+	end
+	local dx, dy = x - entry.x, y - entry.y
+	return dx * dx + dy * dy > TOTEM_RANGE * TOTEM_RANGE
+end
+
+local function readTotemSlot(slot)
+	local ok, haveTotem, totemName, startTime, duration = pcall(GetTotemInfo, slot)
+	if not ok or not readable(haveTotem) then
+		return nil
+	end
+	if not haveTotem then
+		return false
+	end
+	if not readable(totemName) or not readable(startTime) or not readable(duration) or type(totemName) ~= "string" or totemName == "" then
+		return nil
+	end
+	return normName(totemName), tonumber(startTime) or 0, tonumber(duration) or 0
+end
+
+-- A readable slot: learn the totem's slot and duration, keep our cast
+-- record (with its position) when it is the same totem.
+local function syncTotemSlot(slot, key, startTime, duration)
+	totemSlotOf[key] = slot
+	if duration > 0 then
+		totemSecondsOf[key] = duration
+	end
+	local entry = totemOut[slot]
+	if not (entry and entry.key == key and math.abs(entry.at - startTime) < 2) then
+		totemOut[slot] = { key = key, at = startTime, seconds = duration }
+	else
+		entry.at, entry.seconds = startTime, duration
+	end
+end
+
+function ns.API.NoteTotemCast(spellID)
+	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
+		return
+	end
+	local name = ns.API.SpellName(spellID)
+	if type(name) ~= "string" or name == "" then
+		return
+	end
+	local key = normName(name)
+	local row = totemInfo(spellID, key)
+	local slot = totemSlotOf[key] or (row and row.slot)
+	if not slot then
+		return
+	end
+	local x, y, map = playerSpot()
+	totemOut[slot] = {
+		key = key,
+		at = GetTime(),
+		seconds = totemSecondsOf[key] or (row and row.seconds) or 60,
+		x = x,
+		y = y,
+		map = map,
+	}
+end
+
+function ns.API.NoteTotemSlot(slot)
+	slot = tonumber(slot)
+	if not slot then
+		return
+	end
+	local key, startTime, duration = readTotemSlot(slot)
+	if key == false then
+		totemOut[slot] = nil
+	elseif key then
+		syncTotemSlot(slot, key, startTime, duration)
+	end
+end
+
+function ns.API.ClearTotems()
+	wipe(totemOut)
+end
+
 function ns.API.TotemRemain(spellID)
 	if not spellID or not GetTotemInfo then
 		return 0
@@ -2885,24 +3024,50 @@ function ns.API.TotemRemain(spellID)
 		return 0
 	end
 	local wantKey = normName(wantName)
-	local wantFamily = wantKey:gsub("%s+totem$", ""):gsub("^totem%s+", "")
-	for i = 1, 4 do
-		local ok, haveTotem, totemName, startTime, duration = pcall(GetTotemInfo, i)
-		if ok and haveTotem and type(totemName) == "string" and totemName ~= "" then
-			local key = normName(totemName)
-			local family = key:gsub("%s+totem$", ""):gsub("^totem%s+", "")
-			if key == wantKey or family == wantFamily or key:find(wantFamily, 1, true) then
-				startTime = tonumber(startTime) or 0
-				duration = tonumber(duration) or 0
-				local remain = startTime + duration - GetTime()
-				if remain < 0 then
-					remain = 0
-				end
-				return remain
+	local wantFamily = totemFamily(wantKey)
+	local now = GetTime()
+	for slot = 1, 4 do
+		local key, startTime, duration = readTotemSlot(slot)
+		if key == false then
+			totemOut[slot] = nil
+		elseif key then
+			syncTotemSlot(slot, key, startTime, duration)
+		end
+		local entry = totemOut[slot]
+		if entry and totemMatches(entry.key, wantKey, wantFamily) then
+			local remain = entry.at + entry.seconds - now
+			if remain <= 0 or walkedAway(entry) then
+				return 0
 			end
+			return remain
 		end
 	end
 	return 0
+end
+
+-- True when the target attacks you, false when it attacks someone else or
+-- no one, nil when unknown. UnitThreatSituation("player", "target") is not
+-- secret (SecretWhenUnitThreatStateRestricted: player vs target is allowed);
+-- 2 / 3 mean you have aggro. UnitIsUnit("targettarget", ...) is a compound
+-- token, always secret on addon-restricted maps, so it is only a fallback.
+function ns.API.TargetAttacksYou()
+	if not unitExists("target") then
+		return false
+	end
+	if UnitThreatSituation then
+		local ok, status = pcall(UnitThreatSituation, "player", "target")
+		if ok and readable(status) and type(status) == "number" then
+			return status >= 2
+		end
+	end
+	if not unitExists("targettarget") then
+		return false
+	end
+	local ok, onMe = pcall(UnitIsUnit, "targettarget", "player")
+	if ok and readable(onMe) then
+		return onMe == true
+	end
+	return nil
 end
 
 function ns.API.TargetInMelee()

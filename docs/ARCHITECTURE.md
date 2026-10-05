@@ -8,6 +8,8 @@ See also [AGENTS.md](../AGENTS.md) for the repository, the AddOns path and the p
 
 Forever reuses the Midnight / camelot API, not the Classic 1.14 API alone.
 
+The reference for this API is the `ref/wow-ui-source` submodule (`forever` branch): `Interface/AddOns/Blizzard_APIDocumentationGenerated` for functions, events and their secret-value rules, the rest of `Interface/AddOns` for how the Blizzard UI uses them. Read the relevant entry there, and the section of this file for the part you change, before editing code (see AGENTS.md, *Before you start any change*).
+
 - Spell IDs can differ from public Classic (example: devotion aura). The code stores `1.60.1` lab IDs in `ns.Spell`, then `ns.API.Resolve` finds the spell **known to the player** through `C_Spell.GetOverrideSpell`, `IsPlayerSpell` / `C_SpellBook`, then the name in the spellbook.
 - Some values are *secret values*. `API.lua` and `APL.lua` go through `issecretvalue` / `canaccessvalue` before reading a number or a string. An unreadable value is treated as absent.
 - Every Blizzard call is wrapped in a `pcall`. Never replace `C_Spell`, `C_SpellBook`, `GetSpellInfo` or the unit functions.
@@ -127,14 +129,14 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `nodebuff` | `true` = the spell must not already be a debuff on the target. An ID = that other debuff. Aura-first: readable absence → OK + clear hold; remain ≤ `refresh` (default **6** s) → refresh allowed; secret aura → GUID hold. |
 | `refresh` | Remaining seconds under which a `nobuff` / `nodebuff` can be suggested again. Default for `nodebuff` = 6. |
 | `stacks` | With `nodebuff` / `nobuff`: keeps suggesting while readable stacks are &lt; N; then normal refresh. Sunder / Lacerate / Fire Vulnerability. |
-| `nocreature` | `true` = Mechanical / Elemental. Table / string = canonical types (`undead`, `demon`, …). |
-| `creature` | Inverse: the step is OK only if the target type matches (Exorcism Undead/Demon). |
-| `totem` | Suggests the totem if absent or remain ≤ `refresh` (default 1 s) via `GetTotemInfo`. |
+| `nocreature` | `true` = Mechanical / Elemental. Table / string = canonical types (`undead`, `demon`, …). `UnitCreatureType` is secret for units that are not player-controlled or in your group (`SecretWhenUnitIdentityRestricted`); an unreadable type counts as unknown and blocks nothing. |
+| `creature` | Inverse: the step is OK only if the target type matches (Exorcism Undead/Demon). An unknown type lets the step through; Exorcism's `usable` check still refuses a wrong target. |
+| `totem` | Suggests the totem if absent or remain ≤ `refresh` (default 1 s). `ns.API.TotemRemain`: `GetTotemInfo` is secret in combat (`SecretWhenTotemSlotSecret`), so readable reads (and `PLAYER_TOTEM_UPDATE`) teach each totem's slot and duration, and in combat the addon's own casts stand in (`ns.API.NoteTotemCast`, one totem per slot: fire 1, earth 2, water 3, air 4; `ns.TOTEM_INFO` gives slot and rank-1 duration until a real one is read). The drop point is stored with `UnitPosition`; more than 20 yd away the totem counts as gone, so a new pull gets a new one. Cleared on death. |
 | `enemiesMin` / `enemiesYards` | Refuses if `EnemyCount(yards)` &lt; N (Whirlwind, Consecration, Swipe). |
 | `skipLow` | Refuses DoT/mark if target health &lt; 20 % (trash) or &lt; 5 % (elite/raidmob). |
 | `targetMana` | Refuses if the target has no mana (Viper Sting). |
 | `needanybuff` | Requires at least one buff from the list on the player (Judgement after a seal). |
-| `ifTargeting` | Requires `targettarget == player` (Aspect of the Monkey). |
+| `ifTargeting` | Requires the target to attack you (`ns.API.TargetAttacksYou`, Aspect of the Monkey). |
 | `anybuff` | List of IDs. If the player has **any** of them, the step is refused. Used for exclusive seals, auras, aspects, armors. |
 | `form` | Requires the form aura on the player (`ns.API.Form`). |
 | `noform` | Refused if this form is active. |
@@ -149,7 +151,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
 | `minLevel` | Offered only from this character level on (Strength of Earth 30, Mana Spring 40 in the damage lists, Rupture 40): early fights are too short for them. |
-| `behind` | Must be behind the target (Backstab, Shred). Refused while the target attacks you (it faces you) or for 3 s after a "must be behind" error on that target (`UI_ERROR_MESSAGE`, `ns.API.NoteUIError`). No target's target (stunned, gouged) is allowed. |
+| `behind` | Must be behind the target (Backstab, Shred). Refused while the target attacks you or that is unknown (it faces you), or for 3 s after a "must be behind" error on that target (`UI_ERROR_MESSAGE`, `ns.API.NoteUIError`). `ns.API.TargetAttacksYou` reads `UnitThreatSituation("player", "target")` first (not secret for player vs target; 2 / 3 = you have aggro), and `UnitIsUnit("targettarget", "player")` only as a fallback: compound tokens are always secret on addon-restricted maps (`SecretWhenUnitComparisonRestricted`). No target's target (stunned, gouged) is allowed. |
 | `nodebuff` + `unit = "player"` | Checks the debuff on you (Weakened Soul before Power Word: Shield). Without `unit`, a non-heal step checks the target. `refresh = 0` refuses while the debuff is up at all. |
 | `notMelee` | Refused when the target is in melee range (`ns.API.TargetInMelee`): melee shaman Lightning Bolt / Lava Burst only for the pull. |
 | `inMelee` | Inverse: only when the target is in melee range (Frost Nova once the mob reaches the mage). |
@@ -174,7 +176,7 @@ The camelot client often hides `GetSpellCooldown` in combat. On a successful cas
 
 Overpower, Revenge, Riposte, Counterattack and Mongoose Bite (`opt.proc`) are only suggested if `IsSpellUsable` answers true. A hidden answer skips the step. The combat log is not read.
 
-`Physics.lua` (Behavior option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The next-swing window (Heroic Strike, Cleave, Raptor Strike, Maul) reads the main hand only. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
+`Physics.lua` (Behavior option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The swing timer is a rough guess only: `UNIT_ATTACK` is not a per-swing event (the Blizzard paper doll refreshes its stats on it), so `ns.Physics.Blocks` no longer holds back the next-swing attacks (Heroic Strike, Cleave, Raptor Strike, Maul); it only blocks a hunter shot that would clip Auto Shot. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
 
 A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through the power cost if `IsSpellUsable` is false or absent. A harmful spell with `usable == false` is refused.
 

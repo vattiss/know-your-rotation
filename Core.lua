@@ -697,6 +697,7 @@ pcall(frame.RegisterEvent, frame, "PLAYER_MOUNT_DISPLAY_CHANGED")
 pcall(frame.RegisterEvent, frame, "ZONE_CHANGED_NEW_AREA")
 pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
 pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
+pcall(frame.RegisterEvent, frame, "PLAYER_TOTEM_UPDATE")
 
 local ticker
 local booted
@@ -877,6 +878,10 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 		end
 		forceTick()
 	elseif event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
+		-- Totems vanish when you die.
+		if event == "PLAYER_DEAD" and ns.API and ns.API.ClearTotems then
+			ns.API.ClearTotems()
+		end
 		forceTick()
 	elseif event == "PLAYER_TARGET_CHANGED" then
 		-- Classic combo points stay on the old target.
@@ -941,6 +946,9 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			if ns.API and ns.API.NoteSpellCast then
 				ns.API.NoteSpellCast(id or spellID)
 			end
+			if ns.API and ns.API.NoteTotemCast then
+				ns.API.NoteTotemCast(id)
+			end
 			if ns.NoteRotationCast then
 				ns.NoteRotationCast(id or spellID)
 			end
@@ -956,6 +964,12 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			end
 			requestTick()
 		end
+	elseif event == "PLAYER_TOTEM_UPDATE" then
+		-- Payload: the totem slot. Out of combat the slot is readable.
+		if ns.API and ns.API.NoteTotemSlot then
+			ns.API.NoteTotemSlot(unit)
+		end
+		requestTick()
 	elseif event == "UI_ERROR_MESSAGE" then
 		-- "You must be behind your target" (Backstab / Shred wait a moment),
 		-- "Your pet is dead" (Revive Pet instead of Call Pet).
