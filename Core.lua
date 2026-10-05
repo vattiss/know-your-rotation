@@ -614,6 +614,13 @@ function ns.Tick()
 	if ns.GlowHiddenHeal then
 		ns.GlowHiddenHeal(hiddenHeal, hiddenThreshold)
 	end
+	local hiddenExec, hiddenExecThreshold
+	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenExecute then
+		hiddenExec, hiddenExecThreshold = ns.BuildHiddenExecute()
+	end
+	if ns.GlowHiddenExecute then
+		ns.GlowHiddenExecute(hiddenExec, hiddenExecThreshold)
+	end
 	if sig ~= lastTickSig then
 		lastTickSig = sig
 		if ns.GlowSpell then
@@ -634,6 +641,11 @@ function ns.Tick()
 		if ns.GlowWeapon then
 			ns.GlowWeapon(weaponNeed and weapon or nil)
 		end
+	end
+	-- After the glows are set: fade the rotation glow where the finisher takes over.
+	if ns.GlowFadeForFinisher then
+		local fade = hiddenExec and ns.queueGlowOk and queue[1] ~= hiddenExec and queue[1] or nil
+		ns.GlowFadeForFinisher(fade, hiddenExecThreshold)
 	end
 end
 
@@ -850,6 +862,10 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 	elseif event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
 		forceTick()
 	elseif event == "PLAYER_TARGET_CHANGED" then
+		-- Classic combo points stay on the old target.
+		if ns.API and ns.API.ResetComboEstimate then
+			ns.API.ResetComboEstimate()
+		end
 		if ns.ApplyAutoProfile then
 			ns.ApplyAutoProfile()
 		end
@@ -862,6 +878,9 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 		end
 		forceTick()
 	elseif event == "PLAYER_REGEN_ENABLED" then
+		if ns.API and ns.API.ResetComboEstimate then
+			ns.API.ResetComboEstimate()
+		end
 		if ns.ApplyAutoProfile then
 			ns.ApplyAutoProfile()
 		end

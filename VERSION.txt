@@ -15,7 +15,7 @@ A rotation helper for WoW Forever, made for learning a class from level 1: inste
 - A screen message when a cue spell is not on your action bars, and pet reminders for hunters and warlocks.
 
 ## What it does on its own
-- Role from your talents, stance and the distance to your target.
+- Role from the name of your main talent tree (Protection = tank; Holy, Discipline, Restoration = heal), and melee or ranged from the distance to your target.
 - Single-target or AoE list from the number of nearby enemies.
 - PvE or PvP profile from the instance type, your PvP flag or an enemy player as target.
 - Each of these can be fixed by hand on the Behavior page.

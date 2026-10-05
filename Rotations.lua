@@ -411,6 +411,33 @@ function ns.BuildHiddenHeal()
 	return nil
 end
 
+-- Same idea for the target: a step that waits for a low target ("hp" with
+-- unit "target", or "hpPerCombo") when the client hides the target's health.
+-- Returns the spell and the health percent where it should light up.
+function ns.BuildHiddenExecute()
+	if not ns.GetAPL or not API.Hostile() or not ns.API.HealthHiddenFor("target") then
+		return nil
+	end
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		local opt = step.opt or {}
+		if opt.unit == "target" and (opt.hp or opt.hpPerCombo) and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy.noHpGate = true
+			copy.hpPerCombo = nil
+			if API.StepOk(step.id, copy, 0.2) then
+				local threshold = opt.hpPerCombo and (API.Combo() * opt.hpPerCombo) or tonumber(opt.hp) or 20
+				if threshold > 0 then
+					return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
+				end
+			end
+		end
+	end
+	return nil
+end
+
 function ns.BuildDefense()
 	if not ns.GetDef then
 		return

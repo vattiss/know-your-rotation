@@ -248,6 +248,7 @@ local function overlay(button, key, texture, r, g, b, scale, alpha)
 				tex:SetVertexColor(r, g, b)
 			end
 		end
+		frame.kyrAlpha = alpha
 		frame:SetAlpha(alpha)
 		return frame
 	end
@@ -876,7 +877,6 @@ end
 -- curve (1 below the threshold, 0 above) into a value we may pass to SetAlpha
 -- but never read, so the glow fades in on its own as health drops.
 local healCurves = {}
-local hiddenHealButtons = {}
 
 local function healCurve(threshold)
 	local curve = healCurves[threshold]
@@ -902,59 +902,137 @@ local function healCurve(threshold)
 	return curve or nil
 end
 
-local function clearHiddenHeal()
-	for button in pairs(hiddenHealButtons) do
-		if button.KYROverlays and button.KYROverlays.hphide then
-			button.KYROverlays.hphide:Hide()
+-- One hidden-health glow: its own overlay key, unit and color.
+local function hiddenGlow(key, unit, colorKey)
+	local buttons = {}
+	local function clear()
+		for button in pairs(buttons) do
+			if button.KYROverlays and button.KYROverlays[key] then
+				button.KYROverlays[key]:Hide()
+			end
+			buttons[button] = nil
 		end
-		hiddenHealButtons[button] = nil
+	end
+	local warned
+	local function unavailable(reason)
+		clear()
+		if not warned and UIErrorsFrame then
+			warned = true
+			UIErrorsFrame:AddMessage("Know Your Rotation: a health-based cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
+		end
+	end
+	return function(spellID, threshold)
+		if not spellID then
+			clear()
+			return
+		end
+		if not UnitHealthPercent then
+			return unavailable("UnitHealthPercent missing")
+		end
+		local curve = healCurve(math.floor((threshold or 20) + 0.5))
+		if not curve then
+			return unavailable("no curve support")
+		end
+		local ok, alpha = pcall(UnitHealthPercent, unit, true, curve)
+		if not ok then
+			return unavailable("health query failed")
+		end
+		local keep = {}
+		local r, g, b = ns.Color(colorKey)
+		for _, button in ipairs(buttonsFor(spellID)) do
+			local frame = overlay(button, key, GLOW_ART, r, g, b, 1.45, 1)
+			frame:Show()
+			frame:SetAlpha(alpha)
+			keep[button] = true
+			buttons[button] = true
+		end
+		for button in pairs(buttons) do
+			if not keep[button] then
+				if button.KYROverlays and button.KYROverlays[key] then
+					button.KYROverlays[key]:Hide()
+				end
+				buttons[button] = nil
+			end
+		end
 	end
 end
 
-local hiddenHealWarned
+-- Reverse curve: 0 below the threshold, 1 above it.
+local fadeCurves = {}
 
-local function hiddenHealUnavailable(reason)
-	clearHiddenHeal()
-	if not hiddenHealWarned and UIErrorsFrame then
-		hiddenHealWarned = true
-		UIErrorsFrame:AddMessage("Know Your Rotation: the heal cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
+local function fadeCurve(threshold)
+	local curve = fadeCurves[threshold]
+	if curve == nil then
+		curve = false
+		if C_CurveUtil and C_CurveUtil.CreateCurve and Enum and Enum.LuaCurveType then
+			local ok, made = pcall(function()
+				local c = C_CurveUtil.CreateCurve()
+				c:SetType(Enum.LuaCurveType.Linear)
+				local t = math.max(0.05, math.min(1, threshold / 100))
+				c:AddPoint(0.0, 0.0)
+				c:AddPoint(math.max(0.01, t - 0.02), 0.0)
+				c:AddPoint(t, 1.0)
+				c:AddPoint(1.0, 1.0)
+				return c
+			end)
+			if ok and made then
+				curve = made
+			end
+		end
+		fadeCurves[threshold] = curve
+	end
+	return curve or nil
+end
+
+-- While a finisher waits for a low target (hidden health), the rotation glow
+-- on the other spell fades out exactly where the finisher glow fades in: both
+-- alphas come from the same hidden health value, so only one of them shows.
+local fadedFrames = {}
+
+local function restoreFaded()
+	for frame in pairs(fadedFrames) do
+		frame:SetAlpha(frame.kyrAlpha or 1)
+		fadedFrames[frame] = nil
 	end
 end
 
-function ns.GlowHiddenHeal(spellID, threshold)
-	if not spellID then
-		clearHiddenHeal()
+function ns.GlowFadeForFinisher(spellID, threshold)
+	if not spellID or not threshold or not UnitHealthPercent then
+		restoreFaded()
 		return
 	end
-	if not UnitHealthPercent then
-		return hiddenHealUnavailable("UnitHealthPercent missing")
-	end
-	local curve = healCurve(threshold or 80)
+	local curve = fadeCurve(math.floor(threshold + 0.5))
 	if not curve then
-		return hiddenHealUnavailable("no curve support")
+		restoreFaded()
+		return
 	end
-	local ok, alpha = pcall(UnitHealthPercent, "player", true, curve)
+	local ok, alpha = pcall(UnitHealthPercent, "target", true, curve)
 	if not ok then
-		return hiddenHealUnavailable("health query failed")
+		restoreFaded()
+		return
 	end
 	local keep = {}
-	local r, g, b = ns.Color("heal")
 	for _, button in ipairs(buttonsFor(spellID)) do
-		local frame = overlay(button, "hphide", GLOW_ART, r, g, b, 1.45, 1)
-		frame:Show()
-		frame:SetAlpha(alpha)
-		keep[button] = true
-		hiddenHealButtons[button] = true
+		local overlays = button.KYROverlays
+		local frame = overlays and overlays.next
+		if frame and frame.isAlert and frame:IsShown() then
+			frame:SetAlpha(alpha)
+			keep[frame] = true
+			fadedFrames[frame] = true
+		end
 	end
-	for button in pairs(hiddenHealButtons) do
-		if not keep[button] then
-			if button.KYROverlays and button.KYROverlays.hphide then
-				button.KYROverlays.hphide:Hide()
-			end
-			hiddenHealButtons[button] = nil
+	for frame in pairs(fadedFrames) do
+		if not keep[frame] then
+			frame:SetAlpha(frame.kyrAlpha or 1)
+			fadedFrames[frame] = nil
 		end
 	end
 end
+
+-- Heal: lights up as your own health drops below the heal's threshold.
+ns.GlowHiddenHeal = hiddenGlow("hphide", "player", "heal")
+-- Finisher / execute: lights up as the target's health drops below its threshold.
+ns.GlowHiddenExecute = hiddenGlow("hpexec", "target", "next")
 
 function ns.GlowWeapon(spellID)
 	applyExtra(spellID, { lastWeapon }, weaponGlowing, showWeapon, ns.GlowClearWeapon)

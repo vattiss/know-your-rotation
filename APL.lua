@@ -270,6 +270,12 @@ function ns.ResolveCombatMode()
 	if mode ~= "auto" then
 		return mode
 	end
+	-- Before a fight every hostile nameplate around counts, so a pack of idle
+	-- mobs would switch to the AoE list and lose the opener (Charge, ...).
+	-- Pull with the single-target list; switch once enemies are fighting you.
+	if not ns.API.InCombat() then
+		return "auto"
+	end
 	local need = tonumber(ns.db and ns.db.autoEnemies) or 3
 	if need < 2 then
 		need = 2

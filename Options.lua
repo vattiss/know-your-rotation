@@ -416,6 +416,34 @@ local function aplRow(parent, index)
 			ns.DropSpellOnList(self.index, self.mode)
 		end
 	end)
+	row:SetScript("OnEnter", function(self)
+		if not self.stepId then
+			return
+		end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:AddLine(self.label:GetText() or "", 1, 0.82, 0)
+		local text, r, g, b
+		if not API.Known(self.stepId) then
+			text, r, g, b = ns.T("WHY_NOT_KNOWN"), 0.7, 0.7, 0.7
+		elseif not self.stepOn then
+			text, r, g, b = ns.T("WHY_SWITCHED_OFF"), 0.7, 0.7, 0.7
+		elseif ns.db.barOnly ~= false and ns.SpellOnBar and not ns.SpellOnBar(self.stepId) then
+			text, r, g, b = ns.T("WHY_NOT_ON_BAR"), 1, 0.4, 0.4
+		else
+			local why = API.WhyNot and API.WhyNot(self.stepId, self.stepOpt)
+			if why then
+				text, r, g, b = ns.T("WHY_NOT_NOW"):format(why), 1, 0.6, 0.2
+			else
+				text, r, g, b = ns.T("WHY_READY"), 0.3, 1, 0.3
+			end
+		end
+		GameTooltip:AddLine(text, r, g, b, true)
+		GameTooltip:AddLine(ns.T("WHY_HINT"), 0.6, 0.6, 0.6, true)
+		GameTooltip:Show()
+	end)
+	row:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
 
 	local num = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	num:SetPoint("LEFT", 2, 0)
@@ -586,7 +614,13 @@ function ns.RefreshOptions()
 	end
 	local profileKey = ns.ProfileKey and ns.ProfileKey() or "pve"
 	local profile = ns.T("PROFILE_" .. profileKey:upper())
-	frame.editLabel:SetText(ns.T(listKind == "def" and "EDIT_DEF_FOR" or "EDIT_ROT_FOR"):format(profile))
+	local label = ns.T(listKind == "def" and "EDIT_DEF_FOR" or "EDIT_ROT_FOR"):format(profile)
+	local activeSpec = ns.ActiveSpec and ns.ActiveSpec()
+	local activeMode = ns.ResolveCombatMode and ns.ResolveCombatMode() or "auto"
+	if editSpec == activeSpec and (listKind == "def" or editMode == activeMode) then
+		label = label .. "  |cff33ff33" .. ns.T("EDIT_IN_USE") .. "|r"
+	end
+	frame.editLabel:SetText(label)
 	frame.specDrop:GenerateMenu()
 	frame.modeDrop:SetShown(listKind ~= "def")
 	if listKind ~= "def" then
@@ -618,6 +652,9 @@ function ns.RefreshOptions()
 		row.box.stepKey = step.key
 		row.box.mode = mode
 		row.box:SetChecked(ns.IsStepEnabled(step))
+		row.stepId = step.id
+		row.stepOpt = step.opt
+		row.stepOn = ns.IsStepEnabled(step)
 		row.up.index = i
 		row.up.mode = mode
 		row.down.index = i
@@ -652,6 +689,7 @@ function ns.RefreshOptions()
 		row.index = nil
 		row.mode = nil
 		row.box.stepKey = nil
+		row.stepId = nil
 		row.del.stepKey = nil
 		row.hold.stepKey = nil
 	end

@@ -144,6 +144,9 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `ready = false` | Accepts the step without testing cooldown or usability. |
 | `filler` | Spam spell with no own cooldown (Wrath, Heroic Strike, Sinister Strike…). Skipped only by a real cooldown, not by the GCD. `ns.Physics.Blocks` still applies. |
 | `nocombat` | Refused if the player is in combat (Charge, Stealth, Prowl). |
+| `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
+| `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
+| `hpPerCombo` | Target health threshold of N% per combo point (Eviscerate: 8). |
 | `needbuff` | Helpful aura ID required on the player (Garrote and Ambush require Stealth). |
 | `needdebuff` | Debuff ID required on the target (Conflagrate requires Immolate). |
 | `proc` | The client must report the spell as usable. Used for Overpower, Revenge, Riposte, Counterattack and Mongoose Bite. If the answer is hidden, the step is skipped. Do not read the combat log: that call is reserved for the Blizzard UI and blocks the addon. |
@@ -220,11 +223,11 @@ Removing a non-`custom_*` step writes its key to `aplDrop` / `defDrop`, so a def
 Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`. There is no burst mode: the addon targets leveling and learning.
 
 - `ns.CombatMode()` is the player's choice.
-- `ns.ResolveCombatMode()`: if `auto` and `EnemyCount() >= autoEnemies` (floor 2), returns `aoe`, otherwise `auto`.
+- `ns.ResolveCombatMode()`: if `auto`, out of combat always `auto` (pull with the single list, so openers like Charge stay first); in combat `aoe` when `EnemyCount() >= autoEnemies` (floor 2), otherwise `auto`.
 - `ns.SetCombatMode` remembers the last manual mode in `lastManualMode` (never `auto`).
 - The Behavior page sets the mode with a dropdown (`ns.SetCombatMode`).
-- `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those in combat. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
-- `roleAuto` (default true): `ns.SyncAutoRole` picks the role from talents, stance and range. The Behavior page role dropdown calls `ns.SetRoleChoice`: `auto` sets `roleAuto = true`, any role sets it false and pins that role (`ns.RoleChoice` reads it back).
+- `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those fighting you: on your threat table (`UnitThreatSituation`), or targeting you or your pet, with `UnitAffectingCombat` only as a fallback when both are hidden. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
+- `roleAuto` (default true): `ns.SyncAutoRole` picks the role from the name of the talent tree with the most points (`specRole`, `C_SpecializationInfo.GetSpecializationInfo`): Protection = tank; Holy, Discipline or Restoration = heal; anything else = damage. Never by tree position or the client's role field. No talent data (low level) keeps the current role. Druid bear / cat lists come from the form (`ns.ActiveSpec`); shaman and hunter switch melee / ranged by distance (`TargetInMelee`). The Behavior page role dropdown calls `ns.SetRoleChoice`: `auto` sets `roleAuto = true`, any role sets it false and pins that role (`ns.RoleChoice` reads it back).
 - `CombatNotice`: Hunter/Warlock in combat → "call pet" / "pet not attacking" as a screen message.
 - Deferred spellbook index (`RebuildSpellBookIndex`): warmed at login / lazy remap only. **No** `SPELLS_CHANGED` (ConROC neither) — learn / level-up = soft Invalidate + `ButtonFetch` 0.5 s. Glow without action tooltip.
 
@@ -381,3 +384,9 @@ The page host and the spell-list rows are built by `ns.PrebuildOptions` / `ns.Wa
 `ns.SelectedWeaponBuff` returns the player's pick (`weaponBuff`, per profile) only if a rank of it is learned, otherwise `ns.AutoWeaponBuff`: the first learned entry of a role priority list (shaman melee: Windfury, Flametongue, Rockbiter, Frostbrand; other shaman roles: Flametongue first), or of `ns.WEAPON_BUFFS` order for other classes. With nothing learned it returns nothing and no weapon cue is shown. The Highlights dropdown lists Automatic plus the learned buffs only.
 
 Rogues coat both weapons: with an off-hand weapon equipped (`ns.WeaponIsDual`, item class 2 in slot 17) each hand has its own pick (`weaponBuff`, `weaponBuffOff`, both per profile and in the export as `W=` / `O=`). Automatic main hand: Instant, Deadly, Wound, Crippling, Mind-numbing; off hand: Deadly, Instant, Crippling, Wound, Mind-numbing (first learned). `buildDualWeapon` reads each hand with `handState`: a missing or wrong poison, or one with 30 s or less left, is suggested; main hand first. A missing reading must hold for 1.5 s and is ignored during the 3 s grace after a cast; an unanswered reading never nags. Hands are read with `C_PaperDollInfo.GetTemporaryEnchantmentInfo(slot)` (what the Blizzard buff frame uses), falling back to the `GetWeaponEnchantInfo` shim.
+
+## Finishers and executes with hidden target health
+
+The client hides the target's health in combat too. Spells that are only usable on a low target anyway (Execute, Hammer of Wrath) use `proc = true`, so the client's own "usable" answer decides. Other low-target steps (`hp` with `unit = "target"`, or `hpPerCombo`, e.g. Eviscerate at 8% target health per combo point from 2 points, Shadow Word: Death, Shadowburn) get a second glow: `ns.BuildHiddenExecute` picks the first such step that is otherwise ready, and `ns.GlowHiddenExecute` lights it with an alpha from `UnitHealthPercent("target", true, curve)`, like the hidden heal glow. When the health is readable, `StepOk` compares it directly (`needHp = Combo() * hpPerCombo`).
+
+While that finisher glow is active and the rotation glow sits on another spell, `ns.GlowFadeForFinisher` fades the rotation glow with the reverse curve (`fadeCurve`: 0 below the threshold, 1 above). Both alphas come from the same hidden target health, so only one glow shows; the overlay's normal alpha is kept in `frame.kyrAlpha` and restored afterwards.

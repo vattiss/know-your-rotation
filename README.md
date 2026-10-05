@@ -71,6 +71,10 @@ Heals in your lists light up when they are needed:
 
 Full health → no heal suggestion, the damage rotation stays visible.
 
+### Finishing a low target
+
+Execute and Hammer of Wrath light up as soon as the game lets you use them. Rogue Eviscerate does not wait for 5 combo points when the target is low: from 2 points it lights up once the target is below about 8% health per point (2 points: 16%, 3 points: 24%, …). Shadow Word: Death and Shadowburn light up below 20%. In combat the target's health is hidden from add-ons, so the game itself fades the finisher glow in and the regular rotation glow (for example Sinister Strike) out at that point: only one of them shows.
+
 ### Profiles
 
 Two profiles, PvE and PvP, each with its own rotation and defense lists. With **Profile: Automatic** (Behavior page) dungeons and raids use PvE; battlegrounds, arenas, being PvP flagged in the open world, or targeting an enemy player use PvP; everything else uses PvE. Picking PvE or PvP by hand keeps that profile. On the Profiles page you can reset the active profile and export / import it as text.
@@ -81,11 +85,11 @@ The Highlights page has a "Disable on this character" switch: while it is on, th
 
 ### Combat modes
 
-`Automatic`, `Single` and `AoE`. Add, remove, and reorder are **per mode**. Automatic uses the single-target list until enough enemies are nearby (default 3, set on the Behavior page). The addon is tuned for leveling and learning a class, so there is no burst or raid mode.
+`Automatic`, `Single` and `AoE`. Add, remove, and reorder are **per mode**. Automatic pulls with the single-target list and switches to the AoE list once enough enemies are fighting you (default 3, set on the Behavior page). The addon is tuned for leveling and learning a class, so there is no burst or raid mode.
 
 ### Roles
 
-Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). With **Role: Automatic** (Behavior page) the role comes from your talents, stance and range; pick a role to keep it fixed.
+Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). With **Role: Automatic** (Behavior page) the role comes from the name of your main talent tree (Protection: tank; Holy, Discipline, Restoration: heal; anything else: damage), and hunters and shamans switch melee / ranged by distance; pick a role to keep it fixed.
 
 ### Options pages
 

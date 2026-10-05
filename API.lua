@@ -424,13 +424,32 @@ function ns.API.EnemyCount(maxYards)
 		local okR, react = pcall(UnitReaction, "player", unit)
 		return okR and type(react) == "number" and react <= 4
 	end
+	local function plain(value)
+		return not (issecretvalue and issecretvalue(value))
+	end
+	-- In combat, count only enemies fighting you: on your threat table, or
+	-- targeting you or your pet. A mob fighting someone else nearby does not
+	-- count. Out of combat every hostile nameplate counts.
 	local function inFight(unit)
-		local okC, combat = pcall(UnitAffectingCombat, unit)
-		if okC and combat then
+		local okP, pcombat = pcall(UnitAffectingCombat, "player")
+		if not (okP and pcombat) then
 			return true
 		end
-		local okP, pcombat = pcall(UnitAffectingCombat, "player")
-		return not (okP and pcombat)
+		if UnitThreatSituation then
+			local ok, status = pcall(UnitThreatSituation, "player", unit)
+			if ok and plain(status) then
+				return status ~= nil
+			end
+		end
+		local targetUnit = unit .. "target"
+		for _, who in ipairs({ "player", "pet" }) do
+			local ok, same = pcall(UnitIsUnit, targetUnit, who)
+			if ok and plain(same) and same == true then
+				return true
+			end
+		end
+		local okC, combat = pcall(UnitAffectingCombat, unit)
+		return okC and plain(combat) and combat == true or false
 	end
 	local function inYards(unit)
 		if not maxYards or maxYards <= 0 then
@@ -880,6 +899,7 @@ function ns.API.NoteSpellCast(spellID)
 	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
 		return
 	end
+	ns.API.NoteComboCast(spellID)
 	local key = cdKey(spellID)
 	local seconds = baseCooldownSec(spellID)
 	if seconds <= 0 and cdKnown[key] and cdKnown[key] > 1.5 then
@@ -1486,7 +1506,8 @@ local function hasResources(id)
 				if type(cost) == "table" then
 					local needed = tonumber(safe(cost.cost, nil))
 					local ptype = tonumber(safe(cost.type, nil)) or 0
-					if needed and needed > 0 then
+					-- Negative power types are health costs (Bloodrage, Life Tap): not a resource to wait for.
+					if needed and needed > 0 and ptype >= 0 then
 						local cur = safe(UnitPower("player", ptype), nil)
 						if type(cur) == "number" and cur < needed then
 							return false
@@ -1547,10 +1568,25 @@ function ns.API.Ready(spellID, opt, ignoreCooldown)
 	return hasResources(id)
 end
 
+-- Why a step is not offered right now (shown on the Rotation / Defense rows).
+local rejectReason
+local function reject(reason)
+	rejectReason = reason
+	return false
+end
+
+function ns.API.WhyNot(spellID, opt)
+	rejectReason = nil
+	if ns.API.StepOk(spellID, opt, 0.2) then
+		return nil
+	end
+	return rejectReason or "unknown"
+end
+
 function ns.API.StepOk(spellID, opt, timeShift)
 	spellID = ns.API.Resolve(spellID) or spellID
 	if not spellID or not ns.API.Known(spellID) then
-		return false
+		return reject("not learned yet")
 	end
 	opt = opt or {}
 	local gate = tonumber(timeShift) or 0.2
@@ -1558,13 +1594,31 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		gate = 0.2
 	end
 	if opt.hostile and not ns.API.Hostile() then
-		return false
+		return reject("needs an enemy target")
+	end
+	-- An attackable target is needed, without making the spell range-checked
+	-- (Stealth / Prowl are cast on yourself).
+	if opt.enemyTarget and not ns.API.Hostile() then
+		return reject("only with an enemy targeted")
+	end
+	-- At least one of these must be learned (e.g. an opener to use from Stealth).
+	if opt.needKnownAny then
+		local anyKnown = false
+		for _, other in pairs(opt.needKnownAny) do
+			if other and ns.API.Known(other) then
+				anyKnown = true
+				break
+			end
+		end
+		if not anyKnown then
+			return reject("nothing to use it for yet")
+		end
 	end
 	if opt.nocreature and ns.API.CreatureBlocked and ns.API.CreatureBlocked(opt.nocreature) then
-		return false
+		return reject("no effect on this creature type")
 	end
 	if opt.creature and ns.API.CreatureMatch and not ns.API.CreatureMatch(opt.creature) then
-		return false
+		return reject("only for another creature type")
 	end
 	if opt.totem then
 		local refreshAt = tonumber(opt.refresh)
@@ -1573,35 +1627,35 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		end
 		local remain = ns.API.TotemRemain and ns.API.TotemRemain(spellID) or 0
 		if remain > refreshAt then
-			return false
+			return reject("totem already up")
 		end
 	end
 	if opt.enemiesMin then
 		local n = ns.API.EnemyCount(opt.enemiesYards)
 		if (n or 0) < opt.enemiesMin then
-			return false
+			return reject("not enough enemies near you")
 		end
 	end
 	if opt.skipLow and ns.API.Hostile() then
 		local floorHp = (ns.API.IsRaidmob and ns.API.IsRaidmob()) and 5 or 20
 		if ns.API.Health("target") < floorHp then
-			return false
+			return reject("target is almost dead")
 		end
 	end
 	if opt.targetMana then
 		local okCur, current = pcall(UnitPower, "target", 0)
 		local okMax, maxp = pcall(UnitPowerMax, "target", 0)
 		if not okCur or not readable(current) or current <= 0 then
-			return false
+			return reject("target has no mana")
 		end
 		if okMax and readable(maxp) and maxp <= 0 then
-			return false
+			return reject("target has no mana")
 		end
 	end
 	if opt.ifTargeting then
 		local ok, onMe = pcall(UnitIsUnit, "targettarget", "player")
 		if not ok or not onMe then
-			return false
+			return reject("only when the target attacks you")
 		end
 	end
 	local helpful = ns.API.IsHelpful(spellID, opt)
@@ -1623,7 +1677,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 					clearHoldKeys(spellID)
 				end
 			elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
-				return false
+				return reject("already active")
 			end
 		elseif not found and not unreadable then
 			if ns.API.HoldRemain(spellID) > 0 then
@@ -1631,7 +1685,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			end
 		end
 		if not found and unreadable and ns.API.HasAura(spellID, buffUnit, "HELPFUL") then
-			return false
+			return reject("already active")
 		end
 	end
 	if opt.nodebuff then
@@ -1648,21 +1702,24 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			if needStacks and (stacks or 0) < needStacks then
 				clearHoldKeys(spellID)
 			elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
-				return false
+				return reject("already active")
 			else
 				clearHoldKeys(spellID)
 			end
 		elseif not found and not unreadable then
 			clearHoldKeys(spellID)
 		elseif not found and unreadable and ns.API.HasAura(debuff, debuffUnit, "HARMFUL") then
-			return false
+			return reject("already active")
 		end
 	end
 	local holdLeft = ns.API.HoldRemain(spellID)
 	if holdLeft > gate then
-		return false
+		return reject("waiting after the last cast (delay)")
 	end
 	local needHp = opt.hp
+	if opt.hpPerCombo then
+		needHp = ns.API.Combo() * opt.hpPerCombo
+	end
 	if opt.noHpGate then
 		-- Health is hidden: the caller checks the threshold another way.
 		needHp = nil
@@ -1679,32 +1736,33 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			hp = ns.API.Health("player")
 		end
 		if hp > needHp then
-			return false
+			return reject("health is above the heal threshold")
 		end
 	end
 	if opt.form and not ns.API.Form(opt.form) then
-		return false
+		return reject("wrong form or stance")
 	end
 	if opt.noform and ns.API.Form(opt.noform) then
-		return false
+		return reject("not in this form or stance")
 	end
 	if opt.combat and not ns.API.InCombat() then
-		return false
+		return reject("only in combat")
 	end
 	if opt.comboMin and ns.API.Combo() < opt.comboMin then
-		return false
+		local have, source = ns.API.ComboDebug()
+		return reject(("not enough combo points (%d of %d, read from %s)"):format(have, opt.comboMin, source))
 	end
 	if opt.pet and not unitExists("pet") then
-		return false
+		return reject("needs your pet")
 	end
 	if opt.nopet and unitExists("pet") then
-		return false
+		return reject("pet is already out")
 	end
 	if opt.nocombat and ns.API.InCombat() then
-		return false
+		return reject("only out of combat")
 	end
 	if opt.needbuff and not ns.API.HasAura(opt.needbuff, "player", "HELPFUL") then
-		return false
+		return reject("needs a buff you do not have")
 	end
 	if opt.needanybuff then
 		local okBuff = false
@@ -1715,7 +1773,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			end
 		end
 		if not okBuff then
-			return false
+			return reject("needs a buff you do not have")
 		end
 	end
 	-- require / requireAny are NOT used to hide list spells. List order is
@@ -1723,18 +1781,18 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	-- when it is known and ready. School gating lived here before and skipped
 	-- fillers the player had explicitly ordered.
 	if opt.needdebuff and not ns.API.HasAura(opt.needdebuff, opt.unit or "target", "HARMFUL") then
-		return false
+		return reject("needs a debuff on the target first")
 	end
 	if opt.proc or opt.usable then
 		local usable = readUsable(C_Spell and C_Spell.IsSpellUsable, spellID)
 		if usable ~= true then
 			if opt.proc then
-				return false
+				return reject("waiting for its proc")
 			end
 			if ns.API.CastRemain() <= 0 then
 				local last = ns.API.lastCastAt
 				if not last or (GetTime() - last) >= 1.55 then
-					return false
+					return reject("not usable right now")
 				end
 			end
 		end
@@ -1743,26 +1801,26 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		local okCur, current = pcall(UnitPower, "player", 0)
 		local okMax, maxp = pcall(UnitPowerMax, "player", 0)
 		if not okCur or not okMax or not readable(current) or not readable(maxp) or maxp <= 0 or (current / maxp) * 100 > opt.manaMax then
-			return false
+			return reject("mana is still high")
 		end
 	end
 	if opt.hpMin then
 		local hp = ns.API.Health(opt.unit or "player")
 		if hp < opt.hpMin then
-			return false
+			return reject("health too low for it")
 		end
 	end
 	if opt.anybuff then
 		for _, other in ipairs(opt.anybuff) do
 			if ns.API.HasAura(other, "player", "HELPFUL") then
-				return false
+				return reject("a buff from the same group is already up")
 			end
 		end
 	end
 	if opt.anydebuff then
 		for _, other in ipairs(opt.anydebuff) do
 			if ns.API.HasAura(other, opt.unit or "target", "HARMFUL") then
-				return false
+				return reject("a debuff from the same group is already on the target")
 			end
 		end
 	end
@@ -1776,13 +1834,13 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		end
 	end
 	if not opt.swing and remain > gate then
-		return false
+		return reject("on cooldown")
 	end
 	if opt.ready == false then
 		return true
 	end
 	if ns.Physics and ns.Physics.IsClip and ns.Physics.IsClip(spellID) and ns.Physics.WouldClip and ns.Physics.WouldClip() then
-		return false
+		return reject("would clip Auto Shot")
 	end
 	if ns.API.Ready(spellID, opt, true) or opt.filler == true or opt.swing == true then
 		return true
@@ -1798,7 +1856,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if ns.Physics and ns.Physics.EnergySoon and ns.Physics.EnergySoon(spellID) then
 		return true
 	end
-	return false
+	return reject("not usable right now (stance, rage / mana, or the client says no)")
 end
 
 local function auraRemain(aura)
@@ -1865,15 +1923,86 @@ local function normName(name)
 	return n
 end
 
+-- Combo points. The client may hide them in combat (secret values), so a
+-- count of builders and finishers since the last target change backs them up.
+local comboEstimate = 0
+local comboBuilders, comboFinishers
+
+local function comboNameSets()
+	if comboBuilders then
+		return
+	end
+	comboBuilders, comboFinishers = {}, {}
+	local R, D = ns.Spell.Rogue or {}, ns.Spell.Druid or {}
+	local function add(set, id)
+		local name = id and ns.API.SpellName(id)
+		if name then
+			set[name] = true
+		end
+	end
+	-- By key, so a spell missing from ns.Spell does not cut the list short.
+	for _, key in ipairs({ "SinisterStrike", "Backstab", "Hemorrhage", "GhostlyStrike", "Ambush", "Garrote", "Gouge", "Mutilate" }) do
+		add(comboBuilders, R[key])
+	end
+	for _, key in ipairs({ "Claw", "Shred", "Rake", "Ravage", "Pounce", "MangleCat" }) do
+		add(comboBuilders, D[key])
+	end
+	for _, key in ipairs({ "Eviscerate", "SliceandDice", "Rupture", "KidneyShot", "ExposeArmor", "Venom" }) do
+		add(comboFinishers, R[key])
+	end
+	for _, key in ipairs({ "FerociousBite", "Rip" }) do
+		add(comboFinishers, D[key])
+	end
+	-- Names not loaded yet: try again next time.
+	if not next(comboBuilders) then
+		comboBuilders, comboFinishers = nil, nil
+	end
+end
+
+function ns.API.NoteComboCast(spellID)
+	local name = spellID and ns.API.SpellName(spellID)
+	if not name then
+		return
+	end
+	comboNameSets()
+	if not comboBuilders then
+		return
+	end
+	if comboFinishers[name] then
+		comboEstimate = 0
+	elseif comboBuilders[name] then
+		comboEstimate = math.min(5, comboEstimate + 1)
+	end
+end
+
+function ns.API.ResetComboEstimate()
+	comboEstimate = 0
+end
+
+-- The highest of: player power 4 (modern), GetComboPoints on the target
+-- (Classic), and the cast count. One source may read 0 on this client while
+-- another has the real value, so none of them is trusted alone.
+local lastComboSource = "count"
+
 local function rawCombo()
-	if not GetComboPoints then
-		return 0
+	local best, source = comboEstimate, "count"
+	local okP, power = pcall(UnitPower, "player", 4)
+	if okP and readable(power) and type(power) == "number" and power > best then
+		best, source = power, "power"
 	end
-	local ok, points = pcall(GetComboPoints, "player", "target")
-	if ok and type(points) == "number" then
-		return points
+	if GetComboPoints then
+		local ok, points = pcall(GetComboPoints, "player", "target")
+		if ok and readable(points) and type(points) == "number" and points > best then
+			best, source = points, "target"
+		end
 	end
-	return 0
+	lastComboSource = source
+	return best
+end
+
+function ns.API.ComboDebug()
+	local value = rawCombo()
+	return value, lastComboSource
 end
 
 function ns.API.PredictBegin()
@@ -2461,6 +2590,22 @@ function ns.API.AutoHealThreshold(spellID, unit, fallback)
 	return pct
 end
 
+-- True when the client hides this unit's health (combat), so no number can be compared.
+function ns.API.HealthHiddenFor(unit)
+	local health = safe(UnitHealth(unit), nil)
+	local max = safe(UnitHealthMax(unit), nil)
+	if health and max and max > 0 then
+		return false
+	end
+	if UnitHealthPercent and CurveConstants and CurveConstants.ScaleTo100 then
+		local ok, pct = pcall(UnitHealthPercent, unit, true, CurveConstants.ScaleTo100)
+		if ok and type(safe(pct, nil)) == "number" then
+			return false
+		end
+	end
+	return true
+end
+
 function ns.API.HealthHidden()
 	ns.API.Health("player")
 	return ns.API.healthHidden == true
@@ -2650,19 +2795,15 @@ function ns.API.CombatNotice()
 	return nil
 end
 
--- Role from the talent trees (C_SpecializationInfo reports points spent per
--- tree and, when the client knows it, the tree role). Cached for a few seconds.
-local TREE_ROLE = {
-	WARRIOR = { "damage", "damage", "tank" },
-	PALADIN = { "heal", "tank", "damage" },
-	PRIEST = { "heal", "heal", "damage" },
-	SHAMAN = { "damage", "damage", "heal" },
-	DRUID = { "damage", "damage", "heal" },
-}
-local ROLE_WORD = { TANK = "tank", HEALER = "heal", DAMAGER = "damage" }
+-- Role from the talent tree with the most points, judged by the tree's name
+-- (not its position or the role the client reports, which can differ on
+-- Forever): Protection = tank, Holy / Discipline / Restoration = heal,
+-- anything else = damage. Cached for a few seconds; nil = no talent data yet.
+local TANK_TREE_WORDS = { "protection" }
+local HEAL_TREE_WORDS = { "restoration", "holy", "discipline" }
 local specRoleCache, specRoleAt = nil, -10
 
-local function specRole(token)
+local function specRole()
 	local now = GetTime()
 	if specRoleAt > 0 and now - specRoleAt < 3 then
 		return specRoleCache
@@ -2673,29 +2814,33 @@ local function specRole(token)
 	if not info then
 		return nil
 	end
-	local bestPoints, bestRole = 0, nil
+	local bestPoints, bestName = 0, nil
 	for index = 1, 4 do
-		local ok, specId, _, _, _, role, _, points = pcall(info, index)
+		local ok, specId, name, _, _, _, _, points = pcall(info, index)
 		if not ok or not specId or specId == 0 then
 			break
 		end
 		points = tonumber(safe(points, 0)) or 0
-		if points > bestPoints then
-			local word = type(role) == "string" and readable(role) and ROLE_WORD[role:upper()]
+		if points > bestPoints and type(name) == "string" and readable(name) then
 			bestPoints = points
-			bestRole = word or (TREE_ROLE[token] and TREE_ROLE[token][index]) or "damage"
+			bestName = name:lower()
 		end
 	end
-	specRoleCache = bestRole
-	return bestRole
-end
-
-local function defensiveStance()
-	if not GetShapeshiftForm then
-		return false
+	if not bestName then
+		return nil
 	end
-	local ok, index = pcall(GetShapeshiftForm)
-	return ok and safe(index, 0) == 2
+	specRoleCache = "damage"
+	for _, word in ipairs(TANK_TREE_WORDS) do
+		if bestName:find(word, 1, true) then
+			specRoleCache = "tank"
+		end
+	end
+	for _, word in ipairs(HEAL_TREE_WORDS) do
+		if bestName:find(word, 1, true) then
+			specRoleCache = "heal"
+		end
+	end
+	return specRoleCache
 end
 
 -- Picks the playstyle from the character, no clicking needed: talent tree,
@@ -2712,14 +2857,9 @@ function ns.SyncAutoRole()
 		end
 		want = ns.API.TargetInMelee() and "melee" or "range"
 	elseif token == "WARRIOR" or token == "PALADIN" or token == "PRIEST" or token == "SHAMAN" or token == "DRUID" then
-		local spec = specRole(token)
-		if token == "WARRIOR" and defensiveStance() then
-			spec = "tank"
-		elseif token == "PALADIN" and ns.Spell.Paladin and ns.Spell.Paladin.RighteousFury and ns.API.Form(ns.Spell.Paladin.RighteousFury) then
-			spec = "tank"
-		end
+		local spec = specRole()
 		if spec == nil and (token ~= "SHAMAN" or ns.db.role == "heal") then
-			-- No talent data and no stance signal: keep whatever is set.
+			-- No talent data yet (low level): keep whatever is set.
 			return
 		end
 		if spec == "tank" or spec == "heal" then

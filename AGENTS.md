@@ -49,12 +49,12 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Buffs in `ns.MAINTENANCE_BUFF_IDS` are stripped from combat lists at load (`stripMaintFromApl`) and refused by `AddAPL`.
 - A spell with its own cooldown is removed by `NoteSpellCast` until the cooldown ends. The GCD does not count. Do not bypass `ns.API.Cooldown` with `filler`. `filler` is still blocked by `ns.Physics.Blocks`.
 - `opt.hold` / `ns.SPELL_HOLD`: after a cast the spell is not offered for N seconds. `0` means no aura delay. Harmful holds are tied to the target GUID. For `nodebuff` / `nobuff` spells a readable aura wins over the hold.
-- `roleAuto` (default true): role from talents, stance and range. Picking a role on the Behavior page turns it off.
+- `roleAuto` (default true): role from the name of the talent tree with the most points (Protection = tank; Holy / Discipline / Restoration = heal; else damage) and, for hunter / shaman, range. Druid bear / cat comes from the form. Picking a role on the Behavior page turns it off.
 - Hunter stings do not apply to Mechanical / Elemental targets (`CreatureBlocked`).
 - Rotation pass: a listed spell already cast is marked used for this pass; when nothing is usable the queue restarts. Reset on target change and leaving combat.
 - `IsRotationAction`: a filler yields slot 1 to a ready shock / DoT / CD / proc listed lower. Do not use `require` / `requireAny` to hide a filler: list order wins.
 - Do not call `CombatLogGetCurrentEventInfo`: the client blocks the addon. Proc spells use `opt.proc` (`IsSpellUsable`).
 - `listVersion` is 4: saved lists are replaced once by the default order on next login.
-- `auto` mode uses the single list until `ns.API.EnemyCount()` reaches `autoEnemies` (default 3, minimum 2), then the `aoe` list.
+- `auto` mode uses the single list out of combat (the pull) and until `ns.API.EnemyCount()` reaches `autoEnemies` (default 3, minimum 2) in combat, then the `aoe` list.
 - The druid HUD `hybrid` button is not a list key. `ns.ActiveSpec()` picks `cat`, `bear`, `heal`, `tank` or `damage`.
 - `ns.ResetCurrentProfile` only resets the active profile (`pve` or `pvp`).
