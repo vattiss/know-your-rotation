@@ -838,31 +838,40 @@ local function registerHighlights(root)
 	if #choices > 0 then
 		header(layout, "HDR_WEAPON")
 		featureCheckbox(category, "showWeapon", "OPT_WEAPON", "TIP_WEAPON")
-		dropdown(category, "weaponBuff", "OPT_WEAPON_PICK", "TIP_WEAPON_PICK", "auto", function()
-			local key = ns.db.weaponBuff
-			for _, entry in ipairs(ns.WeaponChoices() or {}) do
-				if entry.key == key and ns.WeaponBuffLearned(entry) then
-					return key
+		-- One pick, or one per hand for classes that coat both weapons.
+		local function weaponPick(variable, dbKey, labelKey, offhand)
+			dropdown(category, variable, labelKey, "TIP_WEAPON_PICK", "auto", function()
+				local key = ns.db[dbKey]
+				for _, entry in ipairs(ns.WeaponChoices() or {}) do
+					if entry.key == key and ns.WeaponBuffLearned(entry) then
+						return key
+					end
 				end
-			end
-			return "auto"
-		end, function(value)
-			ns.db.weaponBuff = value ~= "auto" and value or nil
-			afterChange()
-		end, function()
-			local auto = ns.AutoWeaponBuff()
-			local label = ns.T("OPT_AUTOMATIC")
-			if auto then
-				label = label .. " (" .. (API.SpellLabel(auto.id) or auto.key) .. ")"
-			end
-			local list = { { "auto", label } }
-			for _, entry in ipairs(ns.WeaponChoices() or {}) do
-				if ns.WeaponBuffLearned(entry) then
-					list[#list + 1] = { entry.key, API.SpellLabel(entry.id) or entry.key }
+				return "auto"
+			end, function(value)
+				ns.db[dbKey] = value ~= "auto" and value or nil
+				afterChange()
+			end, function()
+				local auto = ns.AutoWeaponBuff(offhand)
+				local label = ns.T("OPT_AUTOMATIC")
+				if auto then
+					label = label .. " (" .. (API.SpellLabel(auto.id) or auto.key) .. ")"
 				end
-			end
-			return list
-		end)
+				local list = { { "auto", label } }
+				for _, entry in ipairs(ns.WeaponChoices() or {}) do
+					if ns.WeaponBuffLearned(entry) then
+						list[#list + 1] = { entry.key, API.SpellLabel(entry.id) or entry.key }
+					end
+				end
+				return list
+			end)
+		end
+		if ns.WeaponHasOffhandChoice() then
+			weaponPick("weaponBuff", "weaponBuff", "OPT_WEAPON_PICK_MAIN", false)
+			weaponPick("weaponBuffOff", "weaponBuffOff", "OPT_WEAPON_PICK_OFF", true)
+		else
+			weaponPick("weaponBuff", "weaponBuff", "OPT_WEAPON_PICK", false)
+		end
 		soundDropdown(category, "soundWeapon", "OPT_SOUND")
 		colorSwatch(category, "weapon", "OPT_COLOR_WEAPON")
 	end

@@ -176,6 +176,7 @@ function ns.FlushProfile()
 	p.lastManualMode = ns.db.lastManualMode
 	p.autoEnemies = ns.db.autoEnemies
 	p.weaponBuff = ns.db.weaponBuff
+	p.weaponBuffOff = ns.db.weaponBuffOff
 end
 
 function ns.BindProfile()
@@ -197,6 +198,7 @@ function ns.BindProfile()
 	ns.db.lastManualMode = p.lastManualMode or "single"
 	ns.db.autoEnemies = tonumber(p.autoEnemies) or 3
 	ns.db.weaponBuff = p.weaponBuff
+	ns.db.weaponBuffOff = p.weaponBuffOff
 end
 
 function ns.SetProfile(key)
@@ -255,6 +257,7 @@ function ns.ResetCurrentProfile()
 	ns.db.def = nil
 	ns.db.defDrop = nil
 	ns.db.weaponBuff = nil
+	ns.db.weaponBuffOff = nil
 	ns.db.autoEnemies = 3
 	ns.db.lastManualMode = "single"
 	ns.db.combatMode = "auto"

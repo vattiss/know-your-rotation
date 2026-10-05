@@ -3067,7 +3067,40 @@ local function interpretEnchant(has, remainRaw, enchRaw)
 	return nil, 0, nil
 end
 
+-- Per-slot read (C_PaperDollInfo, what the Blizzard buff frame uses). Returns
+-- has, remainSeconds, enchantID; has is nil when the API cannot answer.
+local function readTempEnchant(offhand)
+	if not C_PaperDollInfo or not C_PaperDollInfo.GetTemporaryEnchantmentInfo then
+		return nil
+	end
+	local slot = offhand and (INVSLOT_OFFHAND or 17) or (INVSLOT_MAINHAND or 16)
+	local ok, info = pcall(C_PaperDollInfo.GetTemporaryEnchantmentInfo, slot)
+	if not ok then
+		return nil
+	end
+	if info == nil then
+		return false, 0, 0
+	end
+	if type(info) ~= "table" then
+		return nil
+	end
+	local remainMs = info.remainingTimeMs
+	local enchId = info.enchantID
+	if not readable(remainMs) or type(remainMs) ~= "number" then
+		remainMs = nil
+	end
+	if not readable(enchId) or type(enchId) ~= "number" then
+		enchId = nil
+	end
+	local remain = remainMs and remainMs / 1000 or 0
+	return true, remain > 0 and remain or 9999, enchId
+end
+
 local function readWeaponEnchant(offhand)
+	local tHas, tRemain, tId = readTempEnchant(offhand)
+	if tHas ~= nil then
+		return tHas, tRemain, tId
+	end
 	local packs = {}
 	local function push(ok, a, b, c, d, e, f, g, h)
 		if ok then

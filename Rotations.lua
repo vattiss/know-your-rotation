@@ -507,13 +507,50 @@ local WEAPON_PRIORITY = {
 		melee = { "Windfury", "Flametongue", "Rockbiter", "Frostbrand" },
 		default = { "Flametongue", "Rockbiter", "Frostbrand", "Windfury" },
 	},
+	ROGUE = {
+		default = { "InstantPoison", "DeadlyPoison", "WoundPoison", "CripplingPoison", "MindNumbingPoison" },
+	},
 }
 
-function ns.AutoWeaponBuff()
+-- Classes that coat both weapons, and what goes on the off-hand by default.
+local WEAPON_DUAL = { ROGUE = true }
+local OFFHAND_PRIORITY = {
+	ROGUE = { "DeadlyPoison", "InstantPoison", "CripplingPoison", "WoundPoison", "MindNumbingPoison" },
+}
+
+-- True when the class coats both weapons and an off-hand weapon is equipped.
+function ns.WeaponIsDual()
+	local token = ns.ClassToken and ns.ClassToken()
+	if not token or not WEAPON_DUAL[token] or not GetInventoryItemID then
+		return false
+	end
+	local ok, itemID = pcall(GetInventoryItemID, "player", 17)
+	if not ok or type(itemID) ~= "number" then
+		return false
+	end
+	local info = C_Item and C_Item.GetItemInfoInstant
+	if not info then
+		return true
+	end
+	local okInfo, _, _, _, _, _, classID = pcall(info, itemID)
+	return okInfo and classID == 2
+end
+
+function ns.WeaponHasOffhandChoice()
+	local token = ns.ClassToken and ns.ClassToken()
+	return token and WEAPON_DUAL[token] == true or false
+end
+
+function ns.AutoWeaponBuff(offhand)
 	local choices = ns.WeaponChoices()
 	local token = ns.ClassToken and ns.ClassToken()
-	local pack = token and WEAPON_PRIORITY[token]
-	local order = pack and (pack[ns.db.role] or pack.default)
+	local order
+	if offhand then
+		order = token and OFFHAND_PRIORITY[token]
+	else
+		local pack = token and WEAPON_PRIORITY[token]
+		order = pack and (pack[ns.db.role] or pack.default)
+	end
 	if order then
 		local byKey = {}
 		for _, entry in ipairs(choices) do
@@ -537,12 +574,12 @@ end
 
 -- The player's pick if it is learned, otherwise the automatic one. Returns
 -- nothing while no weapon buff is learned yet, so nothing is suggested.
-function ns.SelectedWeaponBuff()
+function ns.SelectedWeaponBuff(offhand)
 	local choices = ns.WeaponChoices()
 	if #choices == 0 then
 		return
 	end
-	local key = ns.db.weaponBuff
+	local key = offhand and ns.db.weaponBuffOff or ns.db.weaponBuff
 	if key and key ~= "auto" then
 		for _, entry in ipairs(choices) do
 			if entry.key == key then
@@ -554,7 +591,7 @@ function ns.SelectedWeaponBuff()
 			end
 		end
 	end
-	return ns.AutoWeaponBuff()
+	return ns.AutoWeaponBuff(offhand)
 end
 
 local function rememberWeaponApply(entry)
@@ -743,7 +780,56 @@ local function detectSelected(entry)
 	return "unknown", 0
 end
 
+-- Two coated weapons (rogue): each hand is read on its own. The first hand
+-- whose poison is missing, wrong or about to run out is the one suggested.
+local missingSince = {}
+
+local function buildDualWeapon()
+	local now = GetTime()
+	local function check(offhand)
+		local hand = offhand and "off" or "main"
+		local entry, spellID = ns.SelectedWeaponBuff(offhand)
+		if not entry or not spellID then
+			missingSince[hand] = nil
+			return nil
+		end
+		local state, remain = handState(entry, offhand)
+		if state == "up" then
+			missingSince[hand] = nil
+			if remain and remain > 0 and remain < 9000 and remain <= 30 then
+				return spellID, remain
+			end
+			return nil
+		end
+		if state == "unknown" then
+			-- The client did not answer: stay quiet rather than nag.
+			missingSince[hand] = nil
+			return nil
+		end
+		-- Missing or another poison. Wait out the few seconds after a cast,
+		-- and only believe a reading that holds for a moment.
+		missingSince[hand] = missingSince[hand] or now
+		if now < (ns.weaponGrace or 0) or now - missingSince[hand] < 1.5 then
+			return nil
+		end
+		return spellID, 0
+	end
+	local spellID, remain = check(false)
+	if not spellID then
+		spellID, remain = check(true)
+	end
+	ns.weaponNeedLast = spellID ~= nil
+	if spellID then
+		return spellID, remain or 0, true
+	end
+	local _, mainID = ns.SelectedWeaponBuff(false)
+	return mainID, 0, false
+end
+
 function ns.BuildWeapon()
+	if ns.WeaponIsDual() then
+		return buildDualWeapon()
+	end
 	local entry, spellID = ns.SelectedWeaponBuff()
 	if not entry or not spellID then
 		ns.weaponNeedLast = nil

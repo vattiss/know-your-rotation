@@ -106,6 +106,7 @@ function ns.ExportProfile()
 		"L=" .. esc(ns.db.lastManualMode or "single"),
 		"A=" .. tostring(tonumber(ns.db.autoEnemies) or 3),
 		"W=" .. esc(ns.db.weaponBuff or ""),
+		"O=" .. esc(ns.db.weaponBuffOff or ""),
 	}
 	writeApl(lines, "APL:", ns.db.apl)
 	if type(ns.db.def) == "table" then
@@ -178,10 +179,10 @@ function ns.ImportProfile(text)
 	if first ~= "WFR1" then
 		return false, "OPT_IMPORT_BAD"
 	end
-	local meta = { C = "", P = "", R = "damage", M = "auto", L = "single", A = "3", W = "" }
+	local meta = { C = "", P = "", R = "damage", M = "auto", L = "single", A = "3", W = "", O = "" }
 	local apl, def, drop, defDrop = {}, {}, {}, {}
 	for line in string.gmatch(text, "[^\n]+") do
-		local key, value = string.match(line, "^([CPRMLAW])=(.*)$")
+		local key, value = string.match(line, "^([CPRMLAWO])=(.*)$")
 		if key then
 			meta[key] = value or ""
 		else
@@ -234,6 +235,7 @@ function ns.ImportProfile(text)
 		ns.db.autoEnemies = 8
 	end
 	ns.db.weaponBuff = meta.W ~= "" and meta.W or nil
+	ns.db.weaponBuffOff = meta.O ~= "" and meta.O or nil
 	if ns.ApplyRotationEdit then
 		ns.ApplyRotationEdit()
 	elseif ns.FlushProfile then

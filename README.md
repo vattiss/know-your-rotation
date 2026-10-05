@@ -83,7 +83,7 @@ Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee,
 
 ### Options pages
 
-- **Highlights**: disable on this character; one section per cue (rotation, defense, interrupt, purge, cleanse, weapon buff) with its switch, sound and color. Only the cues your class can use are listed. The weapon buff is Automatic by default: the best one you have learned (for example Rockbiter at level 1, then Flametongue, then Windfury for a melee shaman); you can also pick one of the learned buffs.
+- **Highlights**: disable on this character; one section per cue (rotation, defense, interrupt, purge, cleanse, weapon buff) with its switch, sound and color. Only the cues your class can use are listed. The weapon buff is Automatic by default: the best one you have learned (for example Rockbiter at level 1, then Flametongue, then Windfury for a melee shaman); you can also pick one of the learned buffs. Rogues with an off-hand weapon get a separate main-hand and off-hand poison pick (Automatic: Instant on the main hand, Deadly on the off hand once learned).
 - **Behavior**: role, combat mode, AoE threshold and profile (each can be Automatic); only suggest spells on your action bars; smart heal threshold (a heal is offered once the missing health is about the heal size; emergency steps below 50% keep their own value); Classic swing and auto-shot timing.
 - **Rotation** and **Defense**: the spell lists. Pick the list with the two dropdowns at the top (role and, for the rotation, the mode), then reorder, switch off, remove, or drag in spells. "Show the delay column" adds the per-spell re-suggest delay.
 - **Profiles**: reset, export, import.
