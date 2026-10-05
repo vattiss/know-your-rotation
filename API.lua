@@ -1151,6 +1151,11 @@ function ns.API.Cooldown(spellID)
 		end
 	end
 	if tracked > 0.2 then
+		-- A readable real cooldown wins over the estimate from the base
+		-- cooldown: talents can shorten it (Reverberation, Improved Fire Blast).
+		if not secret and apiDuration and apiDuration > 1.51 then
+			return apiRemain, apiDuration
+		end
 		return tracked, apiDuration > 0 and apiDuration or tracked
 	end
 	if secret then
@@ -1777,7 +1782,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		-- Health is hidden: the caller checks the threshold another way.
 		needHp = nil
 	elseif opt.heal or ns.API.IsHealSpell(spellID, opt) then
-		needHp = ns.API.AutoHealThreshold(spellID, opt.unit or "player", needHp or 99)
+		needHp = ns.API.AutoHealThreshold(spellID, opt.unit or ns.API.HealUnit(opt), needHp or 99)
 	end
 	if needHp then
 		local hp
@@ -2195,7 +2200,9 @@ function ns.API.ClearTargetDebuffs()
 	clearTargetBoundHolds()
 end
 
-function ns.API.NoteTargetDebuff(spellID)
+-- remain: the duration seen on the target, if any. Otherwise the spell's
+-- own duration (ns.SPELL_HOLD / step hold), else 18 s.
+function ns.API.NoteTargetDebuff(spellID, remain)
 	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
 		return
 	end
@@ -2209,7 +2216,14 @@ function ns.API.NoteTargetDebuff(spellID)
 	end
 	heldHarmfulGuid = guid
 	local name = ns.API.SpellName(spellID)
-	local exp = GetTime() + 18
+	local seconds = tonumber(remain)
+	if not seconds or seconds <= 0 or seconds >= 9000 then
+		seconds = ns.API.HoldSeconds(spellID)
+		if not seconds or seconds <= 0 then
+			seconds = 18
+		end
+	end
+	local exp = GetTime() + seconds
 	if type(name) == "string" and name ~= "" then
 		heldHarmful[normName(name)] = exp
 	end
@@ -2272,7 +2286,11 @@ local function rememberAura(spellID, auraName, remain, fromCast)
 	end
 	local key = normName(name)
 	local family = familyOf(name)
-	local seconds = (family and FAMILY_SECONDS[family]) or 30
+	local seconds = family and FAMILY_SECONDS[family]
+	if not seconds then
+		local hold = ns.API.HoldSeconds(spellID)
+		seconds = (hold and hold > 0) and hold or 30
+	end
 	local exp
 	if remain and remain > 0 and remain < 9000 then
 		exp = GetTime() + remain
@@ -2295,6 +2313,13 @@ end
 
 function ns.API.NoteSelfBuff(spellID)
 	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
+		return
+	end
+	-- Attacks are no buff; a heal cast on someone else is not on you.
+	if ns.API.IsHarmful(spellID) and not ns.API.IsHelpful(spellID) then
+		return
+	end
+	if ns.API.IsHealSpell(spellID) and ns.API.HealUnit() ~= "player" then
 		return
 	end
 	rememberAura(spellID, nil, nil, true)
@@ -2450,7 +2475,7 @@ function ns.API.HasAura(spellID, unit, filter)
 			rememberAura(spellID, nil, remain, false)
 		end
 		if targetHarm then
-			ns.API.NoteTargetDebuff(spellID)
+			ns.API.NoteTargetDebuff(spellID, remain)
 		end
 		return true, remain
 	end
@@ -2472,6 +2497,28 @@ function ns.API.HasAura(spellID, unit, filter)
 	return false, 0
 end
 
+local sharedNames
+
+local function sharedDebuff(spellID, wantKey)
+	local ids = ns.SHARED_DEBUFF_IDS
+	if not ids then
+		return false
+	end
+	if ids[spellID] then
+		return true
+	end
+	if not sharedNames or not next(sharedNames) then
+		sharedNames = {}
+		for id in pairs(ids) do
+			local name = ns.API.SpellName(id)
+			if type(name) == "string" and name ~= "" then
+				sharedNames[normName(name)] = true
+			end
+		end
+	end
+	return wantKey and sharedNames[wantKey] or false
+end
+
 function ns.API.FindAura(spellID, unit, filter)
 	if not spellID then
 		return false, 0, false, nil, 0
@@ -2482,6 +2529,9 @@ function ns.API.FindAura(spellID, unit, filter)
 	local wantName = ns.API.SpellName(resolved or spellID) or ns.API.SpellName(spellID)
 	local wantKey = type(wantName) == "string" and normName(wantName) or nil
 	local wantFamily = familyOf(wantName)
+	if filter == "HARMFUL" and unit == "target" and not sharedDebuff(spellID, wantKey) and ns.API.Hostile() then
+		filter = "HARMFUL|PLAYER"
+	end
 
 	if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID and unit == "player" then
 		for _, id in ipairs({ resolved, spellID }) do

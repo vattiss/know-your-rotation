@@ -875,6 +875,30 @@ end
 -- Seconds to wait after a successful cast before suggesting the spell again.
 -- Values from Forever 1.60 lab tooltips (Classic Era aura / DoT / HoT / snare
 -- durations). Players can override per row in options (opt.hold). 0 disables.
+-- Target debuffs one per target, whoever applied them: another player's
+-- counts as yours. Every other target debuff only counts when it is yours
+-- (two warlocks each keep their own Corruption on the same mob).
+ns.SHARED_DEBUFF_IDS = {}
+do
+	local P, W, H, R, M, L, D =
+		ns.Spell.Paladin, ns.Spell.Warrior, ns.Spell.Hunter, ns.Spell.Rogue,
+		ns.Spell.Mage, ns.Spell.Warlock, ns.Spell.Druid
+	local ids = {
+		W.SunderArmor, W.DemoralizingShout, W.ThunderClap,
+		R.ExposeArmor,
+		D.FaerieFire, D.FaerieFireFeral, D.DemoralizingRoar,
+		H.HuntersMark,
+		L.CurseofElements, L.CurseofShadow,
+		M.FireVulnerability, M.WintersChill,
+		P.JudgementoftheCrusader, P.JudgementofLight, P.JudgementofWisdom,
+	}
+	for _, id in pairs(ids) do
+		if id then
+			ns.SHARED_DEBUFF_IDS[id] = true
+		end
+	end
+end
+
 ns.SPELL_HOLD = {}
 do
 	local P, W, H, R, Pr, Sh, M, L, D =

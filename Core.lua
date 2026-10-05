@@ -228,7 +228,7 @@ function ns.SetProfile(key)
 	end
 end
 
--- Profile picked in the options: "auto" follows instance type / PvP flag,
+-- Profile picked in the options: "auto" follows instance type / enemy player target,
 -- "pve" or "pvp" pins that profile and turns the automatic switch off.
 function ns.SetProfileChoice(choice)
 	if choice == "auto" then
@@ -530,13 +530,10 @@ function ns.ApplyAutoProfile()
 			itype = instanceType
 		end
 	end
-	-- Open world: being PvP flagged, or having an attackable player as target,
-	-- counts as PvP. Instances decide by their own type below.
+	-- Open world: an attackable player as target counts as PvP (the PvP flag
+	-- does not: on a PvP realm it is on all the time in contested zones).
+	-- Instances decide by their own type below.
 	local pvpTarget = false
-	local okF, flagged = pcall(UnitIsPVP, "player")
-	if okF and flagged == true then
-		pvpTarget = true
-	end
 	local okP, isPlayer = pcall(UnitIsPlayer, "target")
 	local okA, canAttack = pcall(UnitCanAttack, "player", "target")
 	if okP and okA and isPlayer == true and canAttack == true then
@@ -697,8 +694,6 @@ pcall(frame.RegisterEvent, frame, "PLAYER_ALIVE")
 pcall(frame.RegisterEvent, frame, "PLAYER_UNGHOST")
 pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
 pcall(frame.RegisterEvent, frame, "PLAYER_MOUNT_DISPLAY_CHANGED")
-pcall(frame.RegisterEvent, frame, "PLAYER_FLAGS_CHANGED")
-pcall(frame.RegisterEvent, frame, "UNIT_FACTION")
 pcall(frame.RegisterEvent, frame, "ZONE_CHANGED_NEW_AREA")
 pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
 pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
@@ -910,10 +905,6 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			ns.ClearRotationSpent()
 		end
 		forceTick()
-	elseif event == "PLAYER_FLAGS_CHANGED" or (event == "UNIT_FACTION" and unit == "player") then
-		if ns.ApplyAutoProfile then
-			ns.ApplyAutoProfile()
-		end
 	elseif event == "UNIT_AURA" then
 		if liveAuraUnit(unit) then
 			if ns.API and ns.API.WipeAuraScan then

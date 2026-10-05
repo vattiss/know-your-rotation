@@ -249,7 +249,7 @@ Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`. There is no burst mod
 
 `ns.PROFILE_ORDER = { "pve", "pvp" }`. Old `base` / `custom` profiles are dropped at login.
 
-`autoProfile` (default true): `ns.ApplyAutoProfile` picks PvP in battlegrounds and arenas, when PvP flagged in the open world or targeting an attackable player, PvE otherwise (never back to PvE in combat). The Behavior page profile dropdown calls `ns.SetProfileChoice` (`auto`, `pve`, `pvp`; a fixed profile sets `autoProfile = false`).
+`autoProfile` (default true): `ns.ApplyAutoProfile` picks PvP in battlegrounds and arenas, or when targeting an attackable player in the open world (not by the PvP flag, which a PvP realm keeps on in contested zones), PvE otherwise (never back to PvE in combat). The Behavior page profile dropdown calls `ns.SetProfileChoice` (`auto`, `pve`, `pvp`; a fixed profile sets `autoProfile = false`).
 
 The active profile is copied into `ns.db.profiles[key]` by `FlushProfile` (profile change, options, logout) and reloaded by `BindProfile`. Profile fields: `apl`, `aplDrop`, `def`, `defDrop`, `role`, `combatMode`, `lastManualMode`, `autoEnemies`, `weaponBuff`.
 
@@ -330,7 +330,11 @@ Auras: `C_UnitAuras.GetPlayerAuraBySpellID` for the player, then `GetAuraDataByS
 
 A personal buff (`nobuff` without `heal`) is always read on the player. The seal is a helpful buff: looking for it on the hostile target makes it reappear in the queue.
 
-On the camelot client, choosing a target can make auras unreadable (*secret values*). A failed read is not an absence. The seal is remembered for **30 seconds** after the cast (Classic duration), then it is suggested again even in combat. Blessings last 5 minutes in this memory, auras and aspects 30 minutes, unless the game gives a shorter real duration. A DoT cast on the target is remembered for **18 seconds** (or until the target changes) if the target aura is unreadable. Heals (`opt.heal`) keep looking at the ally to heal.
+On the camelot client, choosing a target can make auras unreadable (*secret values*). A failed read is not an absence. The seal is remembered for **30 seconds** after the cast (Classic duration), then it is suggested again even in combat. Blessings last 5 minutes in this memory, auras and aspects 30 minutes, unless the game gives a shorter real duration. A DoT cast on the target is remembered (until the target changes) if the target aura is unreadable: for the duration last seen on the target, else the spell's own duration (`ns.SPELL_HOLD` / step `hold`: Moonfire 9 s, Flame Shock 12 s, …), else **18 seconds**. A self-buff cast without a family length is remembered the same way (Slice and Dice, Renew, Rejuvenation), else 30 s. Attacks and heals cast on someone else are not remembered as your buffs.
+
+Target debuffs on an enemy count only when **you** applied them (`HARMFUL|PLAYER`), so another warlock's Corruption does not hide yours. Debuffs one per target whoever applies them (`ns.SHARED_DEBUFF_IDS`: Sunder Armor, Expose Armor, Faerie Fire, Hunter's Mark, Curse of the Elements / Shadow, Demoralizing Shout / Roar, Thunder Clap, Fire Vulnerability, Winter's Chill, the judgements) count from anyone. Debuffs on a friendly unit (Weakened Soul) always count from anyone.
+
+`ns.API.Cooldown`: after a cast the addon tracks the spell's base cooldown, which also covers secret readings. When the client reports a readable real cooldown (longer than the GCD), that value wins, so talent-shortened cooldowns (Reverberation, Improved Fire Blast) are not held back. Heals (`opt.heal`) keep looking at the ally to heal.
 
 The queue imitates ConROC: the 1st spell is the one to cast now, the 2nd and 3rd are the next ones **after** this simulated press. A spell outside the list does not cut the suggestion: on the next tick, the priority is recomputed.
 
