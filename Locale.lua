@@ -85,6 +85,7 @@ L.enUS = {
 	MSG_ROLE_AUTO_OFF = "Automatic role detection off — re-enable it on the Profiles page.",
 	NOTICE_CALL_PET = "Call your pet",
 	NOTICE_PET_ASSIST = "Pet is not attacking",
+	NOTICE_OFF_BAR = "%s is ready, but it is not on your action bars.",
 	OPT_COLORS = "Overlay colors",
 	OPT_COLOR_NEXT = "Next",
 	OPT_COLOR_HEAL = "Heal",

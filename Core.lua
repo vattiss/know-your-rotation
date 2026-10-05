@@ -510,10 +510,17 @@ end
 
 local ALERT_SOUND_KEY = { kick = "soundKick", cleanse = "soundCleanse", weapon = "soundWeapon" }
 
-local function playAlert(kind)
+local function playAlert(kind, spellID)
 	local key = ALERT_SOUND_KEY[kind]
 	if key and ns.db then
 		ns.PlayAlertSound(ns.db[key])
+	end
+	-- A glow needs a button: say so when the spell is on no action bar.
+	if spellID and UIErrorsFrame and ns.SpellOnBar and not ns.SpellOnBar(spellID) then
+		local name = ns.API.SpellName(spellID)
+		if name then
+			UIErrorsFrame:AddMessage(ns.T("NOTICE_OFF_BAR"):format(name), 1, 0.82, 0)
+		end
 	end
 end
 
@@ -596,15 +603,15 @@ function ns.Tick()
 	end
 	lastNotice = noticeKey
 	if interrupt and interrupt ~= lastAlertKick then
-		playAlert("kick")
+		playAlert("kick", interrupt)
 	end
 	lastAlertKick = interrupt
 	if cleanse and cleanse ~= lastAlertCleanse then
-		playAlert("cleanse")
+		playAlert("cleanse", cleanse)
 	end
 	lastAlertCleanse = cleanse
 	if weaponNeed and weapon and weapon ~= lastAlertWeapon then
-		playAlert("weapon")
+		playAlert("weapon", weapon)
 	end
 	if not weaponNeed then
 		lastAlertWeapon = nil

@@ -684,6 +684,9 @@ function ns.BuildWeapon()
 		return
 	end
 	local status, remain = detectSelected(entry)
+	if status ~= "missing" then
+		ns.weaponMissingSince = nil
+	end
 	if status == "up" then
 		ns.weaponRecheckDrop = nil
 		local hold = remain
@@ -707,6 +710,16 @@ function ns.BuildWeapon()
 	end
 	local now = GetTime()
 	if status == "missing" then
+		-- The client says no imbue is on the weapon. Past the short grace after
+		-- a cast, believe it once it has held for a moment, even if we "saw"
+		-- the buff recently (it was removed by hand, or replaced).
+		ns.weaponMissingSince = ns.weaponMissingSince or now
+		if now >= (ns.weaponGrace or 0) and now - ns.weaponMissingSince >= 1.5 then
+			ns.weaponSeenUntil = 0
+			ns.weaponGrace = 0
+			ns.weaponNeedLast = true
+			return spellID, 0, true
+		end
 		if now < (ns.weaponGrace or 0) or now < (ns.weaponSeenUntil or 0) then
 			local left = math.max((ns.weaponSeenUntil or 0) - now, 0)
 			local need = left > 0 and left <= 30
