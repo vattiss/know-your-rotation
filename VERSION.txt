@@ -1,8 +1,10 @@
-1.0.0
+1.0.0-beta.1
 
-# 1.0.0
+# 1.0.0-beta.1
 
-First release of Know Your Rotation.
+First beta of Know Your Rotation.
+
+This is a beta: the addon works, but not every class and level range has been played through yet, and the default spell lists are still being tuned for WoW Forever. Please report anything odd (a wrong suggestion, a missing glow, a Lua error) on GitHub: https://github.com/attilavarga96/know-your-rotation/issues
 
 A rotation helper for WoW Forever, made for learning a class from level 1: instead of digging through guides while you level, follow the addon. The spell to press next lights up on your action bars. There is no extra window to watch.
 

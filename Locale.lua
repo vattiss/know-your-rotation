@@ -22,6 +22,7 @@ L.enUS = {
 	TAB_DEFENSE = "Defense",
 	TAB_PROFILES = "Profiles",
 	OPT_HOME_WELCOME = "Welcome!",
+	OPT_HOME_BETA = "Beta: not every class and level range has been played through yet, and the spell lists are still being tuned. If a suggestion looks wrong, please report it with the issue link below.",
 	OPT_HOME_TEXT = "Know Your Rotation was made for learning a class from level 1: instead of digging through guides every time you level up, just follow the addon. The next spell to press lights up on your action bars, and it also points out heals, defense, interrupts, purges, cleanses and weapon buffs. It is tuned for leveling and learning, so it keeps things simple: no burst or raid setups.\n\nClick the + next to Know Your Rotation in the list on the left to expand it, then choose a page: Highlights, Behavior, Rotation, Defense or Profiles.",
 	TAB_HIGHLIGHTS = "Highlights",
 	TAB_BEHAVIOR = "Behavior",

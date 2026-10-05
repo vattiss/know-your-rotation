@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## AllowLoadGameType: camelot
 ## Title: Know Your Rotation
-## Notes: Highlights the next spell to press on your action bars, plus heals, defense, interrupts, purges and cleanses.
-## Version: 1.0.0
+## Notes: Beta. Highlights the next spell to press on your action bars, plus heals, defense, interrupts, purges and cleanses.
+## Version: 1.0.0-beta.1
 ## IconTexture: Interface\Icons\Ability_Marksmanship
 ## SavedVariables: KnowYourRotationDB
 ## SavedVariablesPerCharacter: KnowYourRotationCharDB
