@@ -408,6 +408,7 @@ ns.Spell = {
 		ConcussiveShot = 5116,
 		MendPet = 136,
 		CallPet = 883,
+		RevivePet = 982,
 		WingClip = 2974,
 		FeignDeath = 5384,
 		Deterrence = 19263,

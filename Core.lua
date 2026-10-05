@@ -966,7 +966,8 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			requestTick()
 		end
 	elseif event == "UI_ERROR_MESSAGE" then
-		-- "You must be behind your target": Backstab / Shred wait a moment.
+		-- "You must be behind your target" (Backstab / Shred wait a moment),
+		-- "Your pet is dead" (Revive Pet instead of Call Pet).
 		if ns.API and ns.API.NoteUIError and ns.API.NoteUIError(powerToken) then
 			lastTickSig = nil
 			requestTick()

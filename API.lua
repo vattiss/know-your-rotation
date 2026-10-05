@@ -1716,6 +1716,33 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if opt.notKnown and ns.API.Known(opt.notKnown) then
 		return reject("a better spell is learned")
 	end
+	-- Not for this talent tree (word in the name of the tree with the most points).
+	if opt.notTree then
+		local tree = ns.API.MainTree()
+		if tree and tree:find(opt.notTree, 1, true) then
+			return reject("not for your talent tree")
+		end
+	end
+	if opt.swimming then
+		local ok, swimming = pcall(IsSwimming)
+		if not ok or safe(swimming, false) ~= true then
+			return reject("only while swimming")
+		end
+	end
+	-- Threat drops (Fade, Feint, Disengage) do nothing with nobody else around.
+	if opt.inGroup then
+		local ok, grouped = pcall(IsInGroup)
+		grouped = ok and safe(grouped, false) == true
+		if not grouped and not (opt.orPet and unitExists("pet")) then
+			return reject("only in a group")
+		end
+	end
+	if opt.petDead and not ns.API.PetDead() then
+		return reject("your pet is not dead")
+	end
+	if opt.notPetDead and ns.API.PetDead() then
+		return reject("your pet is dead")
+	end
 	local helpful = ns.API.IsHelpful(spellID, opt)
 	local auraUnit = helpful and ns.API.HealUnit(opt) or "player"
 	-- Aura-first (ConROC-style): readable missing aura -> allow; up with remain
@@ -2699,17 +2726,37 @@ local function targetGUID()
 	return ok and safe(guid, nil) or nil
 end
 
+-- Dead hunter pet: seen as a dead "pet" unit, or from the "Your pet is
+-- dead" error after the unit is gone. Cleared once a live pet is out.
+local petDeadFlag = false
+
+function ns.API.PetDead()
+	if unitExists("pet") then
+		local ok, dead = pcall(UnitIsDead, "pet")
+		petDeadFlag = ok and safe(dead, false) == true
+	end
+	return petDeadFlag
+end
+
 function ns.API.NoteUIError(message)
 	if type(message) ~= "string" or not readable(message) then
 		return false
 	end
-	local text = SPELL_FAILED_NOT_BEHIND
-	if message ~= text and not strlower(message):find("behind", 1, true) then
-		return false
+	local lower = strlower(message)
+	if message == SPELL_FAILED_NOT_BEHIND or lower:find("behind", 1, true) then
+		notBehindAt = GetTime()
+		notBehindGUID = targetGUID()
+		return true
 	end
-	notBehindAt = GetTime()
-	notBehindGUID = targetGUID()
-	return true
+	if lower:find("pet is dead", 1, true) then
+		petDeadFlag = true
+		return true
+	end
+	if lower:find("have a pet", 1, true) then
+		petDeadFlag = false
+		return true
+	end
+	return false
 end
 
 function ns.API.NotBehindRecently()
@@ -2936,19 +2983,22 @@ end
 local TANK_TREE_WORDS = { "protection" }
 local HEAL_TREE_WORDS = { "restoration", "holy", "discipline" }
 local specRoleCache, specRoleAt = nil, -10
+local treeCache, treeAt = nil, -10
 
-local function specRole()
+-- Lower-case name of the talent tree with the most points; nil = no points
+-- or no talent data yet. Cached for a few seconds.
+function ns.API.MainTree()
 	local now = GetTime()
-	if specRoleAt > 0 and now - specRoleAt < 3 then
-		return specRoleCache
+	if treeAt > 0 and now - treeAt < 3 then
+		return treeCache
 	end
-	specRoleAt = now
-	specRoleCache = nil
+	treeAt = now
+	treeCache = nil
 	local info = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo
 	if not info then
 		return nil
 	end
-	local bestPoints, bestName = 0, nil
+	local bestPoints = 0
 	for index = 1, 4 do
 		local ok, specId, name, _, _, _, _, points = pcall(info, index)
 		if not ok or not specId or specId == 0 then
@@ -2957,9 +3007,20 @@ local function specRole()
 		points = tonumber(safe(points, 0)) or 0
 		if points > bestPoints and type(name) == "string" and readable(name) then
 			bestPoints = points
-			bestName = name:lower()
+			treeCache = name:lower()
 		end
 	end
+	return treeCache
+end
+
+local function specRole()
+	local now = GetTime()
+	if specRoleAt > 0 and now - specRoleAt < 3 then
+		return specRoleCache
+	end
+	specRoleAt = now
+	specRoleCache = nil
+	local bestName = ns.API.MainTree()
 	if not bestName then
 		return nil
 	end

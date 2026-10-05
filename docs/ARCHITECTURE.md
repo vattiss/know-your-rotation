@@ -150,9 +150,14 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
 | `minLevel` | Offered only from this character level on (Strength of Earth 30, Mana Spring 40 in the damage lists, Rupture 40): early fights are too short for them. |
 | `behind` | Must be behind the target (Backstab, Shred). Refused while the target attacks you (it faces you) or for 3 s after a "must be behind" error on that target (`UI_ERROR_MESSAGE`, `ns.API.NoteUIError`). No target's target (stunned, gouged) is allowed. |
+| `nodebuff` + `unit = "player"` | Checks the debuff on you (Weakened Soul before Power Word: Shield). Without `unit`, a non-heal step checks the target. `refresh = 0` refuses while the debuff is up at all. |
 | `notMelee` | Refused when the target is in melee range (`ns.API.TargetInMelee`): melee shaman Lightning Bolt / Lava Burst only for the pull. |
 | `inMelee` | Inverse: only when the target is in melee range (Frost Nova once the mob reaches the mage). |
 | `notKnown` | Refused once this other spell is learned (Summon Imp until Summon Voidwalker). |
+| `notTree` | Refused when the name of the talent tree with the most points contains this word (`ns.API.MainTree`): Frostbolt / Arcane Missiles not for a Fire mage, so Fireball comes next. |
+| `swimming` | Only while swimming (Unending Breath). |
+| `inGroup` / `orPet` | Only in a group, or with `orPet` also with a pet out: threat drops (Fade, Feint, Disengage) do nothing solo. |
+| `petDead` / `notPetDead` | Hunter pet dead or not (`ns.API.PetDead`: a dead `pet` unit, or the "Your pet is dead" error, cleared by a live pet): Revive Pet instead of Call Pet. |
 | `hpPerCombo` | Target health threshold of N% per combo point (Eviscerate: 8). |
 | `needbuff` | Helpful aura ID required on the player (Garrote and Ambush require Stealth). |
 | `needdebuff` | Debuff ID required on the target (Conflagrate requires Immolate). |
