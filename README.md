@@ -136,6 +136,10 @@ Source (public): [https://github.com/vattiss/know-your-rotation](https://github.
 
 Bugs and ideas: [github.com/vattiss/know-your-rotation/issues](https://github.com/vattiss/know-your-rotation/issues). The landing page of the options has the same link to copy.
 
+## Credits
+
+Based on Forever Rotation by Vohnka (MIT). Know Your Rotation is developed by Castorei (vattiss).
+
 ## License
 
 [MIT](LICENSE) — free to use, modify, fork, and redistribute. See the copyright notice in the license file. Contributions are welcome: open an issue or a pull request.
