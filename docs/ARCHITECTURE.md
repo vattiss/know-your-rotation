@@ -244,7 +244,7 @@ Migrations in `defaults()`:
 
 Bump `listVersion` only when old saves must be discarded. Players then lose their reorderings.
 
-Other defaults: `glow`, `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `showCleanse`, `showWeapon` true; `role` `damage` then normalized; `autoEnemies` 3; `combatMode` `auto`; initial profile `pve` if the `profiles` table does not exist.
+Other defaults: `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `showCleanse`, `showWeapon` true; `role` `damage` then normalized; `autoEnemies` 3; `combatMode` `auto`; initial profile `pve` if the `profiles` table does not exist.
 
 ## Interface
 
@@ -263,7 +263,7 @@ Options (`KnowYourRotationOptions`, inside the Settings panel):
 
 - pages: a landing page, then sub-categories Profiles, General, Rotation, Defense, Advanced, Info;
 - Profiles page: buttons Base, PvE (`pve`), PvP (`pvp`), Customs, the automatic detection switches (`autoProfile`, `roleAuto`), plus export / import;
-- checkboxes for `show*` and glow, mode selector;
+- checkboxes for the `show*` highlights and the per-character disable switch, mode selector;
 - enchant choice, AoE threshold (2–8), profile reset;
 - editor: `SpecList` specs, `auto/single/aoe/burst` modes, checkboxes, move up, move down, remove, drop zone.
 
@@ -293,7 +293,7 @@ Overlays `button.WFROverlays` (Blizzard spell-alert glow, tinted):
 | `cleanse` | green | dispel |
 | `weapon` | red | enchant to redo |
 
-`ns.db.glow == false` turns off the rotation and defense glows. Interrupt, purge, cleanse and weapon have their own `Glow*` called from `Tick` without retesting `glow` in those functions: they mostly follow `showInterrupt` / `showPurge` / `showCleanse` / `showWeapon`, which short-circuit the builder.
+`showRotation` and `showDefense` switch the rotation and defense glows off (`GlowClear`, `GlowClearDef`). Interrupt, purge, cleanse and weapon have their own `Glow*` functions, switched by their own `show*` flag in `Tick`.
 
 
 ## Spell resolution
@@ -328,7 +328,7 @@ There are no slash commands and no minimap button. The options are a canvas cate
 ```
 listVersion          = 4
 profile              = "base" | "pve" | "pvp" | "custom"
-glow, showRotation, showDefense, showInterrupt, showPurge,
+showRotation, showDefense, showInterrupt, showPurge,
 showCleanse, showWeapon
 barOnly, autoProfile, cleanseGroup, showPhysics
 soundKick, soundCleanse, soundWeapon = sound key from `ns.SOUNDS` ("none" = off)

@@ -792,7 +792,7 @@ local function apply(spellID, isDef)
 end
 
 function ns.GlowSpell(spellID)
-	if ns.db.glow == false or ns.db.showRotation == false then
+	if ns.db.showRotation == false then
 		ns.GlowClear()
 		return
 	end
@@ -800,7 +800,7 @@ function ns.GlowSpell(spellID)
 end
 
 function ns.GlowDef(spellID)
-	if ns.db.glow == false or ns.db.showDefense == false then
+	if ns.db.showDefense == false then
 		ns.GlowClearDef()
 		return
 	end
@@ -954,7 +954,7 @@ local function hiddenHealUnavailable(reason)
 end
 
 function ns.GlowHiddenHeal(spellID, threshold)
-	if not spellID or ns.db.glow == false then
+	if not spellID then
 		clearHiddenHeal()
 		return
 	end

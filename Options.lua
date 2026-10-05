@@ -415,6 +415,14 @@ local function ensureOptions()
 		frame.profileButtons[i] = btn
 	end
 
+	-- Resets the lists of the profile in use, so it belongs next to the profiles.
+	local resetAll = makeGoldBtn(profiles, 150, 22, ns.T("OPT_RESET_ALL"))
+	resetAll:SetPoint("TOPRIGHT", profiles, "TOPRIGHT", -8, -4)
+	resetAll:SetScript("OnClick", function()
+		ns.ConfirmResetAll()
+	end)
+	frame.resetAll = resetAll
+
 	frame.general = general
 	frame.rotation = rotation
 	frame.profiles = profiles
@@ -425,7 +433,6 @@ local function ensureOptions()
 	local hudCard = makeCard(general, "OPT_CARD_HUD", 8, -4, 318, 172)
 	frame.optMute = addSwitch(hudCard, "muted", ns.T("OPT_MUTE"))
 	frame.optRotation = addSwitch(hudCard, "showRotation", ns.T("OPT_ROTATION"))
-	frame.optGlow = addSwitch(hudCard, "glow", ns.T("OPT_GLOW"))
 
 	local winCard = makeCard(general, "OPT_CARD_WINDOWS", 338, -4, 318, 172)
 	frame.optDef = addSwitch(winCard, "showDefense", ns.T("OPT_DEFENSE"))
@@ -434,15 +441,8 @@ local function ensureOptions()
 	frame.optCleanse = addSwitch(winCard, "showCleanse", ns.T("OPT_CLEANSE"))
 	frame.optWeapon = addSwitch(winCard, "showWeapon", ns.T("OPT_WEAPON"))
 
-	local displayCard = makeCard(general, "OPT_CARD_DISPLAY", 8, -188, 318, 80)
-	local resetAll = makeGoldBtn(displayCard, 140, 22, ns.T("OPT_RESET_ALL"))
-	resetAll:SetPoint("TOPLEFT", 12, -32)
-	resetAll:SetScript("OnClick", function()
-		ns.ConfirmResetAll()
-	end)
-	frame.resetAll = resetAll
 
-	local weaponCard = makeCard(general, "OPT_CARD_WEAPON", 338, -188, 318, 196)
+	local weaponCard = makeCard(general, "OPT_CARD_WEAPON", 8, -188, 318, 196)
 	frame.weaponCard = weaponCard
 	frame.weaponLabel = weaponCard.title
 	frame.weaponBoxes = {}
@@ -919,7 +919,7 @@ local function ensureOptions()
 				label:SetText(ns.T(label.key))
 			end
 		end
-		for _, card in ipairs({ hudCard, winCard, displayCard, weaponCard, combatCard, autoCard, alertCard, colorCard, shareCard, aboutCard, linksCard }) do
+		for _, card in ipairs({ hudCard, winCard, weaponCard, combatCard, autoCard, alertCard, colorCard, shareCard, aboutCard, linksCard }) do
 			if card and card.title and card.titleKey then
 				card.title:SetText(ns.T(card.titleKey))
 			end
@@ -1122,11 +1122,8 @@ function ns.RefreshOptions()
 	if frame.ShowTab and frame.activeTab then
 		frame.ShowTab(frame.activeTab)
 	end
-	if frame.optGlow then
-		frame.optGlow:SetChecked(ns.db.glow ~= false)
-		if frame.optRotation then
-			frame.optRotation:SetChecked(ns.db.showRotation ~= false)
-		end
+	if frame.optRotation then
+		frame.optRotation:SetChecked(ns.db.showRotation ~= false)
 		frame.optDef:SetChecked(ns.db.showDefense ~= false)
 		frame.optKick:SetChecked(ns.db.showInterrupt ~= false)
 		frame.optPurge:SetChecked(ns.db.showPurge ~= false)

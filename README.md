@@ -78,9 +78,9 @@ Four profiles, all saved independently:
 
 PvE or PvP is picked automatically (dungeons and raids = PvE; battlegrounds and arenas = PvP; in the open world your PvP flag or an attackable player as target = PvP); you can also switch in the options window. **Reset** only wipes the **selected** profile. You can export / import a profile as text. Optional auto-switch uses PvE or PvP from the instance type.
 
-### Muting
+### Disabling on one character
 
-The General page has a "Mute this character" switch: while it is on, the addon shows no glows and plays no sounds or messages on the current character. The setting is stored per character.
+The General page has a "Disable on this character" switch: while it is on, the addon shows no glows and plays no sounds or messages on the current character. The setting is stored per character.
 
 ### Combat modes
 

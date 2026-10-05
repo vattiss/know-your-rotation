@@ -56,9 +56,6 @@ local function defaults()
 			end
 		end
 	end
-	if ns.db.glow == nil then
-		ns.db.glow = true
-	end
 	if ns.db.showRotation == nil then
 		ns.db.showRotation = true
 	end
@@ -436,12 +433,12 @@ function ns.InvalidateTick()
 end
 
 function ns.ApplyFeatureFlags()
-	if ns.db.glow == false or ns.db.showRotation == false then
+	if ns.db.showRotation == false then
 		if ns.GlowClear then
 			ns.GlowClear()
 		end
 	end
-	if ns.db.glow == false or ns.db.showDefense == false then
+	if ns.db.showDefense == false then
 		if ns.GlowClearDef then
 			ns.GlowClearDef()
 		end
@@ -623,7 +620,7 @@ function ns.Tick()
 	else
 		lastAlertWeapon = weapon
 	end
-	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(ns.db.glow) .. flagBit(not idle)
+	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(not idle)
 	-- Heal cue when health is hidden: refreshed every tick, the client drives alpha.
 	local hiddenHeal, hiddenThreshold
 	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenHeal then
