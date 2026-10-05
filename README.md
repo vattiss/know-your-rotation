@@ -22,30 +22,35 @@ Forever uses its own spell IDs for some abilities (for example Devotion Aura). T
 
    `World of Warcraft\_classic_beta_\Interface\AddOns\KnowYourRotation`
 
-2. Restart the client or type `/reload`.
+2. Restart the client (for later updates of the same folder a `/reload` is enough).
 3. Enable **Know Your Rotation** in the add-on list.
 
 The folder must contain `KnowYourRotation.toc` and the `.lua` files.
 
 ## What it does
 
-| Surface | Role |
+| Cue | What lights up |
 | --- | --- |
-| **Rotation** | The next combat ability from your checked list lights up on its action-bar button |
-| **Defense** | Missing long buffs / auras, plus emergency buttons when health is low |
-| **Weapon** | Missing weapon imbue (shaman / rogue poisons, etc.) |
-| **Interrupt / Purge / Cleanse** | Target interrupt, enemy magic purge, dispellable debuffs |
-| **Classic timing** | White-hit swing (main + off-hand), hunter auto-shot clip, energy tick |
+| **Rotation** | The next spell from your list, only when you can press it right now |
+| **Heal** | A heal once your missing health is about the size of that heal |
+| **Defense** | Missing long buffs and auras, plus defensive spells when health is low |
+| **Interrupt / Purge / Cleanse** | Your interrupt while the target casts, purge for an enemy magic effect, cleanse for an effect you can remove |
+| **Weapon buff** | A missing or expiring weapon buff (shaman imbues, rogue poisons on each hand, warlock stones) |
+| **Messages** | A screen message when a cue spell is not on your action bars, and pet reminders for hunters and warlocks |
 
+Swing spells (Heroic Strike, Maul, Raptor Strike) wait for your next swing, Aimed and Multi-Shot avoid clipping Auto Shot, and energy spells account for the next energy tick.
 ### Glow colors
 
 | Color | Meaning |
 | --- | --- |
-| White glow | Next damage / utility spell |
-| Green glow | Heal (only when someone actually needs healing) |
+| White glow | Next rotation spell |
+| Green glow | Heal or cleanse |
 | Blue glow | Defense buff |
-| Red glow | Weapon imbue |
+| Yellow glow | Interrupt |
+| Purple glow | Purge |
+| Red glow | Weapon buff |
 
+The rotation, heal, defense and weapon colors can be changed on the Highlights page.
 ### Combat list vs defense
 
 - **Rotation** = short combat spells (strikes, shocks, heals, judgements…).
@@ -55,15 +60,14 @@ The folder must contain `KnowYourRotation.toc` and the `.lua` files.
 
 ### Heals
 
-Heals are suggested from the **friendly unit that needs them** (mouseover, friendly target, then you / party if you are attacking a mob).
+Heals in your lists light up when they are needed:
 
-Examples (paladin):
+- **Smart heal threshold** (Behavior page, on by default): a heal is offered once the health you are missing is about what that heal restores, so it is not wasted. The heal size comes from the spell text and your maximum health is remembered out of combat.
+- Emergency heals keep their own low threshold (for example Lay on Hands around 20%).
+- In combat the client hides health values from add-ons. The heal glow then follows **your own** health, faded in and out by the game itself.
+- Out of combat a friendly mouseover or target is checked too.
 
-- Holy Shock / Holy Light around **80%**
-- Flash of Light around **70%**
-- Lay on Hands around **20%**
-
-Full health → no heal suggestion, damage rotation stays visible. Same idea for Priest, Shaman, and Druid (fast heal vs big heal vs HoT).
+Full health → no heal suggestion, the damage rotation stays visible.
 
 ### Profiles
 
@@ -95,7 +99,7 @@ There are no chat commands and no minimap button. Open the game menu → Options
 ## Files
 
 ```
-KnowYourRotation.toc              # load order
+KnowYourRotation.toc           # load order
 Locale.lua                     # English strings
 API.lua                        # spell resolve, auras, ready, heals
 Data.lua                       # IDs, racials, interrupts, cleanse
