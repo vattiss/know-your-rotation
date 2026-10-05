@@ -43,6 +43,21 @@ jobs:
           done
           exit $status
 
+      - name: TOC icon file exists
+        run: |
+          icon=$(grep '^## IconTexture:' KnowYourRotation.toc | sed 's/^## IconTexture:[[:space:]]*//' | tr -d '\r' | tr '\\' '/')
+          prefix="Interface/AddOns/KnowYourRotation/"
+          case "$icon" in
+            "$prefix"*)
+              path="${icon#"$prefix"}"
+              if [ ! -f "$path.tga" ] && [ ! -f "$path.blp" ]; then
+                echo "::error file=KnowYourRotation.toc::icon $path(.tga/.blp) is missing"
+                exit 1
+              fi
+              echo "icon: $path"
+              ;;
+          esac
+
       - name: Version matches in VERSION.txt and the TOC
         run: |
           file=$(head -n1 VERSION.txt | tr -d '\r')

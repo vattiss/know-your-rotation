@@ -30,5 +30,5 @@ A rotation helper for WoW Forever, made for learning a class from level 1: inste
 ## Scope
 - WoW Forever (camelot client) only, English only.
 - Tuned for leveling and learning: no burst or raid modes.
-- No chat commands, no minimap button, no texture files; all artwork is built into the client.
+- No chat commands and no minimap button. The add-on list icon is the only artwork of its own; every glow and icon in the game is built into the client.
 - It never reads the combat log.

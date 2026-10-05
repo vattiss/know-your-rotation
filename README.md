@@ -27,7 +27,7 @@ Forever uses its own spell IDs for some abilities (for example Devotion Aura). T
 2. Restart the client (for later updates of the same folder a `/reload` is enough).
 3. Enable **Know Your Rotation** in the add-on list.
 
-The folder must contain `KnowYourRotation.toc` and the `.lua` files.
+The folder must contain `KnowYourRotation.toc`, the `.lua` files and the `images` folder.
 
 ## What it does
 
@@ -114,6 +114,7 @@ Options.lua                    # configuration
 Glow.lua                       # action-bar glow
 Rotations.lua                  # queue and cue builders
 Core.lua                       # profiles, events, auto role / profile
+images/logo.tga                # add-on list icon (128x128, made by art/logo.ps1)
 ```
 
 Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per character).

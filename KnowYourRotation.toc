@@ -3,7 +3,7 @@
 ## Title: Know Your Rotation
 ## Notes: Beta. Highlights the next spell to press on your action bars, plus heals, defense, interrupts, purges and cleanses.
 ## Version: 1.0.0-beta.1
-## IconTexture: Interface\Icons\Ability_Marksmanship
+## IconTexture: Interface\AddOns\KnowYourRotation\images\logo
 ## SavedVariables: KnowYourRotationDB
 ## SavedVariablesPerCharacter: KnowYourRotationCharDB
 ## DefaultState: enabled

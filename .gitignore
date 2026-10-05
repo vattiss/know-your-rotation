@@ -10,3 +10,6 @@ desktop.ini
 
 # Release builds (made by GitHub Actions)
 dist/
+
+# Logo generator output
+art/out/
