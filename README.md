@@ -93,6 +93,7 @@ Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee,
 - Only suggest spells that are on your action bars
 - Group dispel limited to types your class can remove
 - Classic combat timing (white hits, dual wield, auto-shot, energy)
+- Smart heal threshold: a heal is offered once the missing health roughly equals what the spell restores (heal size read from the spell text, max health remembered out of combat); emergency steps below 50% keep their own value
 - Overlay colors and a separate alert sound (or none) for interrupt, cleanse and weapon buff
 
 ## Opening the options

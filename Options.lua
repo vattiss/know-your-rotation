@@ -684,12 +684,13 @@ local function ensureOptions()
 		end
 	end
 
-	local combatCard = makeCard(extra, "OPT_CARD_COMBAT", 8, -4, 318, 118)
+	local combatCard = makeCard(extra, "OPT_CARD_COMBAT", 8, -4, 318, 144)
 	frame.optPhysics = addSwitch(combatCard, "showPhysics", ns.T("OPT_PHYSICS"))
 	frame.optBarOnly = addSwitch(combatCard, "barOnly", ns.T("OPT_BAR_ONLY"))
+	frame.optAutoHeal = addSwitch(combatCard, "autoHeal", ns.T("OPT_AUTO_HEAL"))
 	frame.optCleanseGroup = addSwitch(combatCard, "cleanseGroup", ns.T("OPT_CLEANSE_GROUP"))
 
-	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -134, 318, 160)
+	local alertCard = makeCard(extra, "OPT_CARD_ALERTS", 8, -160, 318, 160)
 	frame.soundButtons = {}
 	frame.soundLabels = {}
 	local soundRows = {
@@ -1130,6 +1131,9 @@ function ns.RefreshOptions()
 			if frame.optRoleAuto then
 				frame.optRoleAuto:SetChecked(ns.db.roleAuto ~= false)
 			end
+		end
+		if frame.optAutoHeal then
+			frame.optAutoHeal:SetChecked(ns.db.autoHeal ~= false)
 		end
 		if frame.optBarOnly then
 			frame.optBarOnly:SetChecked(ns.db.barOnly ~= false)

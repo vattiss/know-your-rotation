@@ -362,3 +362,10 @@ Check in game: `/reload`, checked spell, unchecked spell, removed spell (it must
 - Forget to bump the version in `VERSION.txt` and `KnowYourRotation.toc`.
 - Dispel the raid: `BuildCleanse` only looks at `player`.
 - Assume `hybrid`, `range` or `caster` are the stored keys for all lists. See `ActiveSpec` and the aliases at the bottom of `Lists.lua`.
+
+## Heal threshold and hidden health
+
+`UnitHealth` is hidden by the client in combat. `ns.API.Health` falls back to `UnitHealthPercent`, then to 100.
+
+- `ns.API.AutoHealThreshold(spellID, unit, fallback)` returns `100 - healSize / maxHealth * 100`, clamped to 30–92. The heal size is parsed from `C_Spell.GetSpellDescription` (`ns.API.HealAmount`, cached, wiped by `InvalidateSpells`). Max health is remembered by `ns.API.MaxHealth` while readable. Steps with their own `hp` below 50 (emergency heals) keep it. `autoHeal = false` turns it off.
+- When health is hidden, `ns.BuildHiddenHeal` picks the heal to cast and `ns.GlowHiddenHeal` shows its glow with an alpha taken from `UnitHealthPercent("player", true, curve)`: the curve is 1 below the threshold and 0 above, and the result goes straight into `SetAlpha` without being read.

@@ -77,6 +77,9 @@ local function defaults()
 	if ns.db.showWeapon == nil then
 		ns.db.showWeapon = true
 	end
+	if ns.db.autoHeal == nil then
+		ns.db.autoHeal = true
+	end
 	if ns.db.barOnly == nil then
 		ns.db.barOnly = true
 	end
@@ -581,6 +584,8 @@ function ns.Tick()
 	if not ns.booted then
 		return
 	end
+	-- Remember max health while the client still lets us read it.
+	ns.API.MaxHealth("player")
 	if ns.SyncAutoRole then
 		ns.SyncAutoRole()
 	end
@@ -619,6 +624,14 @@ function ns.Tick()
 		lastAlertWeapon = weapon
 	end
 	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(ns.db.glow) .. flagBit(not idle)
+	-- Heal cue when health is hidden: refreshed every tick, the client drives alpha.
+	local hiddenHeal, hiddenThreshold
+	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenHeal then
+		hiddenHeal, hiddenThreshold = ns.BuildHiddenHeal()
+	end
+	if ns.GlowHiddenHeal then
+		ns.GlowHiddenHeal(hiddenHeal, hiddenThreshold)
+	end
 	if sig ~= lastTickSig then
 		lastTickSig = sig
 		if ns.GlowSpell then

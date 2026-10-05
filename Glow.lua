@@ -904,6 +904,90 @@ function ns.GlowCleanse(spellID)
 	end
 end
 
+-- Heal glow for when the client hides health. UnitHealthPercent evaluates a
+-- curve (1 below the threshold, 0 above) into a value we may pass to SetAlpha
+-- but never read, so the glow fades in on its own as health drops.
+local healCurves = {}
+local hiddenHealButtons = {}
+
+local function healCurve(threshold)
+	local curve = healCurves[threshold]
+	if curve == nil then
+		curve = false
+		if C_CurveUtil and C_CurveUtil.CreateCurve and Enum and Enum.LuaCurveType then
+			local ok, made = pcall(function()
+				local c = C_CurveUtil.CreateCurve()
+				c:SetType(Enum.LuaCurveType.Linear)
+				local t = math.max(0.05, math.min(1, threshold / 100))
+				c:AddPoint(0.0, 1.0)
+				c:AddPoint(math.max(0.01, t - 0.02), 1.0)
+				c:AddPoint(t, 0.0)
+				c:AddPoint(1.0, 0.0)
+				return c
+			end)
+			if ok and made then
+				curve = made
+			end
+		end
+		healCurves[threshold] = curve
+	end
+	return curve or nil
+end
+
+local function clearHiddenHeal()
+	for button in pairs(hiddenHealButtons) do
+		if button.WFROverlays and button.WFROverlays.hphide then
+			button.WFROverlays.hphide:Hide()
+		end
+		hiddenHealButtons[button] = nil
+	end
+end
+
+local hiddenHealWarned
+
+local function hiddenHealUnavailable(reason)
+	clearHiddenHeal()
+	if not hiddenHealWarned and UIErrorsFrame then
+		hiddenHealWarned = true
+		UIErrorsFrame:AddMessage("Know Your Rotation: the heal cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
+	end
+end
+
+function ns.GlowHiddenHeal(spellID, threshold)
+	if not spellID or ns.db.glow == false then
+		clearHiddenHeal()
+		return
+	end
+	if not UnitHealthPercent then
+		return hiddenHealUnavailable("UnitHealthPercent missing")
+	end
+	local curve = healCurve(threshold or 80)
+	if not curve then
+		return hiddenHealUnavailable("no curve support")
+	end
+	local ok, alpha = pcall(UnitHealthPercent, "player", true, curve)
+	if not ok then
+		return hiddenHealUnavailable("health query failed")
+	end
+	local keep = {}
+	local r, g, b = ns.Color("heal")
+	for _, button in ipairs(buttonsFor(spellID)) do
+		local frame = overlay(button, "hphide", GLOW_ART, r, g, b, 1.45, 1)
+		frame:Show()
+		frame:SetAlpha(alpha)
+		keep[button] = true
+		hiddenHealButtons[button] = true
+	end
+	for button in pairs(hiddenHealButtons) do
+		if not keep[button] then
+			if button.WFROverlays and button.WFROverlays.hphide then
+				button.WFROverlays.hphide:Hide()
+			end
+			hiddenHealButtons[button] = nil
+		end
+	end
+end
+
 function ns.GlowWeapon(spellID)
 	applyExtra(spellID, { lastWeapon }, weaponGlowing, showWeapon, ns.GlowClearWeapon)
 	if spellID then

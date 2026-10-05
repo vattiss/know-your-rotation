@@ -388,6 +388,29 @@ function ns.BuildQueue()
 	return q
 end
 
+-- When the client hides health values (combat), pick the heal the player
+-- would cast so Glow.lua can show it with a client-driven alpha: visible only
+-- below the step's health threshold, with no number ever compared by us.
+function ns.BuildHiddenHeal()
+	if not ns.GetAPL or not ns.API.HealthHidden() then
+		return nil
+	end
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		local opt = step.opt or {}
+		if opt.heal and step.id and ns.IsStepEnabled(step) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy.noHpGate = true
+			if API.StepOk(step.id, copy, 0.2) then
+				return (API.Resolve and API.Resolve(step.id)) or step.id, API.AutoHealThreshold(step.id, "player", tonumber(opt.hp) or 80)
+			end
+		end
+	end
+	return nil
+end
+
 function ns.BuildDefense()
 	if not ns.GetDef then
 		return

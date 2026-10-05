@@ -592,6 +592,9 @@ function ns.API.WipeAuraScan(unit)
 end
 
 function ns.API.InvalidateSpells(full)
+	if ns.API.healAmountCache then
+		wipe(ns.API.healAmountCache)
+	end
 	if full then
 		wipe(resolveCache)
 		if ns.API.InvalidateSpellBookIndex then
@@ -1354,6 +1357,11 @@ function ns.API.RangeState(spellID, opt)
 		return "none"
 	end
 	local unit = rangeUnitFor(id, opt)
+	-- A self-cast (heal on yourself) has no distance. The action slot would
+	-- report "out of range" while an enemy is targeted, so skip the check.
+	if unit == "player" then
+		return "in"
+	end
 	if not unitExists(unit) then
 		return "out"
 	end
@@ -1655,8 +1663,11 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		return false
 	end
 	local needHp = opt.hp
-	if not needHp and (opt.heal or ns.API.IsHealSpell(spellID, opt)) then
-		needHp = 99
+	if opt.noHpGate then
+		-- Health is hidden: the caller checks the threshold another way.
+		needHp = nil
+	elseif opt.heal or ns.API.IsHealSpell(spellID, opt) then
+		needHp = ns.API.AutoHealThreshold(spellID, opt.unit or "player", needHp or 99)
 	end
 	if needHp then
 		local hp
@@ -2350,10 +2361,109 @@ function ns.API.Health(unit)
 	unit = unit or "player"
 	local health = safe(UnitHealth(unit), nil)
 	local max = safe(UnitHealthMax(unit), nil)
-	if not health or not max or max <= 0 then
-		return 100
+	if health and max and max > 0 then
+		if unit == "player" then
+			ns.API.healthHidden = false
+		end
+		return (health / max) * 100
 	end
-	return (health / max) * 100
+	-- Plain values are hidden: ask for the percentage instead.
+	if UnitHealthPercent and CurveConstants and CurveConstants.ScaleTo100 then
+		local ok, pct = pcall(UnitHealthPercent, unit, true, CurveConstants.ScaleTo100)
+		pct = ok and safe(pct, nil) or nil
+		if type(pct) == "number" then
+			if unit == "player" then
+				ns.API.healthHidden = false
+			end
+			return pct
+		end
+	end
+	-- Hidden in combat: callers that need a number get 100; the heal cue
+	-- switches to a glow whose alpha the client drives (ns.GlowHiddenHeal).
+	if unit == "player" then
+		ns.API.healthHidden = true
+	end
+	return 100
+end
+
+-- Smart heal threshold: cast a heal once the missing health roughly equals
+-- what the spell restores, so it is not wasted. Needs the heal size (parsed
+-- from the spell text) and the maximum health (remembered while readable,
+-- because the client hides it in combat).
+ns.API.healAmountCache = {}
+local playerMaxHealth
+
+function ns.API.MaxHealth(unit)
+	unit = unit or "player"
+	local max = safe(UnitHealthMax(unit), nil)
+	if type(max) == "number" and max > 0 then
+		if unit == "player" then
+			playerMaxHealth = max
+		end
+		return max
+	end
+	if unit == "player" then
+		return playerMaxHealth
+	end
+	return nil
+end
+
+function ns.API.HealAmount(spellID)
+	local id = ns.API.Resolve(spellID) or spellID
+	if not id then
+		return nil
+	end
+	local cache = ns.API.healAmountCache
+	if cache[id] ~= nil then
+		return cache[id] or nil
+	end
+	if not C_Spell or not C_Spell.GetSpellDescription then
+		return nil
+	end
+	local ok, desc = pcall(C_Spell.GetSpellDescription, id)
+	desc = ok and safe(desc, nil) or nil
+	if type(desc) ~= "string" or desc == "" then
+		return nil -- text not loaded yet: ask again next time
+	end
+	desc = desc:lower():gsub(",", "")
+	local lo, hi = desc:match("heal[^%d]*(%d+)%s+to%s+(%d+)")
+	local amount
+	if lo then
+		amount = (tonumber(lo) + tonumber(hi)) / 2
+	else
+		local single = desc:match("heal[^%d]*(%d+)")
+		amount = single and tonumber(single) or nil
+	end
+	cache[id] = amount or false
+	return amount
+end
+
+-- Returns the health percent at or below which the heal should be offered.
+-- Emergency steps (own threshold under 50) keep their value.
+function ns.API.AutoHealThreshold(spellID, unit, fallback)
+	if ns.db and ns.db.autoHeal == false then
+		return fallback
+	end
+	if fallback and fallback < 50 then
+		return fallback
+	end
+	local amount = ns.API.HealAmount(spellID)
+	local maxHp = ns.API.MaxHealth(unit or "player")
+	if not amount or not maxHp or maxHp <= 0 then
+		return fallback
+	end
+	local pct = 100 - (amount / maxHp) * 100
+	if pct < 30 then
+		pct = 30
+	elseif pct > 92 then
+		pct = 92
+	end
+	return pct
+end
+
+function ns.API.HealthHidden()
+	ns.API.Health("player")
+	return ns.API.healthHidden == true
 end
 
 -- Creature types -> canonical EN keys.

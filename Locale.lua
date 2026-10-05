@@ -78,6 +78,7 @@ L.enUS = {
 	OPT_AUTO_HINT = "Auto uses this list on few targets, and the AoE list when enough enemies are nearby. Nameplates must be on.",
 	OPT_AUTO_COUNT = "AoE from %d",
 	OPT_BAR_ONLY = "Only suggest spells that are on your action bars",
+	OPT_AUTO_HEAL = "Smart heal threshold (heal once the missing health matches the heal size)",
 	OPT_AUTO_PROFILE = "Auto-switch PvE / PvP profile (instance type, open-world PvP flag, player target)",
 	OPT_CLEANSE_GROUP = "Dispel the group (only types your class can remove)",
 	OPT_PHYSICS = "Classic combat timing (hold swing / auto-shot spells for the right moment, energy ticks)",
