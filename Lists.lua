@@ -67,7 +67,7 @@ ns.APLDefaults = {
 			step("Prowl", D.Prowl, { nobuff = true, nocombat = true, enemyTarget = true, needKnownAny = { D.Ravage, D.Pounce } }),
 			step("Ravage", D.Ravage, { needbuff = D.Prowl, hostile = true }),
 			step("FeralChargeCat", D.FeralChargeCat, { hostile = true }),
-			step("TigersFury", D.TigersFury, { nobuff = true }),
+			step("TigersFury", D.TigersFury, { nobuff = true, engaged = true }),
 			step("FaerieFireFeral", D.FaerieFireFeral, { nodebuff = true, hostile = true }),
 			step("MangleCat", D.MangleCat, { hostile = true }),
 			step("Rake", D.Rake, { nodebuff = true, nocreature = bleedCreatures, skipLow = true, hostile = true }),
@@ -87,11 +87,11 @@ ns.APLDefaults = {
 	},
 	PALADIN = {
 		damage = {
-			step("SealCrusader", P.SealCrusader, { nobuff = true, anybuff = palaSeals, nodebuff = P.JudgementoftheCrusader }),
+			step("SealCrusader", P.SealCrusader, { nobuff = true, anybuff = palaSeals, engaged = true, nodebuff = P.JudgementoftheCrusader }),
 			step("Judgement", P.Judgement, { needanybuff = palaSeals, hostile = true }),
-			step("SealCommand", P.SealCommand, { nobuff = true, anybuff = palaSeals }),
-			step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals }),
-			step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals }),
+			step("SealCommand", P.SealCommand, { nobuff = true, anybuff = palaSeals, engaged = true }),
+			step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals, engaged = true }),
+			step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals, engaged = true }),
 			step("HammerofWrath", P.HammerofWrath, { proc = true, hostile = true }),
 			step("HolyStrike", P.HolyStrike, { hostile = true }),
 			step("SwiftJudgement", P.SwiftJudgement, { needanybuff = palaSeals, hostile = true }),
@@ -103,8 +103,8 @@ ns.APLDefaults = {
 			step("HolyLight", P.HolyLight, { hp = 80,  heal = true }),
 		},
 		tank = {
-			step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals }),
-			step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals }),
+			step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals, engaged = true }),
+			step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals, engaged = true }),
 			step("HolyShield", P.HolyShield, { combat = true, hostile = true }),
 			step("HolyStrike", P.HolyStrike, { hostile = true }),
 			step("CrusaderStrike", P.CrusaderStrike, { hostile = true }),
@@ -117,8 +117,8 @@ ns.APLDefaults = {
 			step("HolyLight", P.HolyLight, { hp = 80,  heal = true }),
 		},
 		heal = {
-			step("SealLight", P.SealLight, { nobuff = true, anybuff = palaSeals, nodebuff = P.JudgementofLight }),
-			step("SealWisdom", P.SealWisdom, { nobuff = true, anybuff = palaSeals, nodebuff = P.JudgementofWisdom }),
+			step("SealLight", P.SealLight, { nobuff = true, anybuff = palaSeals, engaged = true, nodebuff = P.JudgementofLight }),
+			step("SealWisdom", P.SealWisdom, { nobuff = true, anybuff = palaSeals, engaged = true, nodebuff = P.JudgementofWisdom }),
 			step("Judgement", P.Judgement, { needanybuff = palaSeals, hostile = true }),
 			step("LightsVigil", P.LightsVigil, { hp = 70, heal = true }),
 			step("HolyShock", P.HolyShock, { hp = 80,  heal = true }),
@@ -246,8 +246,8 @@ ns.APLDefaults = {
 	},
 	SHAMAN = {
 		caster = {
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true }),
-			step("ManaSpring", Sh.ManaSpring, { totem = true }),
+			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true }),
+			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true }),
 			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
 			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, hostile = true }),
@@ -259,9 +259,9 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80,  heal = true }),
 		},
 		melee = {
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true }),
-			step("GraceofAir", Sh.GraceofAir, { totem = true }, false),
-			step("WindfuryTotem", Sh.WindfuryTotem, { totem = true }, false),
+			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true }),
+			step("GraceofAir", Sh.GraceofAir, { totem = true, engaged = true }, false),
+			step("WindfuryTotem", Sh.WindfuryTotem, { totem = true, engaged = true }, false),
 			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("Stormstrike", Sh.Stormstrike, { hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
@@ -273,8 +273,8 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80,  heal = true }),
 		},
 		heal = {
-			step("ManaSpring", Sh.ManaSpring, { totem = true }),
-			step("HealingStream", Sh.HealingStream, { totem = true }, false),
+			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true }),
+			step("HealingStream", Sh.HealingStream, { totem = true, engaged = true }, false),
 			step("Riptide", Sh.Riptide, { hp = 90, heal = true }),
 			step("LesserHealingWave", Sh.LesserHealingWave, { hp = 70,  heal = true }),
 			step("ChainHeal", Sh.ChainHeal, { hp = 75,  heal = true }),
@@ -357,7 +357,7 @@ ns.APLModes = {
 		},
 		cat = {
 			aoe = {
-				step("TigersFury", D.TigersFury, { nobuff = true }),
+				step("TigersFury", D.TigersFury, { nobuff = true, engaged = true }),
 				step("Rip", D.Rip, { comboMin = 5, nodebuff = true, hostile = true }),
 				step("Rake", D.Rake, { nodebuff = true, hostile = true }),
 				step("Claw", D.Claw, { filler = true, hostile = true }),
@@ -376,9 +376,9 @@ ns.APLModes = {
 	PALADIN = {
 		damage = {
 			aoe = {
-				step("SealCommand", P.SealCommand, { nobuff = true, anybuff = palaSeals }),
-				step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals }),
-				step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals }),
+				step("SealCommand", P.SealCommand, { nobuff = true, anybuff = palaSeals, engaged = true }),
+				step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals, engaged = true }),
+				step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals, engaged = true }),
 				step("Consecration", P.Consecration, { hostile = true }),
 				step("HolyWrath", P.HolyWrath, { usable = true, hostile = true }),
 				step("HolyStrike", P.HolyStrike, { hostile = true }),
@@ -392,8 +392,8 @@ ns.APLModes = {
 		},
 		tank = {
 			aoe = {
-				step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals }),
-				step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals }),
+				step("SealFury", P.SealFury, { nobuff = true, anybuff = palaSeals, engaged = true }),
+				step("SealRighteousness", P.SealRighteousness, { nobuff = true, anybuff = palaSeals, engaged = true }),
 				step("Consecration", P.Consecration, { hostile = true }),
 				step("HolyWrath", P.HolyWrath, { usable = true, hostile = true }),
 				step("HolyShield", P.HolyShield, { combat = true }),

@@ -1596,6 +1596,11 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if opt.hostile and not ns.API.Hostile() then
 		return reject("needs an enemy target")
 	end
+	-- Fight-only buffs (seals, totems, Tiger's Fury): in combat, or right
+	-- before a pull with an enemy targeted. Never while just walking around.
+	if opt.engaged and not ns.API.InCombat() and not ns.API.Hostile() then
+		return reject("only in combat or with an enemy targeted")
+	end
 	-- An attackable target is needed, without making the spell range-checked
 	-- (Stealth / Prowl are cast on yourself).
 	if opt.enemyTarget and not ns.API.Hostile() then
