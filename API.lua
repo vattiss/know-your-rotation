@@ -1598,6 +1598,15 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if opt.hostile and not ns.API.Hostile() then
 		return reject("needs an enemy target")
 	end
+	-- Level gate: some spells only pay off later while leveling (longer fights,
+	-- bigger mana pool). minLevel = from this character level on.
+	if opt.minLevel then
+		local ok, level = pcall(UnitLevel, "player")
+		level = ok and tonumber(safe(level, nil)) or nil
+		if level and level < opt.minLevel then
+			return reject(("from level %d"):format(opt.minLevel))
+		end
+	end
 	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
 	-- is already running (pressing it again would stop it).
 	if opt.autoRepeat then
@@ -1681,6 +1690,31 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		if not ok or not onMe then
 			return reject("only when the target attacks you")
 		end
+	end
+	-- Backstab / Shred: only from behind. A mob faces whoever it attacks, so
+	-- not while it attacks you; after a "must be behind" error, wait a moment.
+	if opt.behind then
+		if ns.API.NotBehindRecently() then
+			return reject("you were not behind the target")
+		end
+		if unitExists("targettarget") then
+			local ok, onMe = pcall(UnitIsUnit, "targettarget", "player")
+			if not ok or not readable(onMe) or onMe then
+				return reject("the target is facing you")
+			end
+		end
+	end
+	-- Cast-time spells a melee build only uses to pull.
+	if opt.notMelee and ns.API.TargetInMelee() then
+		return reject("not in melee range")
+	end
+	-- Point-blank spells (Frost Nova): only once the target has reached you.
+	if opt.inMelee and not ns.API.TargetInMelee() then
+		return reject("only when the target is in melee range")
+	end
+	-- Replaced by a better spell once that one is learned (Imp -> Voidwalker).
+	if opt.notKnown and ns.API.Known(opt.notKnown) then
+		return reject("a better spell is learned")
 	end
 	local helpful = ns.API.IsHelpful(spellID, opt)
 	local auraUnit = helpful and ns.API.HealUnit(opt) or "player"
@@ -1821,10 +1855,14 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			end
 		end
 	end
-	if opt.manaMax then
+	if opt.manaMax and not opt.noManaGate then
 		local okCur, current = pcall(UnitPower, "player", 0)
 		local okMax, maxp = pcall(UnitPowerMax, "player", 0)
-		if not okCur or not okMax or not readable(current) or not readable(maxp) or maxp <= 0 or (current / maxp) * 100 > opt.manaMax then
+		if not okCur or not okMax or not readable(current) or not readable(maxp) then
+			-- Hidden in combat: ns.GlowHiddenMana shows it instead.
+			return reject("mana is hidden right now")
+		end
+		if maxp <= 0 or (current / maxp) * 100 > opt.manaMax then
 			return reject("mana is still high")
 		end
 	end
@@ -2643,6 +2681,43 @@ function ns.API.HealthHiddenFor(unit)
 		end
 	end
 	return true
+end
+
+-- True when the client hides your mana (combat), so manaMax cannot be compared.
+function ns.API.ManaHidden()
+	local okCur, current = pcall(UnitPower, "player", 0)
+	local okMax, maxp = pcall(UnitPowerMax, "player", 0)
+	return not (okCur and okMax and readable(current) and readable(maxp))
+end
+
+-- "You must be behind your target": remembered for a few seconds on that target.
+local notBehindAt, notBehindGUID
+local NOT_BEHIND_SECONDS = 3
+
+local function targetGUID()
+	local ok, guid = pcall(UnitGUID, "target")
+	return ok and safe(guid, nil) or nil
+end
+
+function ns.API.NoteUIError(message)
+	if type(message) ~= "string" or not readable(message) then
+		return false
+	end
+	local text = SPELL_FAILED_NOT_BEHIND
+	if message ~= text and not strlower(message):find("behind", 1, true) then
+		return false
+	end
+	notBehindAt = GetTime()
+	notBehindGUID = targetGUID()
+	return true
+end
+
+function ns.API.NotBehindRecently()
+	if not notBehindAt or (GetTime() - notBehindAt) > NOT_BEHIND_SECONDS then
+		return false
+	end
+	local guid = targetGUID()
+	return guid == nil or notBehindGUID == nil or guid == notBehindGUID
 end
 
 function ns.API.HealthHidden()

@@ -143,16 +143,21 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `pet` / `nopet` | Pet present or absent. |
 | `ready = false` | Accepts the step without testing cooldown or usability. |
 | `filler` | Spam spell with no own cooldown (Wrath, Heroic Strike, Sinister Strike…). Skipped only by a real cooldown, not by the GCD. `ns.Physics.Blocks` still applies. |
-| `nocombat` | Refused if the player is in combat (Charge, Stealth, Prowl). |
+| `nocombat` | Refused if the player is in combat (Charge, Stealth, Prowl, Pyroblast as an opener). |
 | `autoRepeat` | Auto-repeat attack (Auto Shot, wand Shoot): offered only while it is not running, since pressing it again would stop it. Never counts as a rotation action, so it does not take slot 1 from a filler. Priest, mage and warlock lists end with the wand: a filler the client reports as out of mana no longer passes, so the wand comes next. |
 | `engaged` | Only in combat or with an enemy targeted (seals, totems, Tiger's Fury), so they are not suggested while walking around. |
 | `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
+| `minLevel` | Offered only from this character level on (Strength of Earth 30, Mana Spring 40 in the damage lists, Rupture 40): early fights are too short for them. |
+| `behind` | Must be behind the target (Backstab, Shred). Refused while the target attacks you (it faces you) or for 3 s after a "must be behind" error on that target (`UI_ERROR_MESSAGE`, `ns.API.NoteUIError`). No target's target (stunned, gouged) is allowed. |
+| `notMelee` | Refused when the target is in melee range (`ns.API.TargetInMelee`): melee shaman Lightning Bolt / Lava Burst only for the pull. |
+| `inMelee` | Inverse: only when the target is in melee range (Frost Nova once the mob reaches the mage). |
+| `notKnown` | Refused once this other spell is learned (Summon Imp until Summon Voidwalker). |
 | `hpPerCombo` | Target health threshold of N% per combo point (Eviscerate: 8). |
 | `needbuff` | Helpful aura ID required on the player (Garrote and Ambush require Stealth). |
 | `needdebuff` | Debuff ID required on the target (Conflagrate requires Immolate). |
 | `proc` | The client must report the spell as usable. Used for Overpower, Revenge, Riposte, Counterattack and Mongoose Bite. If the answer is hidden, the step is skipped. Do not read the combat log: that call is reserved for the Blizzard UI and blocks the addon. |
-| `usable` | The client must report the spell as usable (Exorcism, Holy Wrath, Backstab from behind). If the answer is hidden, the step is skipped. |
+| `usable` | The client must report the spell as usable (Exorcism, Holy Wrath, Backstab). If the answer is hidden, the step is skipped. |
 | `manaMax` | Refused if the player's mana percentage is above this threshold (Life Tap). |
 | `hpMin` | Refused if health (player, or `unit`) is under this percentage. |
 | `hold` | Seconds after a successful cast during which the spell is no longer suggested (DoT, HoT, snare). Forever/Classic defaults. Editable next to each spell. `0` = no aura delay. Harmful holds are tied to the GUID. For `nodebuff` / `nobuff`, the readable aura wins; hold = Forever fallback. No CLEU. |
@@ -398,3 +403,5 @@ While that finisher glow is active and the rotation glow sits on another spell, 
 In combat the client may return no auras at all, which looks like "buff missing". `ns.API.HasAura` therefore trusts the remembered expiry of a self-buff (`heldAura`: set when the buff is seen with its remaining time, or when it is cast, by family length such as 30 min for armors) while in combat, and only releases it on a "not found" out of combat. `StepOk`'s `nobuff` check uses the same rule, so Demon Skin, armors, aspects and similar buffs are not re-suggested mid-fight.
 
 Defense steps that wait for low health (`hp`, on the player: Power Word: Shield, Shield Wall, Divine Protection, …) get the same treatment when health is hidden: `ns.BuildHiddenDefense` picks the first ready one from `ns.GetDef()` and `ns.GlowHiddenDefense` lights it in the defense color with the player-health curve.
+
+`ns.BuildHiddenHeal` also takes rotation steps with `hp` on the player that are not heals (Drain Life at 40 %). Two more glows use the same `hiddenGlow` builder in `Glow.lua`: `ns.BuildHiddenPet` / `ns.GlowHiddenPet` for `hp` with `unit = "pet"` (Mend Pet, pet-health curve), and `ns.BuildHiddenMana` / `ns.GlowHiddenMana` for `manaMax` steps (Life Tap) when `ns.API.ManaHidden()`: the alpha comes from `UnitPowerPercent("player", 0, false, curve)`. `StepOk` refuses `manaMax` while mana is hidden unless the builder passes `noManaGate`.

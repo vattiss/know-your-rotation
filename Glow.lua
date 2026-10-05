@@ -902,8 +902,15 @@ local function healCurve(threshold)
 	return curve or nil
 end
 
--- One hidden-health glow: its own overlay key, unit and color.
-local function hiddenGlow(key, unit, colorKey)
+local function healthPercent(unit, curve)
+	return UnitHealthPercent(unit, true, curve)
+end
+
+-- One hidden-value glow: its own overlay key, unit and color. query(unit,
+-- curve) returns the curve-mapped alpha (health by default).
+local function hiddenGlow(key, unit, colorKey, query, apiName)
+	query = query or healthPercent
+	apiName = apiName or "UnitHealthPercent"
 	local buttons = {}
 	local function clear()
 		for button in pairs(buttons) do
@@ -918,7 +925,7 @@ local function hiddenGlow(key, unit, colorKey)
 		clear()
 		if not warned and UIErrorsFrame then
 			warned = true
-			UIErrorsFrame:AddMessage("Know Your Rotation: a health-based cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
+			UIErrorsFrame:AddMessage("Know Your Rotation: a health or mana cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
 		end
 	end
 	return function(spellID, threshold)
@@ -926,16 +933,16 @@ local function hiddenGlow(key, unit, colorKey)
 			clear()
 			return
 		end
-		if not UnitHealthPercent then
-			return unavailable("UnitHealthPercent missing")
+		if not _G[apiName] then
+			return unavailable(apiName .. " missing")
 		end
 		local curve = healCurve(math.floor((threshold or 20) + 0.5))
 		if not curve then
 			return unavailable("no curve support")
 		end
-		local ok, alpha = pcall(UnitHealthPercent, unit, true, curve)
+		local ok, alpha = pcall(query, unit, curve)
 		if not ok then
-			return unavailable("health query failed")
+			return unavailable("query failed")
 		end
 		local keep = {}
 		local r, g, b = ns.Color(colorKey)
@@ -1035,6 +1042,12 @@ ns.GlowHiddenHeal = hiddenGlow("hphide", "player", "heal")
 ns.GlowHiddenDefense = hiddenGlow("hpdef", "player", "def")
 -- Finisher / execute: lights up as the target's health drops below its threshold.
 ns.GlowHiddenExecute = hiddenGlow("hpexec", "target", "next")
+-- Pet heal: lights up as the pet's health drops.
+ns.GlowHiddenPet = hiddenGlow("hppet", "pet", "heal")
+-- Mana step (Life Tap): lights up as your mana drops.
+ns.GlowHiddenMana = hiddenGlow("mphide", "player", "next", function(unit, curve)
+	return UnitPowerPercent(unit, 0, false, curve)
+end, "UnitPowerPercent")
 
 function ns.GlowWeapon(spellID)
 	applyExtra(spellID, { lastWeapon }, weaponGlowing, showWeapon, ns.GlowClearWeapon)

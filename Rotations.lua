@@ -404,14 +404,19 @@ function ns.BuildHiddenHeal()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if opt.heal and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		local ownHealth = opt.heal or (opt.hp and not opt.unit)
+		if ownHealth and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
 			end
 			copy.noHpGate = true
 			if API.StepOk(step.id, copy, 0.2) then
-				return (API.Resolve and API.Resolve(step.id)) or step.id, API.AutoHealThreshold(step.id, "player", tonumber(opt.hp) or 80)
+				local threshold = tonumber(opt.hp) or 80
+				if opt.heal then
+					threshold = API.AutoHealThreshold(step.id, "player", threshold)
+				end
+				return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
 			end
 		end
 	end
@@ -439,6 +444,48 @@ function ns.BuildHiddenExecute()
 				if threshold > 0 then
 					return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
 				end
+			end
+		end
+	end
+	return nil
+end
+
+-- Pet heal (Mend Pet) when the client hides the pet's health.
+function ns.BuildHiddenPet()
+	if not ns.GetAPL or not UnitExists("pet") or not ns.API.HealthHiddenFor("pet") then
+		return nil
+	end
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		local opt = step.opt or {}
+		if opt.unit == "pet" and opt.hp and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy.noHpGate = true
+			if API.StepOk(step.id, copy, 0.2) then
+				return (API.Resolve and API.Resolve(step.id)) or step.id, tonumber(opt.hp) or 40
+			end
+		end
+	end
+	return nil
+end
+
+-- Mana step (Life Tap) when the client hides your mana.
+function ns.BuildHiddenMana()
+	if not ns.GetAPL or not ns.API.ManaHidden() then
+		return nil
+	end
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		local opt = step.opt or {}
+		if opt.manaMax and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy.noManaGate = true
+			if API.StepOk(step.id, copy, 0.2) then
+				return (API.Resolve and API.Resolve(step.id)) or step.id, tonumber(opt.manaMax)
 			end
 		end
 	end

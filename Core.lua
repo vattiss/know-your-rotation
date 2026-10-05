@@ -628,6 +628,20 @@ function ns.Tick()
 	if ns.GlowHiddenExecute then
 		ns.GlowHiddenExecute(hiddenExec, hiddenExecThreshold)
 	end
+	local hiddenPet, hiddenPetThreshold
+	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenPet then
+		hiddenPet, hiddenPetThreshold = ns.BuildHiddenPet()
+	end
+	if ns.GlowHiddenPet then
+		ns.GlowHiddenPet(hiddenPet, hiddenPetThreshold)
+	end
+	local hiddenMana, hiddenManaThreshold
+	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenMana then
+		hiddenMana, hiddenManaThreshold = ns.BuildHiddenMana()
+	end
+	if ns.GlowHiddenMana then
+		ns.GlowHiddenMana(hiddenMana, hiddenManaThreshold)
+	end
 	if sig ~= lastTickSig then
 		lastTickSig = sig
 		if ns.GlowSpell then
@@ -687,6 +701,7 @@ pcall(frame.RegisterEvent, frame, "PLAYER_FLAGS_CHANGED")
 pcall(frame.RegisterEvent, frame, "UNIT_FACTION")
 pcall(frame.RegisterEvent, frame, "ZONE_CHANGED_NEW_AREA")
 pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
+pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
 
 local ticker
 local booted
@@ -948,6 +963,12 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 				ns.API.WipeAuraScan("player")
 				ns.API.WipeAuraScan("target")
 			end
+			requestTick()
+		end
+	elseif event == "UI_ERROR_MESSAGE" then
+		-- "You must be behind your target": Backstab / Shred wait a moment.
+		if ns.API and ns.API.NoteUIError and ns.API.NoteUIError(powerToken) then
+			lastTickSig = nil
 			requestTick()
 		end
 	elseif event == "UNIT_POWER_UPDATE" then

@@ -37,7 +37,7 @@ local undeadDemon = { "undead", "demon" }
 ns.APLDefaults = {
 	DRUID = {
 		damage = {
-			step("FaerieFire", D.FaerieFire, { nodebuff = true, hostile = true }),
+			step("FaerieFire", D.FaerieFire, { nodebuff = true, hostile = true }, false),
 			step("Moonfire", D.Moonfire, { nodebuff = true, skipLow = true, hostile = true }),
 			step("InsectSwarm", D.InsectSwarm, { nodebuff = true, skipLow = true, hostile = true }),
 			step("Starfire", D.Starfire, { hostile = true }),
@@ -67,13 +67,13 @@ ns.APLDefaults = {
 			step("Prowl", D.Prowl, { nobuff = true, nocombat = true, enemyTarget = true, needKnownAny = { D.Ravage, D.Pounce } }),
 			step("Ravage", D.Ravage, { needbuff = D.Prowl, hostile = true }),
 			step("FeralChargeCat", D.FeralChargeCat, { hostile = true }),
-			step("TigersFury", D.TigersFury, { nobuff = true, engaged = true }),
+			step("TigersFury", D.TigersFury, { nobuff = true, engaged = true }, false),
 			step("FaerieFireFeral", D.FaerieFireFeral, { nodebuff = true, hostile = true }),
 			step("MangleCat", D.MangleCat, { hostile = true }),
 			step("Rake", D.Rake, { nodebuff = true, nocreature = bleedCreatures, skipLow = true, hostile = true }),
 			step("Rip", D.Rip, { comboMin = 5, nodebuff = true, nocreature = bleedCreatures, skipLow = true, hostile = true }),
 			step("FerociousBite", D.FerociousBite, { comboMin = 5, hostile = true }),
-			step("Shred", D.Shred, { usable = true, hostile = true }),
+			step("Shred", D.Shred, { usable = true, behind = true, hostile = true }),
 			step("Claw", D.Claw, { filler = true, hostile = true }),
 		},
 		bear = {
@@ -200,7 +200,7 @@ ns.APLDefaults = {
 			step("Garrote", R.Garrote, { needbuff = R.Stealth, hostile = true }),
 			step("Ambush", R.Ambush, { needbuff = R.Stealth, hostile = true }),
 			step("SliceandDice", R.SliceandDice, { comboMin = 1, nobuff = true, refresh = 4, hostile = true }),
-			step("Rupture", R.Rupture, { comboMin = 5, nodebuff = true, nocreature = bleedCreatures, skipLow = true, hostile = true }),
+			step("Rupture", R.Rupture, { comboMin = 5, nodebuff = true, nocreature = bleedCreatures, skipLow = true, minLevel = 40, hostile = true }),
 			step("Eviscerate", R.Eviscerate, { comboMin = 2, hpPerCombo = 8, unit = "target", hostile = true }),
 			step("Eviscerate5", R.Eviscerate, { comboMin = 5, hostile = true }),
 			step("Riposte", R.Riposte, { proc = "parry", hostile = true }),
@@ -209,7 +209,7 @@ ns.APLDefaults = {
 			step("GhostlyStrike", R.GhostlyStrike, { hostile = true }),
 			step("Mutilate", R.Mutilate, { usable = true, hostile = true }),
 			step("Venom", R.Venom, { comboMin = 5, hostile = true }, false),
-			step("Backstab", R.Backstab, { usable = true, hostile = true }),
+			step("Backstab", R.Backstab, { usable = true, behind = true, hostile = true }),
 			step("SinisterStrike", R.SinisterStrike, { filler = true, hostile = true }),
 		},
 	},
@@ -250,8 +250,8 @@ ns.APLDefaults = {
 	},
 	SHAMAN = {
 		caster = {
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true }),
-			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true }),
+			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
+			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true, minLevel = 40 }),
 			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
 			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, hostile = true }),
@@ -263,16 +263,16 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80,  heal = true }),
 		},
 		melee = {
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true }),
+			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
 			step("GraceofAir", Sh.GraceofAir, { totem = true, engaged = true }, false),
 			step("WindfuryTotem", Sh.WindfuryTotem, { totem = true, engaged = true }, false),
 			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("Stormstrike", Sh.Stormstrike, { hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
-			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, hostile = true }),
+			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, notMelee = true, hostile = true }),
 			step("EarthShock", Sh.EarthShock, { hostile = true }),
 			step("FrostShock", Sh.FrostShock, { nodebuff = true, needdebuff = Sh.FlameShock, hostile = true }, false),
-			step("LightningBolt", Sh.LightningBolt, { filler = true, hostile = true }),
+			step("LightningBolt", Sh.LightningBolt, { filler = true, notMelee = true, hostile = true }),
 			step("LesserHealingWave", Sh.LesserHealingWave, { hp = 70,  heal = true }),
 			step("HealingWave", Sh.HealingWave, { hp = 80,  heal = true }),
 		},
@@ -289,10 +289,11 @@ ns.APLDefaults = {
 	},
 	MAGE = {
 		damage = {
-			step("Pyroblast", M.Pyroblast, { hostile = true }),
+			step("FrostNova", M.FrostNova, { inMelee = true, enemyTarget = true, nodebuff = true, refresh = 0, skipLow = true }),
+			step("Pyroblast", M.Pyroblast, { nocombat = true, hostile = true }),
 			step("FireBlast", M.FireBlast, { hostile = true }),
 			step("IceLance", M.IceLance, { hostile = true }),
-			step("Scorch", M.Scorch, { nodebuff = M.FireVulnerability, stacks = 5, refresh = 4, hostile = true }),
+			step("Scorch", M.Scorch, { nodebuff = M.FireVulnerability, stacks = 5, refresh = 4, hostile = true }, false),
 			step("Frostbolt", M.Frostbolt, { filler = true, hostile = true }),
 			step("ArcaneMissiles", M.ArcaneMissiles, { filler = true, hostile = true }),
 			step("ArcaneBlast", M.ArcaneBlast, { filler = true, hostile = true }),
@@ -303,8 +304,8 @@ ns.APLDefaults = {
 	},
 	WARLOCK = {
 		damage = {
-			step("SummonImp", L.SummonImp, { nopet = true }),
-			step("SummonVoidwalker", L.SummonVoidwalker, { nopet = true }, false),
+			step("SummonImp", L.SummonImp, { nopet = true, notKnown = L.SummonVoidwalker }),
+			step("SummonVoidwalker", L.SummonVoidwalker, { nopet = true }),
 			step("SummonSuccubus", L.SummonSuccubus, { nopet = true }, false),
 			step("SummonIncubus", L.SummonIncubus, { nopet = true }, false),
 			step("SummonFelhunter", L.SummonFelhunter, { nopet = true }, false),
