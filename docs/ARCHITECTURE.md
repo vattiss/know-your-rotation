@@ -395,3 +395,5 @@ While that finisher glow is active and the rotation glow sits on another spell, 
 ## Self-buffs in combat
 
 In combat the client may return no auras at all, which looks like "buff missing". `ns.API.HasAura` therefore trusts the remembered expiry of a self-buff (`heldAura`: set when the buff is seen with its remaining time, or when it is cast, by family length such as 30 min for armors) while in combat, and only releases it on a "not found" out of combat. `StepOk`'s `nobuff` check uses the same rule, so Demon Skin, armors, aspects and similar buffs are not re-suggested mid-fight.
+
+Defense steps that wait for low health (`hp`, on the player: Power Word: Shield, Shield Wall, Divine Protection, …) get the same treatment when health is hidden: `ns.BuildHiddenDefense` picks the first ready one from `ns.GetDef()` and `ns.GlowHiddenDefense` lights it in the defense color with the player-health curve.

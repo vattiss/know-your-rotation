@@ -614,6 +614,13 @@ function ns.Tick()
 	if ns.GlowHiddenHeal then
 		ns.GlowHiddenHeal(hiddenHeal, hiddenThreshold)
 	end
+	local hiddenDef, hiddenDefThreshold
+	if ns.db.showDefense ~= false and not idle and ns.BuildHiddenDefense then
+		hiddenDef, hiddenDefThreshold = ns.BuildHiddenDefense()
+	end
+	if ns.GlowHiddenDefense then
+		ns.GlowHiddenDefense(hiddenDef, hiddenDefThreshold)
+	end
 	local hiddenExec, hiddenExecThreshold
 	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenExecute then
 		hiddenExec, hiddenExecThreshold = ns.BuildHiddenExecute()

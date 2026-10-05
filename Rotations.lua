@@ -313,10 +313,17 @@ function ns.BuildQueue()
 				shift = left
 			end
 		end
+		-- The spell being cast right now is not glowed again: it only counts as
+		-- used for the look-ahead, so the glow already shows what comes next.
 		if API.CastingSpell then
 			for _, step in ipairs(apl) do
 				if consider(step) and API.CastingSpell(step.id) then
-					if take(step) and API.PredictConsume then
+					local castId = (API.Resolve and API.Resolve(step.id)) or step.id
+					if castId and step.opt and step.opt.swing ~= true then
+						used[castId] = true
+						used[step.key] = true
+					end
+					if API.PredictConsume then
 						API.PredictConsume(step.id, step.opt)
 					end
 					break
@@ -364,7 +371,7 @@ function ns.BuildQueue()
 	end
 	if not healFirst then
 		for _, step in ipairs(apl) do
-			if consider(step) and API.IsHealSpell and API.IsHealSpell(step.id, step.opt) and API.StepOk(step.id, step.opt, 0.2) then
+			if consider(step) and API.IsHealSpell and API.IsHealSpell(step.id, step.opt) and not (API.CastingSpell and API.CastingSpell(step.id)) and API.StepOk(step.id, step.opt, 0.2) then
 				local id = (API.Resolve and API.Resolve(step.id)) or step.id
 				if id then
 					for i = #q, 1, -1 do
@@ -397,7 +404,7 @@ function ns.BuildHiddenHeal()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if opt.heal and step.id and ns.IsStepEnabled(step) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if opt.heal and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -432,6 +439,30 @@ function ns.BuildHiddenExecute()
 				if threshold > 0 then
 					return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
 				end
+			end
+		end
+	end
+	return nil
+end
+
+function ns.BuildHiddenDefense()
+	if not ns.GetDef or not ns.API.HealthHidden() then
+		return nil
+	end
+	for _, step in ipairs(ns.GetDef() or {}) do
+		local opt = step.opt or {}
+		if opt.hp and (not opt.unit or opt.unit == "player") and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy.noHpGate = true
+			if API.StepOk(step.id, copy, 0.2) then
+				local threshold = tonumber(opt.hp) or 50
+				if opt.heal then
+					threshold = API.AutoHealThreshold(step.id, "player", threshold)
+				end
+				return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
 			end
 		end
 	end

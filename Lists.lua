@@ -227,6 +227,8 @@ ns.APLDefaults = {
 			step("Smite", Pr.Smite, { filler = true, hostile = true }),
 			step("FlashHeal", Pr.FlashHeal, { hp = 70,  heal = true }),
 			step("Heal", Pr.Heal, { hp = 80,  heal = true }),
+			step("Renew", Pr.Renew, { hp = 85,  nobuff = true, refresh = 4, heal = true }),
+			step("LesserHeal", Pr.LesserHeal, { hp = 75,  heal = true }),
 		},
 		heal = {
 			step("PowerWordShield", Pr.PowerWordShield, { hp = 90,  nobuff = true, heal = true }),

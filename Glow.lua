@@ -1031,6 +1031,8 @@ end
 
 -- Heal: lights up as your own health drops below the heal's threshold.
 ns.GlowHiddenHeal = hiddenGlow("hphide", "player", "heal")
+-- Defensive step (shield, defensive cooldown): lights up as your health drops.
+ns.GlowHiddenDefense = hiddenGlow("hpdef", "player", "def")
 -- Finisher / execute: lights up as the target's health drops below its threshold.
 ns.GlowHiddenExecute = hiddenGlow("hpexec", "target", "next")
 
