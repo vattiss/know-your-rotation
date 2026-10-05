@@ -1684,7 +1684,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 				clearHoldKeys(spellID)
 			end
 		end
-		if not found and unreadable and ns.API.HasAura(spellID, buffUnit, "HELPFUL") then
+		if not found and (unreadable or ns.API.InCombat()) and ns.API.HasAura(spellID, buffUnit, "HELPFUL") then
 			return reject("already active")
 		end
 	end
@@ -2395,6 +2395,12 @@ function ns.API.HasAura(spellID, unit, filter)
 		return true, 9999
 	end
 	if selfBuff and not unreadable then
+		-- In combat the client may simply return no auras. A long self-buff we
+		-- saw or cast is trusted until it runs out; the "not found" only
+		-- counts out of combat.
+		if heldAura(spellID) and ns.API.InCombat() then
+			return true, 9999
+		end
 		releaseAura(spellID, nil, familiesSeen)
 	end
 	return false, 0
