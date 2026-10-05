@@ -21,14 +21,6 @@ local function bindSimpleTip(frame, title, desc)
 	end)
 end
 
-local PANEL = {
-	bgFile = "Interface\\Buttons\\WHITE8x8",
-	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true,
-	tileSize = 16,
-	edgeSize = 12,
-	insets = { left = 3, right = 3, top = 3, bottom = 3 },
-}
 
 
 local function makeGoldBtn(parent, width, height, label)

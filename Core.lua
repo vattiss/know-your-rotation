@@ -1,5 +1,4 @@
 local addonName, ns = ...
-local API = ns.API
 
 KnowYourRotationDB = KnowYourRotationDB or {}
 
@@ -672,8 +671,6 @@ pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
 
 local ticker
 local booted
-local spellsPending
-local barsPending
 
 local function startTicker()
 	if ticker then
@@ -721,7 +718,6 @@ local function forceTick()
 end
 
 local function flushBars()
-	barsPending = nil
 	if ns.GlowFetch then
 		ns.GlowFetch(true)
 	end
@@ -735,7 +731,6 @@ local function scheduleBarFlush()
 	-- ConROC: CancelTimer + ScheduleTimer('Fetch', 0.5)
 	barFlushGen = barFlushGen + 1
 	local gen = barFlushGen
-	barsPending = true
 	if C_Timer and C_Timer.After then
 		C_Timer.After(0.5, function()
 			if gen ~= barFlushGen then
@@ -749,7 +744,6 @@ local function scheduleBarFlush()
 end
 
 local function flushSpells()
-	spellsPending = nil
 	-- ConROC-style (Forever-safe): on learn / level-up, only clear *failed*
 	-- Resolve entries so newly learned ranks can resolve. Do NOT wipe known
 	-- hits and do NOT rebuild the spellbook index (that is what froze Forever
@@ -765,7 +759,6 @@ end
 local function scheduleSpellFlush()
 	spellsFlushGen = spellsFlushGen + 1
 	local gen = spellsFlushGen
-	spellsPending = true
 	if C_Timer and C_Timer.After then
 		-- Same idea as ConROC ButtonFetch(0.5): coalesce learn spam.
 		C_Timer.After(0.5, function()

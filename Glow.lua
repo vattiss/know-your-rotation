@@ -70,41 +70,6 @@ local function isToken(value, expected)
 	return ok and same == true
 end
 
-local function actionSpellName(slot)
-	if not slot or not C_TooltipInfo or not C_TooltipInfo.GetAction then
-		return nil
-	end
-	local ok, data = pcall(C_TooltipInfo.GetAction, slot)
-	if not ok or type(data) ~= "table" or type(data.lines) ~= "table" then
-		return nil
-	end
-	local line = data.lines[1]
-	local text = line and line.leftText
-	if type(text) ~= "string" or text == "" then
-		return nil
-	end
-	if issecretvalue and issecretvalue(text) then
-		return nil
-	end
-	text = text:gsub("%s*%([^)]*%)%s*$", "")
-	if text == "" then
-		return nil
-	end
-	if C_Spell and C_Spell.GetSpellInfo then
-		local okInfo, info = pcall(C_Spell.GetSpellInfo, text)
-		if okInfo and type(info) == "table" then
-			local name = info.name
-			if issecretvalue and issecretvalue(name) then
-				name = nil
-			end
-			if type(name) == "string" and name ~= "" then
-				return name
-			end
-		end
-	end
-	return text
-end
-
 local ACCENT_FOLD = {
 	["à"] = "a", ["á"] = "a", ["â"] = "a", ["ã"] = "a", ["ä"] = "a", ["å"] = "a",
 	["À"] = "a", ["Á"] = "a", ["Â"] = "a", ["Ã"] = "a", ["Ä"] = "a", ["Å"] = "a",
@@ -502,6 +467,9 @@ local function addStandard(button)
 	local okType, attrType = pcall(function()
 		return button:GetAttribute("type")
 	end)
+	if not okType then
+		attrType = nil
+	end
 	local slot = actionSlot(button)
 	local actionType, id = attrType, nil
 	if attrType == "action" or (not attrType and slot) then

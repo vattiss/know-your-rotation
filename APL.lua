@@ -1,10 +1,6 @@
 local addonName, ns = ...
 local S = ns.Spell
 
-local function step(key, id, opt)
-	return { key = key, id = id, opt = opt or {}, on = true }
-end
-
 function ns.IsStepEnabled(step)
 	if type(step) ~= "table" then
 		return false
