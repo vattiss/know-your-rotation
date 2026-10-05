@@ -7,3 +7,6 @@ desktop.ini
 .idea/
 *.log
 
+
+# Release builds (made by GitHub Actions)
+dist/

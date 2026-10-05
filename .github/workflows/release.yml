@@ -1,0 +1,90 @@
+name: Release
+
+# Push a tag like v1.0.0-beta.1 (it must match VERSION.txt and the TOC).
+# The zip is built here from that commit, never by hand, and gets a SHA-256
+# checksum and a GitHub build attestation that proves where it came from.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LuaJIT
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luajit
+
+      - name: Check tag, VERSION.txt and TOC agree
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file=$(head -n1 VERSION.txt | tr -d '\r')
+          toc=$(grep '^## Version:' KnowYourRotation.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')
+          echo "tag: $tag, VERSION.txt: $file, TOC: $toc"
+          if [ "$tag" != "$file" ] || [ "$tag" != "$toc" ]; then
+            echo "::error::tag, VERSION.txt and the TOC must have the same version"
+            exit 1
+          fi
+          echo "version=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Syntax check
+        run: |
+          for f in *.lua; do luajit -bl "$f" > /dev/null; done
+
+      - name: Build the addon zip
+        id: build
+        run: |
+          name="KnowYourRotation-${{ steps.version.outputs.version }}"
+          mkdir -p "dist/KnowYourRotation"
+          # Only what the game loads, plus license and readme. No ref/, docs/ or dev files.
+          cp KnowYourRotation.toc *.lua LICENSE README.md VERSION.txt "dist/KnowYourRotation/"
+          (cd dist && zip -r -X "$name.zip" KnowYourRotation)
+          (cd dist && sha256sum "$name.zip" > "$name.zip.sha256")
+          cat "dist/$name.zip.sha256"
+          echo "zip=dist/$name.zip" >> "$GITHUB_OUTPUT"
+          echo "sum=dist/$name.zip.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.build.outputs.zip }}
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          {
+            tail -n +3 VERSION.txt
+            echo
+            echo "## Verify the download"
+            echo
+            echo "SHA-256:"
+            echo
+            echo '```'
+            cat "${{ steps.build.outputs.sum }}"
+            echo '```'
+            echo
+            echo "This zip was built by GitHub Actions from this tag. Check it with:"
+            echo
+            echo '```'
+            echo "gh attestation verify KnowYourRotation-$version.zip --repo ${{ github.repository }}"
+            echo '```'
+          } > notes.md
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" \
+            "${{ steps.build.outputs.zip }}" "${{ steps.build.outputs.sum }}" \
+            --title "Know Your Rotation $version" \
+            --notes-file notes.md \
+            $prerelease

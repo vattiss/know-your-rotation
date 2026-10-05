@@ -128,6 +128,8 @@ Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per c
 
 The player guide above is not the implementation map. Before changing code, read [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+Every push runs a check on GitHub (syntax, TOC file list, version match, lint). Releases are built by GitHub Actions from a version tag (`v1.0.0-beta.1`): bump `VERSION.txt` and the TOC, push, then push the tag. The release zip comes with a SHA-256 checksum and a GitHub build attestation (`gh attestation verify <zip> --repo vattiss/know-your-rotation`).
+
 The git repository is the source of truth. The copy under `World of Warcraft\_classic_beta_\Interface\AddOns\KnowYourRotation` must be refreshed from this repo. Do not replace this repo with files taken from the game folder.
 
 ## Support

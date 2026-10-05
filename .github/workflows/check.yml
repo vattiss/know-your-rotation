@@ -1,0 +1,58 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LuaJIT and luacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luajit lua-check
+
+      - name: Syntax check (LuaJIT, Lua 5.1 like the game)
+        run: |
+          status=0
+          for f in *.lua; do
+            if ! luajit -bl "$f" > /dev/null; then
+              echo "::error file=$f::syntax error"
+              status=1
+            fi
+          done
+          exit $status
+
+      - name: TOC lists every Lua file, and nothing missing
+        run: |
+          status=0
+          listed=$(grep -v '^#' KnowYourRotation.toc | sed 's/\r$//' | grep '\.lua$' | sort)
+          present=$(ls *.lua | sort)
+          for f in $listed; do
+            [ -f "$f" ] || { echo "::error file=KnowYourRotation.toc::$f is listed but missing"; status=1; }
+          done
+          for f in $present; do
+            echo "$listed" | grep -qx "$f" || { echo "::error file=$f::not listed in KnowYourRotation.toc"; status=1; }
+          done
+          exit $status
+
+      - name: Version matches in VERSION.txt and the TOC
+        run: |
+          file=$(head -n1 VERSION.txt | tr -d '\r')
+          toc=$(grep '^## Version:' KnowYourRotation.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')
+          echo "VERSION.txt: $file, TOC: $toc"
+          if [ "$file" != "$toc" ]; then
+            echo "::error file=KnowYourRotation.toc::version $toc does not match VERSION.txt ($file)"
+            exit 1
+          fi
+
+      - name: Lint (luacheck, report only)
+        continue-on-error: true
+        run: luacheck *.lua
