@@ -192,13 +192,13 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 - slot 1 prefers `RangeState` `in`; otherwise `notOut`. `out` → slots 2–3;
 - `ns.ApplyRotationEdit` (Up / Down / Apply) clears the cache and re-evaluates the glows without `/reload`;
 - `IsSpellUsable` false during the GCD or a cast no longer prevents a shock from entering the queue;
-- if no heal made it into the 3 slots, the first `StepOk` heal is inserted at the head and the queue is trimmed back to 3.
+- unless slot 1 already is a heal, the first `StepOk` heal is moved to the head (also from slot 2 or 3, since only slot 1 glows) and the queue is trimmed back to 3.
 
 `ns.queueHeal[id]` (list ID and resolved ID) is used for the green highlight.
 
-`ns.BuildDefense`: first checked defense step that passes `StepOk`.
+`ns.BuildDefense`: first checked defense step that passes `StepOk`, in two passes: steps with `hp` (defensive cooldowns) first, then the rest (buffs), each in list order. A lapsed Battle Shout does not hide Shield Wall at 20%.
 
-`ns.BuildInterrupt`: known and ready class ID, hostile target that is casting.
+`ns.BuildInterrupt`: known and ready class ID, hostile target that is casting an interruptible spell (`notInterruptible` is return 8 of `UnitCastingInfo`, 7 of `UnitChannelInfo`), and not clearly out of range. `ns.BuildPurge` has the same range check.
 
 `ns.BuildPurge`: ready class ID, hostile target, purgeable aura.
 
@@ -334,7 +334,7 @@ On the camelot client, choosing a target can make auras unreadable (*secret valu
 
 The queue imitates ConROC: the 1st spell is the one to cast now, the 2nd and 3rd are the next ones **after** this simulated press. A spell outside the list does not cut the suggestion: on the next tick, the priority is recomputed.
 
-Heals — unit: `opt.unit` if present, otherwise `mouseover`, `target`, `focus`, `targettarget`, otherwise `player`. `HealHealth` uses `LowestFriendly` (player, mouseover, target, focus, targettarget, pet, party1–4) when none of mouseover/target/focus is friendly. A dead or attackable unit is not friendly.
+Heals — unit (`ns.API.HealUnit`, also used by `HealHealth` and `HealRangeUnit`): the unit a press from the bar would heal. `opt.unit` if present, otherwise a friendly `mouseover` (only with the client's `enableMouseoverCast` on), otherwise a friendly `target`, otherwise `player` (an enemy target or no target heals yourself). Health, auras and range all come from that one unit. A dead or attackable unit is not friendly.
 
 ## Opening the options
 

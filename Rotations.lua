@@ -363,11 +363,10 @@ function ns.BuildQueue()
 		end
 		return true
 	end
-	for _, id in ipairs(q) do
-		if ns.queueHeal[id] then
-			healFirst = true
-			break
-		end
+	-- Only slot 1 glows: a needed heal moves there even when it already sits
+	-- in slot 2 or 3.
+	if q[1] and ns.queueHeal[q[1]] then
+		healFirst = true
 	end
 	if not healFirst then
 		for _, step in ipairs(apl) do
@@ -520,9 +519,14 @@ function ns.BuildDefense()
 	if not ns.GetDef then
 		return
 	end
-	for _, step in ipairs(ns.GetDef()) do
-		if ns.IsStepEnabled(step) and stepReady(step.id, step.opt) then
-			return (API.Resolve and API.Resolve(step.id)) or step.id
+	-- Health-based defensives first (Shield Wall at 20% beats a lapsed Battle
+	-- Shout), then buffs and the rest, each in list order.
+	for pass = 1, 2 do
+		for _, step in ipairs(ns.GetDef()) do
+			local urgent = step.opt and step.opt.hp and true or false
+			if urgent == (pass == 1) and ns.IsStepEnabled(step) and stepReady(step.id, step.opt) then
+				return (API.Resolve and API.Resolve(step.id)) or step.id
+			end
 		end
 	end
 end
@@ -534,6 +538,9 @@ function ns.BuildInterrupt()
 		return
 	end
 	if not API.Hostile() or not API.TargetCasting() then
+		return
+	end
+	if API.RangeState and API.RangeState(id, { hostile = true }) == "out" then
 		return
 	end
 	return id
@@ -549,6 +556,9 @@ function ns.BuildPurge()
 		return
 	end
 	if not API.Purgable(token == "MAGE") then
+		return
+	end
+	if API.RangeState and API.RangeState(id, { hostile = true }) == "out" then
 		return
 	end
 	return id

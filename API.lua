@@ -1434,71 +1434,39 @@ function ns.API.InSpellRange(spellID, opt, mode)
 	return mode ~= "in"
 end
 
+-- The unit a heal lands on when pressed from the action bar: the mouseover
+-- (only with the client's mouseover cast on), a friendly target, else you
+-- (an enemy target or no target heals yourself).
+local function mouseoverCastOn()
+	if not GetCVarBool then
+		return false
+	end
+	local ok, on = pcall(GetCVarBool, "enableMouseoverCast")
+	return ok and on == true
+end
+
 function ns.API.HealUnit(opt)
 	opt = opt or {}
 	if opt.unit and unitExists(opt.unit) then
 		return opt.unit
 	end
-	for _, unit in ipairs({ "mouseover", "target", "focus", "targettarget" }) do
-		if unitFriendly(unit) then
-			return unit
-		end
+	if mouseoverCastOn() and unitFriendly("mouseover") then
+		return "mouseover"
+	end
+	if unitFriendly("target") then
+		return "target"
 	end
 	return "player"
 end
 
 function ns.API.HealHealth(opt)
-	opt = opt or {}
-	if opt.unit and unitExists(opt.unit) then
-		return ns.API.Health(opt.unit)
-	end
-	for _, unit in ipairs({ "mouseover", "target", "focus" }) do
-		if unitFriendly(unit) then
-			return ns.API.Health(unit)
-		end
-	end
-	local _, hp = ns.API.LowestFriendly()
-	return hp
+	return ns.API.Health(ns.API.HealUnit(opt))
 end
 
 function ns.API.HealRangeUnit(opt)
-	opt = opt or {}
-	if opt.unit and unitExists(opt.unit) then
-		return opt.unit
-	end
-	for _, unit in ipairs({ "mouseover", "target", "focus", "targettarget" }) do
-		if unitFriendly(unit) then
-			return unit
-		end
-	end
-	local unit = ns.API.LowestFriendly()
-	return unit or "player"
+	return ns.API.HealUnit(opt)
 end
 
-function ns.API.LowestFriendly()
-	local best, bestHp = "player", ns.API.Health("player")
-	local units = {
-		"player",
-		"mouseover",
-		"target",
-		"focus",
-		"targettarget",
-		"pet",
-		"party1",
-		"party2",
-		"party3",
-		"party4",
-	}
-	for _, unit in ipairs(units) do
-		if unitFriendly(unit) then
-			local hp = ns.API.Health(unit)
-			if hp < bestHp then
-				best, bestHp = unit, hp
-			end
-		end
-	end
-	return best, bestHp
-end
 
 local function hasResources(id)
 	if C_Spell and C_Spell.GetSpellPowerCost then
@@ -3217,28 +3185,29 @@ function ns.API.TargetCasting()
 	if not UnitExists("target") then
 		return false
 	end
-	local function peek(fn)
+	-- notInterruptible is return 8 of UnitCastingInfo (after castID) and
+	-- return 7 of UnitChannelInfo.
+	local function peek(fn, kickIndex)
 		if not fn then
 			return false, nil
 		end
-		local ok, name, _, _, _, _, extraA, extraB = pcall(fn, "target")
+		local ok, name = pcall(fn, "target")
 		if not ok or name == nil then
 			return false, nil
 		end
-		local notKick = extraB
-		if fn == UnitChannelInfo then
-			notKick = extraA
-		end
-		if readable(notKick) and notKick then
+		local okKick, notKick = pcall(function()
+			return (select(kickIndex, fn("target")))
+		end)
+		if okKick and readable(notKick) and notKick then
 			return false, true
 		end
 		return true, false
 	end
-	local casting = peek(UnitCastingInfo)
+	local casting = peek(UnitCastingInfo, 8)
 	if casting then
 		return true
 	end
-	casting = peek(UnitChannelInfo)
+	casting = peek(UnitChannelInfo, 7)
 	if casting then
 		return true
 	end
