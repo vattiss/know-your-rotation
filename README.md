@@ -2,7 +2,7 @@
 
 Rotation helper for **WoW Forever** (Classic Era combat on the camelot / Midnight-family client, interface `16001`).
 
-It highlights the spell to press next with a glow on your action-bar button, and does the same for heals, long defense buffs, interrupts, purges, cleanses, and weapon imbues. There is no HUD window. It does **not** cast spells for you.
+It highlights the spell to press next with a glow on your action-bar button, and does the same for heals, long defense buffs, interrupts, purges, cleanses, and weapon imbues. There is no HUD window.
 
 Current version: **1.0.0**
 
@@ -78,6 +78,10 @@ Four profiles, all saved independently:
 
 PvE or PvP is picked automatically (dungeons and raids = PvE; battlegrounds and arenas = PvP; in the open world your PvP flag or an attackable player as target = PvP); you can also switch in the options window. **Reset** only wipes the **selected** profile. You can export / import a profile as text. Optional auto-switch uses PvE or PvP from the instance type.
 
+### Muting
+
+The General page has a "Mute this character" switch: while it is on, the addon shows no glows and plays no sounds or messages on the current character. The setting is stored per character.
+
 ### Combat modes
 
 `Auto` / `Single` / `AoE` / `Burst`. Add, remove, and reorder are **per mode**. Auto uses the single-target list until enough enemies are nearby (default: 3).
@@ -98,7 +102,7 @@ Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee,
 
 ## Opening the options
 
-There are no chat commands and no minimap button. Open the game menu → Options → AddOns → Know Your Rotation; expand it with + for General, Rotation, Defense, Advanced and Info. Role, combat mode and PvE / PvP profile are detected automatically.
+There are no chat commands and no minimap button. Open the game menu → Options → AddOns → Know Your Rotation; expand it with + and pick Profiles, General, Rotation, Defense, Advanced or Info (the main entry is only a short landing page). Role, combat mode and PvE / PvP profile are detected automatically.
 
 ## Files
 
@@ -135,6 +139,8 @@ The git repository is the source of truth. The copy under `World of Warcraft\_cl
 ## Support
 
 Source (public): [https://github.com/attilavarga96/know-your-rotation](https://github.com/attilavarga96/know-your-rotation).
+
+Bugs and ideas: [github.com/attilavarga96/know-your-rotation/issues](https://github.com/attilavarga96/know-your-rotation/issues). The Info page in the game has the same link to copy.
 
 ## License
 

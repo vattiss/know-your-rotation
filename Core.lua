@@ -591,7 +591,7 @@ function ns.Tick()
 	end
 
 	-- No glow while dead, mounted, eating, or resting in town.
-	local idle = ns.API.ShouldHideIdle()
+	local idle = ns.API.ShouldHideIdle() or ns.db.muted == true
 	local queue = ns.db.showRotation ~= false and not idle and ns.BuildQueue() or {}
 	local defense = ns.db.showDefense ~= false and not idle and ns.BuildDefense() or nil
 	local interrupt = ns.db.showInterrupt ~= false and not idle and ns.BuildInterrupt() or nil

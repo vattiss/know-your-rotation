@@ -1,6 +1,7 @@
 local addonName, ns = ...
 local API = ns.API
 local GITHUB_URL = "https://github.com/attilavarga96/know-your-rotation"
+local ISSUES_URL = GITHUB_URL .. "/issues"
 
 local editSpec
 local editMode
@@ -155,6 +156,9 @@ local function makeCard(parent, titleKey, x, y, width, height)
 end
 
 local function featureOn(key)
+	if key == "muted" then
+		return ns.db.muted == true
+	end
 	return ns.db[key] ~= false
 end
 
@@ -419,6 +423,7 @@ local function ensureOptions()
 	frame.content = content
 
 	local hudCard = makeCard(general, "OPT_CARD_HUD", 8, -4, 318, 172)
+	frame.optMute = addSwitch(hudCard, "muted", ns.T("OPT_MUTE"))
 	frame.optRotation = addSwitch(hudCard, "showRotation", ns.T("OPT_ROTATION"))
 	frame.optGlow = addSwitch(hudCard, "glow", ns.T("OPT_GLOW"))
 
@@ -429,7 +434,7 @@ local function ensureOptions()
 	frame.optCleanse = addSwitch(winCard, "showCleanse", ns.T("OPT_CLEANSE"))
 	frame.optWeapon = addSwitch(winCard, "showWeapon", ns.T("OPT_WEAPON"))
 
-	local displayCard = makeCard(general, "OPT_CARD_DISPLAY", 8, -188, 318, 196)
+	local displayCard = makeCard(general, "OPT_CARD_DISPLAY", 8, -188, 318, 80)
 	local resetAll = makeGoldBtn(displayCard, 140, 22, ns.T("OPT_RESET_ALL"))
 	resetAll:SetPoint("TOPLEFT", 12, -32)
 	resetAll:SetScript("OnClick", function()
@@ -858,10 +863,13 @@ local function ensureOptions()
 	frame.aboutSupport = aboutSupport
 
 
-	local linksCard = makeCard(info, "OPT_CARD_LINKS", 8, -212, 648, 70)
+	local linksCard = makeCard(info, "OPT_CARD_LINKS", 8, -212, 648, 98)
 	frame.githubRow = makeLinkRow(linksCard, "INFO_GITHUB", GITHUB_URL)
 	frame.githubRow:SetPoint("TOPLEFT", 12, -32)
 	frame.githubRow:SetPoint("RIGHT", -12, 0)
+	frame.issuesRow = makeLinkRow(linksCard, "INFO_ISSUES", ISSUES_URL)
+	frame.issuesRow:SetPoint("TOPLEFT", 12, -60)
+	frame.issuesRow:SetPoint("RIGHT", -12, 0)
 
 
 	function frame.RelocalizeChrome()
@@ -898,7 +906,7 @@ local function ensureOptions()
 		if frame.aboutSupport then
 			frame.aboutSupport:SetText(ns.T("INFO_SUPPORT"))
 		end
-		for _, row in ipairs({ frame.githubRow }) do
+		for _, row in ipairs({ frame.githubRow, frame.issuesRow }) do
 			if row and row.label and row.labelKey then
 				row.label:SetText(ns.T(row.labelKey))
 			end
@@ -1104,7 +1112,7 @@ end
 
 function ns.RefreshOptions()
 	-- Nothing to refresh until the Settings panel is open; it rebuilds on show.
-	if not (ns.UI.options and ns.UI.options:IsVisible()) then
+	if not ns.optionsWarm and not (ns.UI.options and ns.UI.options:IsVisible()) then
 		return
 	end
 	local frame = ensureOptions()
@@ -1131,6 +1139,9 @@ function ns.RefreshOptions()
 			if frame.optRoleAuto then
 				frame.optRoleAuto:SetChecked(ns.db.roleAuto ~= false)
 			end
+		end
+		if frame.optMute then
+			frame.optMute:SetChecked(ns.db.muted == true)
 		end
 		if frame.optAutoHeal then
 			frame.optAutoHeal:SetChecked(ns.db.autoHeal ~= false)
@@ -1265,6 +1276,10 @@ function ns.RefreshOptions()
 		frame.autoLess:SetShown(showAuto)
 		frame.autoMore:SetShown(showAuto)
 	end
+	-- The spell list is the slow part: only rebuild it on the pages that show it.
+	if frame.activeTab ~= "rotation" and frame.activeTab ~= "def" then
+		return
+	end
 	local child = frame.aplChild
 	local y = 2
 	local rowIndex = 0
@@ -1386,7 +1401,7 @@ end
 
 
 -- The options live in the game's Settings window, under AddOns: one category
--- for Profiles (the main entry) and a sub-category (expandable with +) for every other page.
+-- for a landing page, with one sub-category (expandable with +) per page.
 local TABS = {
 	{ "profiles", "TAB_PROFILES" },
 	{ "general", "TAB_GENERAL" },
@@ -1396,15 +1411,68 @@ local TABS = {
 	{ "info", "TAB_INFO" },
 }
 
+-- Build the heavy page host a few seconds after login, out of combat, so the
+-- first click in the Settings window does not stall.
+function ns.PrebuildOptions()
+	if ns.UI.options then
+		return
+	end
+	if InCombatLockdown and InCombatLockdown() then
+		return
+	end
+	pcall(ensureOptions)
+	-- A little later, create the spell-list rows once while hidden.
+	if C_Timer and C_Timer.After then
+		C_Timer.After(2, ns.WarmOptionsList)
+	end
+end
+
+function ns.WarmOptionsList()
+	local frame = ns.UI.options
+	if not frame or frame:IsVisible() or (InCombatLockdown and InCombatLockdown()) then
+		return
+	end
+	local previous = frame.activeTab
+	ns.optionsWarm = true
+	frame.activeTab = "rotation"
+	pcall(ns.RefreshOptions)
+	frame.activeTab = previous
+	ns.optionsWarm = false
+end
+
 function ns.RegisterOptions()
 	if ns.optionsCategory or not Settings or not Settings.RegisterCanvasLayoutCategory then
 		return
 	end
-	local root
-	for index, tab in ipairs(TABS) do
+	if C_Timer and C_Timer.After then
+		C_Timer.After(4, ns.PrebuildOptions)
+	end
+	-- Main entry: a short landing page. The real pages are its sub-categories.
+	local home = CreateFrame("Frame", "KnowYourRotationPanelHome")
+	local homeTitle = home:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+	homeTitle:SetPoint("TOPLEFT", 16, -16)
+	homeTitle:SetTextColor(1, 0.82, 0.2)
+	homeTitle:SetText(ns.T("TITLE"))
+	local homeName = home:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+	homeName:SetPoint("TOPLEFT", homeTitle, "BOTTOMLEFT", 0, -6)
+	homeName:SetText(ns.T("OPT_HOME_WELCOME"))
+	local homeText = home:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	homeText:SetPoint("TOPLEFT", homeName, "BOTTOMLEFT", 0, -16)
+	homeText:SetPoint("RIGHT", home, "RIGHT", -24, 0)
+	homeText:SetJustifyH("LEFT")
+	homeText:SetWordWrap(true)
+	homeText:SetText(ns.T("OPT_HOME_TEXT"))
+	local root = Settings.RegisterCanvasLayoutCategory(home, ns.T("TITLE"))
+	Settings.RegisterAddOnCategory(root)
+	ns.optionsCategory = root
+
+	for _, tab in ipairs(TABS) do
 		local key, labelKey = tab[1], tab[2]
 		local panel = CreateFrame("Frame", "KnowYourRotationPanel" .. key)
-		panel:SetScript("OnShow", function(self)
+		-- A new frame starts shown, so Settings' first Show() would not fire
+		-- OnShow and the page stayed empty until it was opened a second time.
+		panel:Hide()
+		local function showPage(self)
 			editSpec = ns.ActiveSpec()
 			local frame = ensureOptions()
 			frame:SetParent(self)
@@ -1412,14 +1480,16 @@ function ns.RegisterOptions()
 			frame:SetAllPoints(self)
 			frame:Show()
 			frame.ShowTab(key)
-			ns.RefreshOptions()
-		end)
-		if index == 1 then
-			root = Settings.RegisterCanvasLayoutCategory(panel, ns.T("TITLE"))
-			Settings.RegisterAddOnCategory(root)
-			ns.optionsCategory = root
-		else
-			Settings.RegisterCanvasLayoutSubcategory(root, panel, ns.T(labelKey))
+			-- Settings shows its canvas after this panel, so the frame is not
+			-- "visible" yet; force the refresh instead of waiting for that.
+			ns.optionsWarm = true
+			local ok, err = pcall(ns.RefreshOptions)
+			ns.optionsWarm = false
+			if not ok then
+				ns.Print(tostring(err))
+			end
 		end
+		panel:SetScript("OnShow", showPage)
+		Settings.RegisterCanvasLayoutSubcategory(root, panel, ns.T(labelKey))
 	end
 end

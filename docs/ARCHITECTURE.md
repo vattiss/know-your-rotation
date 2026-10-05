@@ -261,7 +261,7 @@ There is no HUD window. Every cue is a glow on an action-bar button (`Glow.lua`)
 
 Options (`KnowYourRotationOptions`, inside the Settings panel):
 
-- pages: Profiles (main entry), then sub-categories General, Rotation, Defense, Advanced, Info;
+- pages: a landing page, then sub-categories Profiles, General, Rotation, Defense, Advanced, Info;
 - Profiles page: buttons Base, PvE (`pve`), PvP (`pvp`), Customs, the automatic detection switches (`autoProfile`, `roleAuto`), plus export / import;
 - checkboxes for `show*` and glow, mode selector;
 - enchant choice, AoE threshold (2–8), profile reset;
@@ -321,7 +321,7 @@ Heals — unit: `opt.unit` if present, otherwise `mouseover`, `target`, `focus`,
 
 ## Opening the options
 
-There are no slash commands and no minimap button. The options are a canvas category in the game Settings window (Options → AddOns): `ns.RegisterOptions` registers Profiles as the category and General, Rotation, Defense, Advanced and Info as sub-categories (`Settings.RegisterCanvasLayoutSubcategory`, expandable with +). One shared page host frame is moved into whichever panel is open; `ns.RefreshOptions` does nothing while it is closed.
+There are no slash commands and no minimap button. The options are a canvas category in the game Settings window (Options → AddOns): `ns.RegisterOptions` registers a text-only landing page as the category and Profiles, General, Rotation, Defense, Advanced and Info as sub-categories (`Settings.RegisterCanvasLayoutSubcategory`, expandable with +). One shared page host frame is moved into whichever panel is open; `ns.RefreshOptions` does nothing while it is closed.
 
 ## `KnowYourRotationDB` schema
 
@@ -369,3 +369,7 @@ Check in game: `/reload`, checked spell, unchecked spell, removed spell (it must
 
 - `ns.API.AutoHealThreshold(spellID, unit, fallback)` returns `100 - healSize / maxHealth * 100`, clamped to 30–92. The heal size is parsed from `C_Spell.GetSpellDescription` (`ns.API.HealAmount`, cached, wiped by `InvalidateSpells`). Max health is remembered by `ns.API.MaxHealth` while readable. Steps with their own `hp` below 50 (emergency heals) keep it. `autoHeal = false` turns it off.
 - When health is hidden, `ns.BuildHiddenHeal` picks the heal to cast and `ns.GlowHiddenHeal` shows its glow with an alpha taken from `UnitHealthPercent("player", true, curve)`: the curve is 1 below the threshold and 0 above, and the result goes straight into `SetAlpha` without being read.
+
+## Options load time
+
+The page host and the spell-list rows are built by `ns.PrebuildOptions` / `ns.WarmOptionsList` 4 and 6 seconds after login (out of combat), so the first click in Settings is not slow. `ns.RefreshOptions` rebuilds the spell list only on the Rotation and Defense pages.
