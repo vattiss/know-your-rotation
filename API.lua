@@ -2778,8 +2778,28 @@ function ns.API.CombatNotice()
 	if not ns.API.InCombat() then
 		return nil
 	end
+	-- Only once a pet can be summoned: hunters get Call Pet around level 10,
+	-- and a warlock may not have a demon spell yet.
+	local summons
+	if token == "HUNTER" then
+		summons = { "CallPet" }
+	else
+		summons = { "SummonImp", "SummonVoidwalker", "SummonSuccubus", "SummonFelhunter", "SummonIncubus", "SummonFelguard" }
+	end
+	local book = token == "HUNTER" and ns.Spell.Hunter or ns.Spell.Warlock
+	local canSummon = false
+	for _, key in ipairs(summons) do
+		local id = book and book[key]
+		if id and ns.API.Known(id) then
+			canSummon = true
+			break
+		end
+	end
+	if not canSummon then
+		return nil
+	end
 	if not unitExists("pet") then
-		return "NOTICE_CALL_PET"
+		return token == "WARLOCK" and "NOTICE_SUMMON_DEMON" or "NOTICE_CALL_PET"
 	end
 	if not ns.API.Hostile() then
 		return nil

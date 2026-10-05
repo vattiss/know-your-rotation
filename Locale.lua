@@ -112,6 +112,7 @@ L.enUS = {
 	OPT_CLEANSE_GROUP = "Also cleanse your group",
 	OPT_PHYSICS = "Classic swing and auto-shot timing",
 	NOTICE_CALL_PET = "Call your pet",
+	NOTICE_SUMMON_DEMON = "Summon your demon",
 	NOTICE_PET_ASSIST = "Pet is not attacking",
 	NOTICE_OFF_BAR = "%s is ready, but it is not on your action bars.",
 	OPT_COLOR_NEXT = "Next spell color",
