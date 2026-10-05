@@ -144,6 +144,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `ready = false` | Accepts the step without testing cooldown or usability. |
 | `filler` | Spam spell with no own cooldown (Wrath, Heroic Strike, Sinister Strike…). Skipped only by a real cooldown, not by the GCD. `ns.Physics.Blocks` still applies. |
 | `nocombat` | Refused if the player is in combat (Charge, Stealth, Prowl). |
+| `autoRepeat` | Auto-repeat attack (Auto Shot, wand Shoot): offered only while it is not running, since pressing it again would stop it. Never counts as a rotation action, so it does not take slot 1 from a filler. Priest, mage and warlock lists end with the wand: a filler the client reports as out of mana no longer passes, so the wand comes next. |
 | `engaged` | Only in combat or with an enemy targeted (seals, totems, Tiger's Fury), so they are not suggested while walking around. |
 | `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |

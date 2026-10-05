@@ -71,6 +71,10 @@ Heals in your lists light up when they are needed:
 
 Full health → no heal suggestion, the damage rotation stays visible.
 
+### Auto Shot and wands
+
+Hunters are told to start Auto Shot (right after Hunter's Mark) and never while it is already running, since pressing it again would stop it. Priests, mages and warlocks get the wand (Shoot) once the main spell is out of mana; it needs a wand equipped.
+
 ### Finishing a low target
 
 Execute and Hammer of Wrath light up as soon as the game lets you use them. Rogue Eviscerate does not wait for 5 combo points when the target is low: from 2 points it lights up once the target is below about 8% health per point (2 points: 16%, 3 points: 24%, …). Shadow Word: Death and Shadowburn light up below 20%. In combat the target's health is hidden from add-ons, so the game itself fades the finisher glow in and the regular rotation glow (for example Sinister Strike) out at that point: only one of them shows.

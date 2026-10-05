@@ -164,6 +164,7 @@ ns.APLDefaults = {
 			step("SummonHawk", H.SummonHawk, { nopet = true }, false),
 			step("MendPet", H.MendPet, { pet = true, hp = 40, unit = "pet" }),
 			step("HuntersMark", H.HuntersMark, { nodebuff = true, skipLow = true, hostile = true }),
+			step("AutoShot", H.AutoShot, { autoRepeat = true, hostile = true }),
 			step("SerpentSting", H.SerpentSting, { nodebuff = true, anydebuff = hunterStings, nocreature = true, skipLow = true, hostile = true }),
 			step("ViperSting", H.ViperSting, { nodebuff = true, anydebuff = hunterStings, nocreature = true, targetMana = true, skipLow = true, hostile = true }, false),
 			step("ScorpidSting", H.ScorpidSting, { nodebuff = true, anydebuff = hunterStings, nocreature = true, skipLow = true, hostile = true }, false),
@@ -179,7 +180,6 @@ ns.APLDefaults = {
 			step("ArcaneShot", H.ArcaneShot, { hostile = true }),
 			step("Intimidation", H.Intimidation, { hostile = true }, false),
 			step("ConcussiveShot", H.ConcussiveShot, { nodebuff = true, hostile = true }, false),
-			step("AutoShot", H.AutoShot, { filler = true, swing = true, hostile = true }),
 		},
 		melee = {
 			step("CallPet", H.CallPet, { nopet = true }),
@@ -225,6 +225,7 @@ ns.APLDefaults = {
 			step("MindFlay", Pr.MindFlay, { filler = true, hostile = true }),
 			step("HolyFire", Pr.HolyFire, { nodebuff = true, skipLow = true, hostile = true }),
 			step("Smite", Pr.Smite, { filler = true, hostile = true }),
+			step("Shoot", Pr.Shoot, { autoRepeat = true, hostile = true }),
 			step("FlashHeal", Pr.FlashHeal, { hp = 70,  heal = true }),
 			step("Heal", Pr.Heal, { hp = 80,  heal = true }),
 			step("Renew", Pr.Renew, { hp = 85,  nobuff = true, refresh = 4, heal = true }),
@@ -244,6 +245,7 @@ ns.APLDefaults = {
 			step("PrayerofHealing", Pr.PrayerofHealing, { hp = 75,  heal = true }),
 			step("LesserHeal", Pr.LesserHeal, { hp = 85,  heal = true }),
 			step("Smite", Pr.Smite, { filler = true, hostile = true }),
+			step("Shoot", Pr.Shoot, { autoRepeat = true, hostile = true }),
 		},
 	},
 	SHAMAN = {
@@ -296,6 +298,7 @@ ns.APLDefaults = {
 			step("ArcaneBlast", M.ArcaneBlast, { filler = true, hostile = true }),
 			step("FrostfireBolt", M.FrostfireBolt, { filler = true, hostile = true }),
 			step("Fireball", M.Fireball, { filler = true, hostile = true }),
+			step("Shoot", M.Shoot, { autoRepeat = true, hostile = true }),
 		},
 	},
 	WARLOCK = {
@@ -322,6 +325,7 @@ ns.APLDefaults = {
 			step("SearingPain", L.SearingPain, { hostile = true }, false),
 			step("DrainLife", L.DrainLife, { hostile = true, hp = 40 }),
 			step("ShadowBolt", L.ShadowBolt, { filler = true, hostile = true }),
+			step("Shoot", L.Shoot, { autoRepeat = true, hostile = true }),
 		},
 	},
 }
@@ -447,7 +451,7 @@ ns.APLModes = {
 				step("Volley", H.Volley, { hostile = true }),
 				step("ArcaneShot", H.ArcaneShot, { hostile = true }),
 				step("SerpentSting", H.SerpentSting, { nodebuff = true, nocreature = true, hostile = true }),
-				step("AutoShot", H.AutoShot, { filler = true, swing = true, hostile = true }),
+				step("AutoShot", H.AutoShot, { autoRepeat = true, hostile = true }),
 			},
 		},
 		melee = {

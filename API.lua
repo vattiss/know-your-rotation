@@ -854,7 +854,7 @@ function ns.API.IsRotationAction(spellID, opt, isRacial)
 		return false
 	end
 	opt = opt or {}
-	if ns.API.IsFallback(opt) then
+	if ns.API.IsFallback(opt) or opt.autoRepeat then
 		return false
 	end
 	if opt.heal or opt.nodebuff or opt.nobuff or opt.needbuff or opt.needdebuff then
@@ -1309,8 +1309,10 @@ function ns.API.TargetRangeBand(unit)
 		return nil, nil
 	end
 	if UnitDistanceSquared then
-		local ok, distSq = pcall(UnitDistanceSquared, unit)
-		if ok then
+		-- Only valid when the client says it measured (group members); for an
+		-- enemy it returns 0 with checked = false, which read as "in melee".
+		local ok, distSq, checked = pcall(UnitDistanceSquared, unit)
+		if ok and not (issecretvalue and (issecretvalue(checked) or issecretvalue(distSq))) and checked == true then
 			distSq = numberOrNil(distSq)
 			if distSq and distSq >= 0 then
 				local yards = math.sqrt(distSq)
@@ -1596,6 +1598,23 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if opt.hostile and not ns.API.Hostile() then
 		return reject("needs an enemy target")
 	end
+	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
+	-- is already running (pressing it again would stop it).
+	if opt.autoRepeat then
+		local repeating = false
+		local check = (C_Spell and C_Spell.IsAutoRepeatSpell) or IsAutoRepeatSpell
+		if check then
+			local ok, on = pcall(check, spellID)
+			repeating = ok and on == true
+		end
+		if not repeating and IsAutoRepeatSpell and check ~= IsAutoRepeatSpell then
+			local ok, on = pcall(IsAutoRepeatSpell, ns.API.SpellName(spellID) or spellID)
+			repeating = ok and on == true
+		end
+		if repeating then
+			return reject("already on")
+		end
+	end
 	-- Fight-only buffs (seals, totems, Tiger's Fury): in combat, or right
 	-- before a pull with an enemy targeted. Never while just walking around.
 	if opt.engaged and not ns.API.InCombat() and not ns.API.Hostile() then
@@ -1847,8 +1866,17 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if ns.Physics and ns.Physics.IsClip and ns.Physics.IsClip(spellID) and ns.Physics.WouldClip and ns.Physics.WouldClip() then
 		return reject("would clip Auto Shot")
 	end
-	if ns.API.Ready(spellID, opt, true) or opt.filler == true or opt.swing == true then
+	if ns.API.Ready(spellID, opt, true) then
 		return true
+	end
+	-- Fillers skip the strict "usable" test (the client says no during a cast
+	-- or GCD), but not when it says you are out of mana: then the next step
+	-- (the wand) takes over.
+	if opt.filler == true or opt.swing == true then
+		local _, noMana = readUsable(C_Spell and C_Spell.IsSpellUsable, spellID)
+		if noMana ~= true then
+			return true
+		end
 	end
 	-- Out of range is still a queue candidate for slots 2-3. Slot 1
 	-- requires RangeState "in" separately. IsSpellUsable is false when OOR.

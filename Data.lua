@@ -468,6 +468,7 @@ ns.Spell = {
 		Preparation = 14185,
 	},
 	Priest = {
+		Shoot = 5019,
 		Smite = 585,
 		LesserHeal = 2050,
 		ShadowWordPain = 589,
@@ -545,6 +546,7 @@ ns.Spell = {
 		TotemicProjection = 437009,
 	},
 	Mage = {
+		Shoot = 5019,
 		Fireball = 133,
 		FrostArmor = 168,
 		ArcaneIntellect = 1459,
@@ -581,6 +583,7 @@ ns.Spell = {
 		ArcaneBlast = 400574,
 	},
 	Warlock = {
+		Shoot = 5019,
 		ShadowBolt = 686,
 		Immolate = 348,
 		DemonSkin = 687,
