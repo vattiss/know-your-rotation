@@ -17,6 +17,14 @@ Always start by reading the docs for the part you work on, before you edit code:
 
 If the docs do not answer a question, say so instead of guessing; it can only be checked in game.
 
+## Checks (run before you hand back a change)
+
+- **Tests:** `luajit tests/run.lua` runs every `tests/*_spec.lua` against the WoW API stand-in in `tests/wow.lua` and prints the line coverage per file (`--uncovered` lists the missing lines, `--min=N` fails below N %). Every change to addon code comes with tests; the coverage must not drop below `tests/MIN_COVERAGE` (CI enforces it; the goal is 100 %). Secret values are typed sentinels (`wow.SECRET`, `wow.SECRET_STRING`, `wow.SECRET_BOOL`): arithmetic or concatenation on them fails the test, like in game.
+- **Lint:** `luacheck *.lua tests tools types`. `.luacheckrc` lists every WoW global the addon reads; a new Blizzard function must be added there (after checking it in `ref/`).
+- **Format:** `stylua .` (config in `stylua.toml`: tabs, 120 columns). CI runs `stylua --check .`.
+- **Types:** LuaLS (`.luarc.json`; `types/KnowYourRotation.lua` defines `KYR.StepOpt` / `KYR.Step`). Keep it at zero warnings.
+- `tests/`, `tools/` and `types/` are never copied to the AddOns folder and never shipped (the release zip takes only the root `*.lua`).
+
 ## Scope
 
 - Supports **WoW Forever only**. No other client or version.
@@ -58,7 +66,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Resolve spells by **name + spellbook** (`ns.API.Resolve`). A Classic ID can be remapped.
 - Reject names containing `TEST`, `(OLD)`, `(PT)` (`junkSpellName`).
 - Buffs in `ns.MAINTENANCE_BUFF_IDS` are stripped from combat lists at load (`stripMaintFromApl`) and refused by `AddAPL`.
-- A spell with its own cooldown is removed by `NoteSpellCast` until the cooldown ends. The GCD does not count. Do not bypass `ns.API.Cooldown` with `filler`. `filler` is still blocked by `ns.Physics.Blocks`.
+- A spell with its own cooldown is removed by `NoteSpellCast` until the cooldown ends. The GCD does not count. Do not bypass `ns.API.Cooldown` with `filler`. `ns.Physics.Blocks` (Auto Shot clip) applies to every step.
 - `opt.hold` / `ns.SPELL_HOLD`: after a cast the spell is not offered for N seconds. `0` means no aura delay. Harmful holds are tied to the target (GUID when readable, else the current target until it changes). Fillers ignore holds. For `nodebuff` / `nobuff` spells a readable aura wins over the hold.
 - `roleAuto` (default true): role from the name of the talent tree with the most points (Protection = tank; Holy / Discipline / Restoration = heal; else damage) and, for hunter / shaman, range. Druid bear / cat comes from the form. Picking a role on the Behavior page turns it off.
 - Hunter stings do not apply to Mechanical / Elemental targets (`CreatureBlocked`).

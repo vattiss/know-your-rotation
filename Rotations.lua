@@ -184,7 +184,11 @@ function ns.BuildQueue()
 		return true
 	end
 	local function consider(step)
-		return ns.IsStepEnabled(step) and step.id and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and onBar(step.id)
+		return ns.IsStepEnabled(step)
+			and step.id
+			and not ns.IsWeaponBuff(step.id)
+			and not ns.IsMaintenanceBuff(step.id)
+			and onBar(step.id)
 	end
 	if API.PredictBegin then
 		API.PredictBegin()
@@ -253,7 +257,11 @@ function ns.BuildQueue()
 	local function laterAction(from, shift)
 		for j = from + 1, #apl do
 			local step = apl[j]
-			if not isRotSpent(step) and API.IsRotationAction and API.IsRotationAction(step.id, step.opt, step.racial) then
+			if
+				not isRotSpent(step)
+				and API.IsRotationAction
+				and API.IsRotationAction(step.id, step.opt, step.racial)
+			then
 				-- Confirmed in-range, or unknown (notOut): a ready shock/DoT/CD
 				-- must still beat a filler listed above it.
 				if pressable(step, shift, "in", false) or pressable(step, shift, "notOut", false) then
@@ -370,7 +378,13 @@ function ns.BuildQueue()
 	end
 	if not healFirst then
 		for _, step in ipairs(apl) do
-			if consider(step) and API.IsHealSpell and API.IsHealSpell(step.id, step.opt) and not (API.CastingSpell and API.CastingSpell(step.id)) and API.StepOk(step.id, step.opt, 0.2) then
+			if
+				consider(step)
+				and API.IsHealSpell
+				and API.IsHealSpell(step.id, step.opt)
+				and not (API.CastingSpell and API.CastingSpell(step.id))
+				and API.StepOk(step.id, step.opt, 0.2)
+			then
 				local id = (API.Resolve and API.Resolve(step.id)) or step.id
 				if id then
 					for i = #q, 1, -1 do
@@ -404,7 +418,15 @@ function ns.BuildHiddenHeal()
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
 		local ownHealth = opt.heal or (opt.hp and not opt.unit)
-		if ownHealth and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if
+			ownHealth
+			and step.id
+			and ns.IsStepEnabled(step)
+			and not (API.CastingSpell and API.CastingSpell(step.id))
+			and not ns.IsWeaponBuff(step.id)
+			and not ns.IsMaintenanceBuff(step.id)
+			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
+		then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -431,7 +453,13 @@ function ns.BuildHiddenExecute()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if opt.unit == "target" and (opt.hp or opt.hpPerCombo) and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if
+			opt.unit == "target"
+			and (opt.hp or opt.hpPerCombo)
+			and step.id
+			and ns.IsStepEnabled(step)
+			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
+		then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -456,7 +484,14 @@ function ns.BuildHiddenPet()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if opt.unit == "pet" and opt.hp and step.id and ns.IsStepEnabled(step) and not (API.CastingSpell and API.CastingSpell(step.id)) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if
+			opt.unit == "pet"
+			and opt.hp
+			and step.id
+			and ns.IsStepEnabled(step)
+			and not (API.CastingSpell and API.CastingSpell(step.id))
+			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
+		then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -497,7 +532,13 @@ function ns.BuildHiddenDefense()
 	end
 	for _, step in ipairs(ns.GetDef() or {}) do
 		local opt = step.opt or {}
-		if opt.hp and (not opt.unit or opt.unit == "player") and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if
+			opt.hp
+			and (not opt.unit or opt.unit == "player")
+			and step.id
+			and ns.IsStepEnabled(step)
+			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
+		then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -818,7 +859,13 @@ end
 local function handState(entry, offhand)
 	local has, remain, enchId = API.WeaponEnchant(offhand)
 	if has == true then
-		if enchId and enchId > 0 and ns.WEAPON_ENCHANT_IDS and ns.WEAPON_ENCHANT_IDS[enchId] and not entryHasEnchant(entry, enchId) then
+		if
+			enchId
+			and enchId > 0
+			and ns.WEAPON_ENCHANT_IDS
+			and ns.WEAPON_ENCHANT_IDS[enchId]
+			and not entryHasEnchant(entry, enchId)
+		then
 			return "other", 0
 		end
 		return "up", remain

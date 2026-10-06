@@ -1,7 +1,137 @@
--- luacheck settings for the GitHub "Check" workflow.
+-- luacheck settings for the GitHub "Check" workflow (and local runs).
+-- Every WoW global the addon reads is listed, so a misspelled API name is an
+-- error instead of a silent nil in game. Add a name here when the code starts
+-- using a new Blizzard function (after checking it in ref/wow-ui-source).
 std = "lua51"
 max_line_length = false
--- The WoW API and Blizzard UI are globals the addon reads or sets; checking
--- them would be all noise. 212 = unused argument (event handler signatures).
+-- 212 = unused argument (event handler signatures).
 -- addonName is part of the standard file header (local addonName, ns = ...).
-ignore = { "11.", "12.", "13.", "212", "211/addonName" }
+ignore = { "212", "211/addonName" }
+
+-- Written by the addon: SavedVariables and the shared popup table.
+globals = {
+	"KnowYourRotationDB",
+	"KnowYourRotationCharDB",
+	"StaticPopupDialogs",
+}
+
+-- WoW API, Blizzard UI objects, constants and Lua aliases the addon reads.
+read_globals = {
+	"AuraUtil",
+	"BOOKTYPE_PET",
+	"BOOKTYPE_SPELL",
+	"CANCEL",
+	"C_AddOns",
+	"C_CurveUtil",
+	"C_Item",
+	"C_PaperDollInfo",
+	"C_SpecializationInfo",
+	"C_Spell",
+	"C_SpellBook",
+	"C_Timer",
+	"C_TooltipInfo",
+	"C_UnitAuras",
+	"ChatEdit_ActivateChat",
+	"ChatEdit_ChooseBoxForSend",
+	"ChatFrame_OpenChat",
+	"CheckInteractDistance",
+	"ClearCursor",
+	"CopyToClipboard",
+	"CreateColor",
+	"CreateColorFromHexString",
+	"CreateFrame",
+	"CreateSettingsListSectionHeaderInitializer",
+	"CurveConstants",
+	"DEFAULT_CHAT_FRAME",
+	"Enum",
+	"GameTooltip",
+	"GetActionInfo",
+	"GetActionTexture",
+	"GetBindingKey",
+	"GetBindingText",
+	"GetCVarBool",
+	"GetComboPoints",
+	"GetCursorInfo",
+	"GetInstanceInfo",
+	"GetInventoryItemID",
+	"GetMacroBody",
+	"GetMacroSpell",
+	"GetNumShapeshiftForms",
+	"GetShapeshiftFormInfo",
+	"GetSpellBaseCooldown",
+	"GetSpellBookItemName",
+	"GetTime",
+	"GetTotemInfo",
+	"GetWeaponEnchantInfo",
+	"HasAction",
+	"INVSLOT_MAINHAND",
+	"INVSLOT_OFFHAND",
+	"InCombatLockdown",
+	"IsActionInRange",
+	"IsAutoRepeatSpell",
+	"IsInGroup",
+	"IsMounted",
+	"IsPlayerSpell",
+	"IsResting",
+	"IsSpellKnown",
+	"IsSpellKnownOrOverridesKnown",
+	"IsSwimming",
+	"MinimalSliderWithSteppersMixin",
+	"NO",
+	"OKAY",
+	"PlaySound",
+	"RANGE_INDICATOR",
+	"SOUNDKIT",
+	"SPELL_FAILED_NOT_BEHIND",
+	"Settings",
+	"StaticPopup_Show",
+	"UIErrorsFrame",
+	"UIParent",
+	"UnitAffectingCombat",
+	"UnitAttackSpeed",
+	"UnitCanAttack",
+	"UnitCastingInfo",
+	"UnitChannelInfo",
+	"UnitClass",
+	"UnitClassBase",
+	"UnitClassification",
+	"UnitCreatureType",
+	"UnitDistanceSquared",
+	"UnitExists",
+	"UnitFactionGroup",
+	"UnitGUID",
+	"UnitHealth",
+	"UnitHealthMax",
+	"UnitHealthPercent",
+	"UnitIsDead",
+	"UnitIsDeadOrGhost",
+	"UnitIsPlayer",
+	"UnitIsUnit",
+	"UnitLevel",
+	"UnitOnTaxi",
+	"UnitPosition",
+	"UnitPower",
+	"UnitPowerMax",
+	"UnitPowerPercent",
+	"UnitRace",
+	"UnitRangedDamage",
+	"UnitReaction",
+	"UnitThreatSituation",
+	"YES",
+	"canaccessvalue",
+	"format",
+	"issecretvalue",
+	"strlower",
+	"strsub",
+	"strtrim",
+	"wipe",
+}
+
+-- Test specs, the test runner and dev tools run outside the game.
+files["tests/"] = {
+	std = "luajit",
+	globals = { "describe", "it", "before_each", "after_each" },
+	read_globals = { "jit" },
+}
+files["tools/"] = { std = "luajit" }
+files["types/"] = { ignore = { "1" } }

@@ -2,7 +2,9 @@
 
 Classic Era rotation helper for the **camelot** client of WoW Forever (interface `16001`, `_classic_beta_` folder). The player always presses the keys. The addon suggests up to 3 spells, plus a reminder for defense, interrupt, purge, dispel and weapon enchant, then puts a glow on the matching action bar button.
 
-See also [AGENTS.md](../AGENTS.md) for the repository, the AddOns path and the push rule.
+See also [AGENTS.md](../AGENTS.md) for the repository, the AddOns path, the push rule and the checks (tests, lint, format, types).
+
+Tests: `tests/run.lua` is a small describe / it runner with line coverage (pure Lua, LuaJIT `jit.util` for the executable lines, a line hook for the executed ones). `tests/wow.lua` builds a fresh WoW-like global environment per test (units, spells and spellbook, auras, totems, action slots, frames, events, timers, Settings API) and loads the addon files into it with `setfenv`, so module-local state never leaks between tests.
 
 ## Client constraints
 
@@ -47,7 +49,7 @@ Load order (single TOC): `Locale.lua` → `API.lua` → `Data.lua` → `Physics.
 | `Locale.lua` | English strings only. `ns.T(key)` returns the string, or the raw key if missing. |
 | `API.lua` | `ns.API`: resolution, spellbook, ready, auras, heals, enemies, weapon. |
 | `Data.lua` | IDs, roles, colors, racials, interrupts, purges, cleanses, enchants, long buffs, heals. |
-| `Physics.lua` | Swing, auto shot clip, energy tick. Option `ns.db.showPhysics`. No combat log. |
+| `Physics.lua` | Auto Shot clip, energy tick. Option `ns.db.showPhysics`. No combat log. |
 | `Lists.lua` | `ns.APLDefaults`, `ns.APLModes`, `ns.DefDefaults`. |
 | `APL.lua` | Read / write of saved lists, merge with defaults. |
 | `Share.lua` | Export / import of the active profile (`WFR1` text). |
@@ -176,7 +178,7 @@ The camelot client often hides `GetSpellCooldown` in combat. On a successful cas
 
 Overpower, Revenge, Riposte, Counterattack and Mongoose Bite (`opt.proc`) are only suggested if `IsSpellUsable` answers true. A hidden answer skips the step. The combat log is not read.
 
-`Physics.lua` (Behavior option `showPhysics`, default true): white hits for **all** classes via `PLAYER_ENTER_COMBAT` / `UNIT_ATTACK` + `UnitAttackSpeed` (main hand + off hand if dual wielding). The swing timer is a rough guess only: `UNIT_ATTACK` is not a per-swing event (the Blizzard paper doll refreshes its stats on it), so `ns.Physics.Blocks` no longer holds back the next-swing attacks (Heroic Strike, Cleave, Raptor Strike, Maul); it only blocks a hunter shot that would clip Auto Shot. `UNIT_SPELLCAST_SUCCEEDED` + Auto Shot 75 for the hunter clip; `UNIT_POWER_UPDATE` for the 2 s energy tick. Without an observed swing, the next-swing is not hidden. No `CombatLogGetCurrentEventInfo`. `UNIT_ATTACK` only restarts the hand whose timer has expired; a speed change realigns the progress. `UNIT_COMBAT` with `PARRY` on the player shortens the main hand swing by 40 %, without going under 20 % of the speed. The energy bar shows the remaining time and only resyncs on a tick of about 20. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
+`Physics.lua` (Behavior option `showPhysics`, "Classic Auto Shot timing", default true): `UNIT_SPELLCAST_SUCCEEDED` with Auto Shot (75) starts the shot timer, its length from `UnitRangedDamage` (secret in combat, so the last readable value is kept) or the ranged weapon tooltip. `ns.Physics.Blocks` holds Aimed Shot, Multi-Shot and Volley in the last 0.4 s before an Auto Shot; `StepOk` asks it, so the option really turns this off. `UNIT_POWER_UPDATE` resyncs the 2 s energy tick on a gain of about 20 (40 with Adrenaline Rush); `ns.Physics.EnergySoon` lets a spell through when its energy arrives within 0.45 s. There is no swing timer: `UNIT_ATTACK` is not a per-swing event and the combat log is blocked. A movable combo point window follows the HUD chrome for the rogue and the cat druid. Player settings are stored in `KnowYourRotationCharDB` (SavedVariablesPerCharacter). The first login copies `KnowYourRotationDB` once.
 
 A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through the power cost if `IsSpellUsable` is false or absent. A harmful spell with `usable == false` is refused.
 

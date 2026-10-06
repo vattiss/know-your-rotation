@@ -21,8 +21,6 @@ local function bindSimpleTip(frame, title, desc)
 	end)
 end
 
-
-
 local function makeGoldBtn(parent, width, height, label)
 	local btn = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	btn:SetSize(width, height)
@@ -297,8 +295,6 @@ local function ensureOptions()
 	bindSimpleTip(addSpell, ns.T("OPT_ADD_SPELL"), ns.T("OPT_DROP_SPELL"))
 	frame.addSpell = addSpell
 
-
-
 	local shareCard = makeCard(profiles, "OPT_CARD_SHARE", 8, -36, 648, 248)
 	local shareHint = shareCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	shareHint:SetPoint("TOPLEFT", 12, -28)
@@ -355,8 +351,6 @@ local function ensureOptions()
 		ns.Print(ns.T(msg or "OPT_IMPORT_BAD"))
 	end)
 	frame.importBtn = importBtn
-
-
 
 	function frame.RelocalizeChrome()
 		if frame.shareHint then
@@ -699,7 +693,6 @@ function ns.RefreshOptions()
 	child:SetHeight(math.max(40, y + 40))
 end
 
-
 -- The options live in the game's Settings window, under AddOns: one category
 -- for a landing page, with one sub-category (expandable with +) per page.
 local TABS = {
@@ -754,7 +747,15 @@ local function afterChange()
 end
 
 local function proxy(category, variable, varType, labelKey, default, get, set)
-	return Settings.RegisterProxySetting(category, "KnowYourRotation_" .. variable, varType, ns.T(labelKey), default, get, set)
+	return Settings.RegisterProxySetting(
+		category,
+		"KnowYourRotation_" .. variable,
+		varType,
+		ns.T(labelKey),
+		default,
+		get,
+		set
+	)
 end
 
 local function header(layout, labelKey)

@@ -1,0 +1,68 @@
+---@meta
+-- Type definitions for the Lua Language Server (LuaLS). Read by the editor
+-- only: this file is not in the TOC and is not shipped with the addon.
+
+---@class KYR.StepOpt Conditions of one list step (docs/ARCHITECTURE.md, "Step options").
+---@field hostile? boolean Needs an attackable target (range checked).
+---@field enemyTarget? boolean Needs an attackable target, no range check.
+---@field heal? boolean Heal: threshold from the healed unit's health.
+---@field unit? string Unit for health / auras ("player", "target", "pet").
+---@field hp? number Offered at or below this health percent.
+---@field hpMin? number Refused below this health percent.
+---@field hpPerCombo? number Target health threshold per combo point.
+---@field manaMax? number Offered at or below this mana percent.
+---@field minLevel? integer From this character level on.
+---@field nobuff? boolean|integer Not while this buff is up (true = the spell itself).
+---@field nodebuff? boolean|integer Not while this debuff is on the target (true = the spell itself).
+---@field needbuff? integer Needs this buff on the player.
+---@field needanybuff? integer[] Needs one of these buffs on the player.
+---@field needdebuff? integer Needs this debuff on the target.
+---@field anybuff? integer[] Refused while any of these buffs is up.
+---@field anydebuff? integer[] Refused while any of these debuffs is on the target.
+---@field refresh? number Re-offer when the aura has this many seconds left.
+---@field stacks? integer Keep applying until this many stacks.
+---@field hold? number Seconds after a cast before it is offered again.
+---@field filler? boolean Spam spell: no hold, yields slot 1 to ready actions.
+---@field swing? boolean Next-swing attack.
+---@field proc? boolean|string Only while the client reports it usable.
+---@field usable? boolean Only while the client reports it usable.
+---@field ready? boolean false = skip cooldown and usability tests.
+---@field combat? boolean Only in combat.
+---@field nocombat? boolean Only out of combat.
+---@field engaged? boolean In combat or with an enemy targeted.
+---@field comboMin? integer Minimum combo points.
+---@field totem? boolean Totem: offered when it is not down (or far away).
+---@field pet? boolean Needs a pet.
+---@field nopet? boolean Only without a pet.
+---@field petDead? boolean Only while the hunter pet is dead.
+---@field notPetDead? boolean Not while the hunter pet is dead.
+---@field form? integer Needs this form / stance.
+---@field noform? integer Not in this form / stance.
+---@field creature? string|string[] Only for these creature types.
+---@field nocreature? boolean|string|string[] Not for these creature types.
+---@field skipLow? boolean Not on an almost dead target.
+---@field targetMana? boolean Only on a target with mana.
+---@field ifTargeting? boolean Only while the target attacks you.
+---@field behind? boolean Must be behind the target.
+---@field notMelee? boolean Not with the target in melee range.
+---@field inMelee? boolean Only with the target in melee range.
+---@field notKnown? integer Refused once this spell is learned.
+---@field needKnownAny? integer[] Needs one of these spells learned.
+---@field notTree? string Refused for a talent tree whose name has this word.
+---@field swimming? boolean Only while swimming.
+---@field inGroup? boolean Only in a group.
+---@field orPet? boolean With inGroup: a pet out is enough.
+---@field enemiesMin? integer Needs this many enemies near you.
+---@field enemiesYards? number Range for enemiesMin.
+---@field autoRepeat? boolean Auto Shot / wand: only while it is off.
+---@field role? string Only for this role.
+---@field noHpGate? boolean Internal: health checked by a hidden-health glow.
+---@field noManaGate? boolean Internal: mana checked by a hidden-mana glow.
+
+---@class KYR.Step One entry of a rotation or defense list.
+---@field key string Unique key in the list.
+---@field id integer Spell ID (resolved by name + spellbook at use).
+---@field opt KYR.StepOpt
+---@field on boolean Enabled.
+---@field custom? boolean Added by the player.
+---@field racial? boolean Racial added automatically.

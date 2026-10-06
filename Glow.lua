@@ -71,21 +71,63 @@ local function isToken(value, expected)
 end
 
 local ACCENT_FOLD = {
-	["à"] = "a", ["á"] = "a", ["â"] = "a", ["ã"] = "a", ["ä"] = "a", ["å"] = "a",
-	["À"] = "a", ["Á"] = "a", ["Â"] = "a", ["Ã"] = "a", ["Ä"] = "a", ["Å"] = "a",
-	["è"] = "e", ["é"] = "e", ["ê"] = "e", ["ë"] = "e",
-	["È"] = "e", ["É"] = "e", ["Ê"] = "e", ["Ë"] = "e",
-	["ì"] = "i", ["í"] = "i", ["î"] = "i", ["ï"] = "i",
-	["Ì"] = "i", ["Í"] = "i", ["Î"] = "i", ["Ï"] = "i",
-	["ò"] = "o", ["ó"] = "o", ["ô"] = "o", ["õ"] = "o", ["ö"] = "o",
-	["Ò"] = "o", ["Ó"] = "o", ["Ô"] = "o", ["Õ"] = "o", ["Ö"] = "o",
-	["ù"] = "u", ["ú"] = "u", ["û"] = "u", ["ü"] = "u",
-	["Ù"] = "u", ["Ú"] = "u", ["Û"] = "u", ["Ü"] = "u",
-	["ý"] = "y", ["ÿ"] = "y", ["Ý"] = "y",
-	["ç"] = "c", ["Ç"] = "c",
-	["ñ"] = "n", ["Ñ"] = "n",
-	["œ"] = "oe", ["Œ"] = "oe",
-	["æ"] = "ae", ["Æ"] = "ae",
+	["à"] = "a",
+	["á"] = "a",
+	["â"] = "a",
+	["ã"] = "a",
+	["ä"] = "a",
+	["å"] = "a",
+	["À"] = "a",
+	["Á"] = "a",
+	["Â"] = "a",
+	["Ã"] = "a",
+	["Ä"] = "a",
+	["Å"] = "a",
+	["è"] = "e",
+	["é"] = "e",
+	["ê"] = "e",
+	["ë"] = "e",
+	["È"] = "e",
+	["É"] = "e",
+	["Ê"] = "e",
+	["Ë"] = "e",
+	["ì"] = "i",
+	["í"] = "i",
+	["î"] = "i",
+	["ï"] = "i",
+	["Ì"] = "i",
+	["Í"] = "i",
+	["Î"] = "i",
+	["Ï"] = "i",
+	["ò"] = "o",
+	["ó"] = "o",
+	["ô"] = "o",
+	["õ"] = "o",
+	["ö"] = "o",
+	["Ò"] = "o",
+	["Ó"] = "o",
+	["Ô"] = "o",
+	["Õ"] = "o",
+	["Ö"] = "o",
+	["ù"] = "u",
+	["ú"] = "u",
+	["û"] = "u",
+	["ü"] = "u",
+	["Ù"] = "u",
+	["Ú"] = "u",
+	["Û"] = "u",
+	["Ü"] = "u",
+	["ý"] = "y",
+	["ÿ"] = "y",
+	["Ý"] = "y",
+	["ç"] = "c",
+	["Ç"] = "c",
+	["ñ"] = "n",
+	["Ñ"] = "n",
+	["œ"] = "oe",
+	["Œ"] = "oe",
+	["æ"] = "ae",
+	["Æ"] = "ae",
 }
 
 local function foldAccents(name)
@@ -925,7 +967,12 @@ local function hiddenGlow(key, unit, colorKey, query, apiName)
 		clear()
 		if not warned and UIErrorsFrame then
 			warned = true
-			UIErrorsFrame:AddMessage("Know Your Rotation: a health or mana cue is unavailable (" .. reason .. ").", 1, 0.3, 0.3)
+			UIErrorsFrame:AddMessage(
+				"Know Your Rotation: a health or mana cue is unavailable (" .. reason .. ").",
+				1,
+				0.3,
+				0.3
+			)
 		end
 	end
 	return function(spellID, threshold)
@@ -1231,9 +1278,7 @@ local function shortKey(text)
 	local mouse = text:match("(%d+)%s*$")
 	if mouse and #text > 4 then
 		local low = text:lower()
-		if low:find("button", 1, true)
-			or low:find("mouse", 1, true)
-		then
+		if low:find("button", 1, true) or low:find("mouse", 1, true) then
 			local prefix = text:match("^([SCA]+)")
 			if prefix and #prefix < #text then
 				return prefix .. "M" .. mouse

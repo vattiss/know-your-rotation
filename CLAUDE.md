@@ -3,6 +3,8 @@
 # Working notes for Claude Code
 
 - LuaJIT (Lua 5.1 compatible, like WoW) is installed but not on PATH: `%LOCALAPPDATA%\Programs\LuaJIT\bin\luajit.exe`. After editing Lua, syntax-check each file with `luajit -bl <file>.lua` (exit code non-zero = error). This only checks syntax; the WoW API is not available, so nothing is actually run. Say so plainly.
+- Run the checks from AGENTS.md "Checks" before reporting a change: `luajit tests/run.lua` (LuaJIT path above), StyLua (`%LOCALAPPDATA%\Microsoft\WinGet\Packages\JohnnyMorganz.StyLua_Microsoft.Winget.Source_8wekyb3d8bbwe\stylua.exe`), luacheck (`%USERPROFILE%\.luarocks\bin\luacheck.bat` with `LUA_PATH=<repo>/tools/?.lua;;`, because there is no C compiler for LuaFileSystem; `tools/lfs.lua` stands in), LuaLS (`lua-language-server --check=<repo> --checklevel=Warning`). Raise `tests/MIN_COVERAGE` when coverage grows.
+- When formatting, compare the LuaJIT bytecode before and after (`luajit -bl`, with line numbers stripped): StyLua must not change behaviour.
 - Lua patterns have no alternation: `(A|B)` does not work. Match a generic prefix, then compare in code.
 - Match the surrounding style: tab indentation, `local addonName, ns = ...` header, `ns.T("KEY")` for every player-facing string (add the key to `Locale.lua`).
 - Start every task with the docs, as AGENTS.md "Before you start any change" says: the matching `docs/ARCHITECTURE.md` section first, then the API docs of every Blizzard function / event you touch. Do this for bug hunts and reviews too: a suspected bug in a Blizzard call (argument or return order, nil, secret value) is confirmed in the API docs before it is reported or fixed, and the reply cites the doc file and line.

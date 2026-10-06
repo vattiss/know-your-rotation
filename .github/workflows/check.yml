@@ -68,5 +68,15 @@ jobs:
             exit 1
           fi
 
-      - name: Lint (luacheck)
-        run: luacheck *.lua
+      - name: Lint (luacheck, strict WoW globals)
+        run: luacheck *.lua tests tools types
+
+      - name: Formatting (StyLua)
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 2.5.2
+          args: --check .
+
+      - name: Unit tests and coverage
+        run: luajit tests/run.lua --min=$(cat tests/MIN_COVERAGE)

@@ -576,7 +576,7 @@ function ns.Tick()
 	local interrupt = ns.db.showInterrupt ~= false and not idle and ns.BuildInterrupt() or nil
 	local purge = ns.db.showPurge ~= false and not idle and ns.BuildPurge() or nil
 	local cleanse = ns.db.showCleanse ~= false and not idle and ns.BuildCleanse() or nil
-	local weapon, weaponNeed
+	local weapon, weaponNeed, _
 	if ns.db.showWeapon ~= false and not idle then
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
@@ -602,7 +602,32 @@ function ns.Tick()
 	else
 		lastAlertWeapon = weapon
 	end
-	local sig = (queue[1] or 0) .. (ns.queueGlowOk and "g" or "n") .. ":" .. (queue[2] or 0) .. ":" .. (queue[3] or 0) .. ":" .. (defense or 0) .. ":" .. (interrupt or 0) .. ":" .. (purge or 0) .. ":" .. (cleanse or 0) .. ":" .. (weapon or 0) .. ":" .. (weaponNeed and 1 or 0) .. ":" .. flagBit(ns.db.showRotation) .. flagBit(ns.db.showDefense) .. flagBit(ns.db.showInterrupt) .. flagBit(ns.db.showPurge) .. flagBit(ns.db.showCleanse) .. flagBit(ns.db.showWeapon) .. flagBit(not idle)
+	local sig = (queue[1] or 0)
+		.. (ns.queueGlowOk and "g" or "n")
+		.. ":"
+		.. (queue[2] or 0)
+		.. ":"
+		.. (queue[3] or 0)
+		.. ":"
+		.. (defense or 0)
+		.. ":"
+		.. (interrupt or 0)
+		.. ":"
+		.. (purge or 0)
+		.. ":"
+		.. (cleanse or 0)
+		.. ":"
+		.. (weapon or 0)
+		.. ":"
+		.. (weaponNeed and 1 or 0)
+		.. ":"
+		.. flagBit(ns.db.showRotation)
+		.. flagBit(ns.db.showDefense)
+		.. flagBit(ns.db.showInterrupt)
+		.. flagBit(ns.db.showPurge)
+		.. flagBit(ns.db.showCleanse)
+		.. flagBit(ns.db.showWeapon)
+		.. flagBit(not idle)
 	-- Heal cue when health is hidden: refreshed every tick, the client drives alpha.
 	local hiddenHeal, hiddenThreshold
 	if ns.db.showRotation ~= false and not idle and ns.BuildHiddenHeal then
@@ -816,10 +841,7 @@ end
 local function liveAuraUnit(unit)
 	-- Player + current targets only. Party auras were wiping caches constantly
 	-- in groups and forcing extra work that felt like input lag.
-	return unit == "player"
-		or unit == "target"
-		or unit == "focus"
-		or unit == "mouseover"
+	return unit == "player" or unit == "target" or unit == "focus" or unit == "mouseover"
 end
 
 frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
@@ -877,7 +899,13 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			ns.ApplyAutoProfile()
 		end
 		forceTick()
-	elseif event == "PLAYER_DEAD" or event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_MOUNT_DISPLAY_CHANGED" then
+	elseif
+		event == "PLAYER_DEAD"
+		or event == "PLAYER_ALIVE"
+		or event == "PLAYER_UNGHOST"
+		or event == "PLAYER_UPDATE_RESTING"
+		or event == "PLAYER_MOUNT_DISPLAY_CHANGED"
+	then
 		-- Totems vanish when you die.
 		if event == "PLAYER_DEAD" and ns.API and ns.API.ClearTotems then
 			ns.API.ClearTotems()
@@ -937,7 +965,12 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			local castName = lastPlayerCastName
 			lastPlayerCastName = nil
 			local id = spellID
-			if (id == nil or (issecretvalue and issecretvalue(id))) and castName and ns.API and ns.API.ResolveFromName then
+			if
+				(id == nil or (issecretvalue and issecretvalue(id)))
+				and castName
+				and ns.API
+				and ns.API.ResolveFromName
+			then
 				id = ns.API.ResolveFromName(castName)
 			end
 			if ns.API and ns.API.NoteSelfBuff then
@@ -1011,8 +1044,11 @@ frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
 			ns.NoteWeaponEnchantChanged()
 		end
 		requestTick()
-	elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_SHAPESHIFT_FORM" then
+	elseif
+		event == "ACTIONBAR_SLOT_CHANGED"
+		or event == "ACTIONBAR_PAGE_CHANGED"
+		or event == "UPDATE_SHAPESHIFT_FORM"
+	then
 		scheduleBarFlush()
 	end
 end)
-

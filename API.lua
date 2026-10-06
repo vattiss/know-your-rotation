@@ -37,9 +37,7 @@ local function junkSpellName(name)
 		return true
 	end
 	local upper = name:upper()
-	return upper:find("TEST", 1, true)
-		or upper:find("(OLD)", 1, true)
-		or upper:find("(PT)", 1, true)
+	return upper:find("TEST", 1, true) or upper:find("(OLD)", 1, true) or upper:find("(PT)", 1, true)
 end
 
 local function spellIdFromName(name)
@@ -113,21 +111,63 @@ end
 -- Forever lab clients often drop accents (Eclair vs Éclair). Fold so Resolve
 -- matches the spellbook for every class spell and racial by name.
 local ACCENT_FOLD = {
-	["à"] = "a", ["á"] = "a", ["â"] = "a", ["ã"] = "a", ["ä"] = "a", ["å"] = "a",
-	["À"] = "a", ["Á"] = "a", ["Â"] = "a", ["Ã"] = "a", ["Ä"] = "a", ["Å"] = "a",
-	["è"] = "e", ["é"] = "e", ["ê"] = "e", ["ë"] = "e",
-	["È"] = "e", ["É"] = "e", ["Ê"] = "e", ["Ë"] = "e",
-	["ì"] = "i", ["í"] = "i", ["î"] = "i", ["ï"] = "i",
-	["Ì"] = "i", ["Í"] = "i", ["Î"] = "i", ["Ï"] = "i",
-	["ò"] = "o", ["ó"] = "o", ["ô"] = "o", ["õ"] = "o", ["ö"] = "o",
-	["Ò"] = "o", ["Ó"] = "o", ["Ô"] = "o", ["Õ"] = "o", ["Ö"] = "o",
-	["ù"] = "u", ["ú"] = "u", ["û"] = "u", ["ü"] = "u",
-	["Ù"] = "u", ["Ú"] = "u", ["Û"] = "u", ["Ü"] = "u",
-	["ý"] = "y", ["ÿ"] = "y", ["Ý"] = "y",
-	["ç"] = "c", ["Ç"] = "c",
-	["ñ"] = "n", ["Ñ"] = "n",
-	["œ"] = "oe", ["Œ"] = "oe",
-	["æ"] = "ae", ["Æ"] = "ae",
+	["à"] = "a",
+	["á"] = "a",
+	["â"] = "a",
+	["ã"] = "a",
+	["ä"] = "a",
+	["å"] = "a",
+	["À"] = "a",
+	["Á"] = "a",
+	["Â"] = "a",
+	["Ã"] = "a",
+	["Ä"] = "a",
+	["Å"] = "a",
+	["è"] = "e",
+	["é"] = "e",
+	["ê"] = "e",
+	["ë"] = "e",
+	["È"] = "e",
+	["É"] = "e",
+	["Ê"] = "e",
+	["Ë"] = "e",
+	["ì"] = "i",
+	["í"] = "i",
+	["î"] = "i",
+	["ï"] = "i",
+	["Ì"] = "i",
+	["Í"] = "i",
+	["Î"] = "i",
+	["Ï"] = "i",
+	["ò"] = "o",
+	["ó"] = "o",
+	["ô"] = "o",
+	["õ"] = "o",
+	["ö"] = "o",
+	["Ò"] = "o",
+	["Ó"] = "o",
+	["Ô"] = "o",
+	["Õ"] = "o",
+	["Ö"] = "o",
+	["ù"] = "u",
+	["ú"] = "u",
+	["û"] = "u",
+	["ü"] = "u",
+	["Ù"] = "u",
+	["Ú"] = "u",
+	["Û"] = "u",
+	["Ü"] = "u",
+	["ý"] = "y",
+	["ÿ"] = "y",
+	["Ý"] = "y",
+	["ç"] = "c",
+	["Ç"] = "c",
+	["ñ"] = "n",
+	["Ñ"] = "n",
+	["œ"] = "oe",
+	["Œ"] = "oe",
+	["æ"] = "ae",
+	["Æ"] = "ae",
 }
 
 local function foldAccents(name)
@@ -675,6 +715,9 @@ local function playerKnows(id)
 	return false
 end
 
+---The spell ID the player knows for this spell (by name + spellbook).
+---@param spellID integer
+---@return integer?
 function ns.API.Resolve(spellID)
 	if not spellID then
 		return nil
@@ -722,6 +765,8 @@ function ns.API.Resolve(spellID)
 	return nil
 end
 
+---@param spellID integer
+---@return boolean
 function ns.API.Known(spellID)
 	return ns.API.Resolve(spellID) ~= nil
 end
@@ -1043,6 +1088,7 @@ function ns.API.NoteSpellHold(spellID, seconds)
 		return
 	end
 	local exp = GetTime() + seconds
+	---@type string|false
 	local guid = "self"
 	if holdBindsToTarget(spellID) then
 		guid = holdTargetGuid() or false
@@ -1050,6 +1096,9 @@ function ns.API.NoteSpellHold(spellID, seconds)
 	writeHold(spellID, exp, guid)
 end
 
+---Seconds left on the spell's hold after its last cast.
+---@param spellID integer
+---@return number
 function ns.API.HoldRemain(spellID)
 	if not spellID then
 		return 0
@@ -1139,6 +1188,10 @@ local function readSpellCooldown(spellID)
 	return remain, duration, false
 end
 
+---Seconds left on the spell's own cooldown (GCD ignored), and its length.
+---@param spellID integer
+---@return number remain
+---@return number duration
 function ns.API.Cooldown(spellID)
 	spellID = ns.API.Resolve(spellID) or spellID
 	if not spellID then
@@ -1386,6 +1439,10 @@ end
 -- Unknown is never treated as in-range for the first HUD slot.
 -- Yard band can override a wrong/secret IsSpellInRange so melee spells
 -- stay out at distance and long-range spells can still win slot 1 (all classes).
+---Range of the spell's target: "in", "out", "unknown" or "none" (no range).
+---@param spellID integer
+---@param opt? KYR.StepOpt
+---@return "in"|"out"|"unknown"|"none"
 function ns.API.RangeState(spellID, opt)
 	opt = opt or {}
 	local id = ns.API.Resolve(spellID) or spellID
@@ -1459,6 +1516,9 @@ local function mouseoverCastOn()
 	return ok and on == true
 end
 
+---The unit a press of a heal would land on.
+---@param opt? KYR.StepOpt
+---@return string
 function ns.API.HealUnit(opt)
 	opt = opt or {}
 	if opt.unit and unitExists(opt.unit) then
@@ -1480,7 +1540,6 @@ end
 function ns.API.HealRangeUnit(opt)
 	return ns.API.HealUnit(opt)
 end
-
 
 local function hasResources(id)
 	if C_Spell and C_Spell.GetSpellPowerCost then
@@ -1559,6 +1618,10 @@ local function reject(reason)
 	return false
 end
 
+---Why a step is not offered now, or nil when it is.
+---@param spellID integer
+---@param opt? KYR.StepOpt
+---@return string?
 function ns.API.WhyNot(spellID, opt)
 	rejectReason = nil
 	if ns.API.StepOk(spellID, opt, 0.2) then
@@ -1567,6 +1630,11 @@ function ns.API.WhyNot(spellID, opt)
 	return rejectReason or "unknown"
 end
 
+---Is this list step offered right now? Fills the WhyNot reason when not.
+---@param spellID integer
+---@param opt? KYR.StepOpt
+---@param timeShift? number Look-ahead in seconds (at least 0.2).
+---@return boolean
 function ns.API.StepOk(spellID, opt, timeShift)
 	spellID = ns.API.Resolve(spellID) or spellID
 	if not spellID or not ns.API.Known(spellID) then
@@ -1751,6 +1819,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	end
 	if opt.nodebuff then
 		local debuff = opt.nodebuff == true and spellID or opt.nodebuff
+		---@cast debuff integer
 		-- Seals / buffs are "helpful" but judgement/DoT checks always use the enemy.
 		local debuffUnit = opt.unit or ((helpful and opt.heal) and auraUnit or "target")
 		local found, remain, unreadable, _, stacks = ns.API.FindAura(debuff, debuffUnit, "HARMFUL")
@@ -1906,7 +1975,7 @@ function ns.API.StepOk(spellID, opt, timeShift)
 	if opt.ready == false then
 		return true
 	end
-	if ns.Physics and ns.Physics.IsClip and ns.Physics.IsClip(spellID) and ns.Physics.WouldClip and ns.Physics.WouldClip() then
+	if ns.Physics and ns.Physics.Blocks and ns.Physics.Blocks(spellID) then
 		return reject("would clip Auto Shot")
 	end
 	if ns.API.Ready(spellID, opt, true) then
@@ -2017,7 +2086,16 @@ local function comboNameSets()
 		end
 	end
 	-- By key, so a spell missing from ns.Spell does not cut the list short.
-	for _, key in ipairs({ "SinisterStrike", "Backstab", "Hemorrhage", "GhostlyStrike", "Ambush", "Garrote", "Gouge", "Mutilate" }) do
+	for _, key in ipairs({
+		"SinisterStrike",
+		"Backstab",
+		"Hemorrhage",
+		"GhostlyStrike",
+		"Ambush",
+		"Garrote",
+		"Gouge",
+		"Mutilate",
+	}) do
 		add(comboBuilders, R[key])
 	end
 	for _, key in ipairs({ "Claw", "Shred", "Rake", "Ravage", "Pounce", "MangleCat" }) do
@@ -2140,6 +2218,7 @@ function ns.API.PredictConsume(spellID, opt)
 	predict.taken = (predict.taken or 0) + 1
 	if opt.nodebuff then
 		local debuff = opt.nodebuff == true and spellID or opt.nodebuff
+		---@cast debuff integer
 		predictMarkDebuff(debuff)
 		predictMarkDebuff(spellID)
 	end
@@ -2443,6 +2522,12 @@ local function auraBySpellName(unit, name, filter)
 	end
 end
 
+---Aura present, including the remembered state when the client hides auras.
+---@param spellID integer
+---@param unit? string
+---@param filter? string "HELPFUL" or "HARMFUL"
+---@return boolean found
+---@return number remain 9999 = unknown or permanent
 function ns.API.HasAura(spellID, unit, filter)
 	unit = unit or "player"
 	filter = filter or "HELPFUL"
@@ -2451,17 +2536,29 @@ function ns.API.HasAura(spellID, unit, filter)
 		local name = ns.API.SpellName(resolved or spellID)
 		local key = type(name) == "string" and name ~= "" and normName(name) or nil
 		if filter == "HELPFUL" and unit == "player" then
-			if (resolved and predict.usedBuffs[resolved]) or (spellID and predict.usedBuffs[spellID]) or (key and predict.usedBuffs[key]) then
+			if
+				(resolved and predict.usedBuffs[resolved])
+				or (spellID and predict.usedBuffs[spellID])
+				or (key and predict.usedBuffs[key])
+			then
 				return false, 0
 			end
 		end
 		if filter == "HARMFUL" and (unit == "target" or unit == "") then
-			if (resolved and predict.debuffs[resolved]) or (spellID and predict.debuffs[spellID]) or (key and predict.debuffs[key]) then
+			if
+				(resolved and predict.debuffs[resolved])
+				or (spellID and predict.debuffs[spellID])
+				or (key and predict.debuffs[key])
+			then
 				return true, 9999
 			end
 		end
 		if filter == "HELPFUL" and unit == "player" then
-			if (resolved and predict.buffs[resolved]) or (spellID and predict.buffs[spellID]) or (key and predict.buffs[key]) then
+			if
+				(resolved and predict.buffs[resolved])
+				or (spellID and predict.buffs[spellID])
+				or (key and predict.buffs[key])
+			then
 				return true, 9999
 			end
 		end
@@ -2525,6 +2622,15 @@ local function sharedDebuff(spellID, wantKey)
 	return wantKey and sharedNames[wantKey] or false
 end
 
+---Raw aura read: found, remain, unreadable, families seen, stacks.
+---@param spellID integer
+---@param unit? string
+---@param filter? string
+---@return boolean found
+---@return number remain
+---@return boolean unreadable
+---@return table? families
+---@return integer stacks
 function ns.API.FindAura(spellID, unit, filter)
 	if not spellID then
 		return false, 0, false, nil, 0
@@ -2614,6 +2720,9 @@ function ns.API.Hostile()
 	return reaction <= 4
 end
 
+---Health percent of the unit; 100 when the client hides it.
+---@param unit? string Defaults to "player".
+---@return number
 function ns.API.Health(unit)
 	unit = unit or "player"
 	local health = safe(UnitHealth(unit), nil)
@@ -2964,7 +3073,13 @@ local function readTotemSlot(slot)
 	if not haveTotem then
 		return false
 	end
-	if not readable(totemName) or not readable(startTime) or not readable(duration) or type(totemName) ~= "string" or totemName == "" then
+	if
+		not readable(totemName)
+		or not readable(startTime)
+		or not readable(duration)
+		or type(totemName) ~= "string"
+		or totemName == ""
+	then
 		return nil
 	end
 	return normName(totemName), tonumber(startTime) or 0, tonumber(duration) or 0
@@ -3027,6 +3142,9 @@ function ns.API.ClearTotems()
 	wipe(totemOut)
 end
 
+---Seconds left on this totem; 0 when it is not down or you walked away.
+---@param spellID integer
+---@return number
 function ns.API.TotemRemain(spellID)
 	if not spellID or not GetTotemInfo then
 		return 0
@@ -3140,7 +3258,8 @@ function ns.API.CombatNotice()
 	if token == "HUNTER" then
 		summons = { "CallPet" }
 	else
-		summons = { "SummonImp", "SummonVoidwalker", "SummonSuccubus", "SummonFelhunter", "SummonIncubus", "SummonFelguard" }
+		summons =
+			{ "SummonImp", "SummonVoidwalker", "SummonSuccubus", "SummonFelhunter", "SummonIncubus", "SummonFelguard" }
 	end
 	local book = token == "HUNTER" and ns.Spell.Hunter or ns.Spell.Warlock
 	local canSummon = false
@@ -3652,7 +3771,11 @@ local function readWeaponEnchant(offhand)
 		if type(src[1]) == "table" then
 			local t = src[1]
 			if offhand then
-				has, remain, enchId = interpretEnchant(pickField(t, "hasOffHandEnchant", 5), pickField(t, "offHandExpiration", 6), pickField(t, "offHandEnchantID", 8))
+				has, remain, enchId = interpretEnchant(
+					pickField(t, "hasOffHandEnchant", 5),
+					pickField(t, "offHandExpiration", 6),
+					pickField(t, "offHandEnchantID", 8)
+				)
 			else
 				has, remain, enchId = interpretEnchant(t)
 			end

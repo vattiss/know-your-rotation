@@ -3,7 +3,9 @@ Thumbs.db
 desktop.ini
 *.bak
 *.tmp
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.log
 

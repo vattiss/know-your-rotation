@@ -31,9 +31,6 @@ local function copyOpt(opt)
 end
 
 local function injectHold(opt, spellID)
-	if type(opt) ~= "table" then
-		opt = {}
-	end
 	-- Every spell gets an editable hold. Unknown aura length → 0 (no aura
 	-- re-cast delay). The queue still walks list order and never stacks the
 	-- same non-swing spell three times.
@@ -85,9 +82,6 @@ local function readableText(value)
 end
 
 local function listHas(list, value)
-	if not list or value == nil then
-		return false
-	end
 	for _, item in ipairs(list) do
 		if item == value then
 			return true
@@ -127,19 +121,19 @@ function ns.RaceId()
 		end
 		if name then
 			local lower = name:lower()
-			if lower:find("humain", 1, true) or lower == "human" then
+			if lower == "human" then
 				return 1
 			end
 			if lower:find("orc", 1, true) then
 				return 2
 			end
-			if lower:find("nain", 1, true) or lower == "dwarf" then
+			if lower == "dwarf" then
 				return 3
 			end
-			if lower:find("nuit", 1, true) or lower:find("night", 1, true) then
+			if lower:find("night", 1, true) then
 				return 4
 			end
-			if lower:find("mort", 1, true) or lower:find("undead", 1, true) or lower:find("forsaken", 1, true) then
+			if lower:find("undead", 1, true) or lower:find("forsaken", 1, true) then
 				return 5
 			end
 			if lower:find("tauren", 1, true) then
@@ -151,7 +145,7 @@ function ns.RaceId()
 			if lower:find("troll", 1, true) then
 				return 8
 			end
-			if lower:find("olide", 1, true) or lower:find("aeolid", 1, true) or lower:find("skyborne", 1, true) then
+			if lower:find("aeolid", 1, true) or lower:find("skyborne", 1, true) then
 				local fac = ns.Faction()
 				if fac == "Horde" then
 					return 96
@@ -205,7 +199,6 @@ function ns.RacialSteps(defensiveOnly)
 	end
 	return out
 end
-
 
 function ns.ActiveSpec()
 	local token = ns.ClassToken and ns.ClassToken() or ""
@@ -310,7 +303,9 @@ local function validMode(mode)
 end
 
 local function isModeBucket(saved)
-	return type(saved) == "table" and (saved.auto ~= nil or saved.single ~= nil or saved.aoe ~= nil or saved.burst ~= nil) and saved[1] == nil
+	return type(saved) == "table"
+		and (saved.auto ~= nil or saved.single ~= nil or saved.aoe ~= nil or saved.burst ~= nil)
+		and saved[1] == nil
 end
 
 local function savedForMode(saved, mode)
@@ -449,9 +444,6 @@ end
 local function mergeSteps(defaults, saved, dropped, skipMaint)
 	dropped = dropped or {}
 	if not saved then
-		if not next(dropped) then
-			return defaults
-		end
 		local out = {}
 		for _, def in ipairs(defaults) do
 			if not dropped[def.key] and not skipCombatOnly(def.id, skipMaint) then
@@ -487,8 +479,21 @@ local function mergeSteps(defaults, saved, dropped, skipMaint)
 				seen[row.key] = true
 			elseif (row.id or row.custom) and not skipCombatOnly(row.id, skipMaint) then
 				local opt = applySavedHold(copyOpt(row.opt), row, row.id)
-				if ns.API.IsHelpful and ns.API.IsHelpful(row.id, opt) and not opt.heal then
-					opt.heal = true
+				local helpful = ns.API.IsHelpful(row.id, opt)
+				-- Saved rows keep only key, on, id and hold: give the custom spell
+				-- back the conditions AddAPL / AddDef set. Rotation (skipMaint): a
+				-- heal, or an enemy target; defense: only in combat.
+				if skipMaint then
+					if helpful and not ns.API.IsHarmful(row.id) then
+						opt.heal = true
+					else
+						opt.hostile = true
+					end
+				else
+					if helpful then
+						opt.heal = true
+					end
+					opt.combat = true
 				end
 				out[#out + 1] = {
 					key = row.key,
@@ -741,7 +746,9 @@ function ns.AddAPL(spellID, classFile, spec, mode, atIndex)
 		step = {
 			key = customKey(spellID),
 			id = spellID,
-			opt = (ns.API.IsHelpful and ns.API.IsHelpful(spellID) and not (ns.API.IsHarmful and ns.API.IsHarmful(spellID))) and { heal = true } or { hostile = true },
+			opt = (ns.API.IsHelpful and ns.API.IsHelpful(spellID) and not (ns.API.IsHarmful and ns.API.IsHarmful(
+				spellID
+			))) and { heal = true } or { hostile = true },
 			on = true,
 			custom = true,
 		}

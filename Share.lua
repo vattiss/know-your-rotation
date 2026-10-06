@@ -6,9 +6,6 @@ end
 
 local function packSteps(rows)
 	local parts = {}
-	if type(rows) ~= "table" then
-		return ""
-	end
 	for _, row in ipairs(rows) do
 		if type(row) == "table" and row.key then
 			local chunk = esc(row.key) .. ":" .. (row.on == 0 and "0" or "1")
@@ -27,9 +24,6 @@ end
 
 local function packDrops(map)
 	local parts = {}
-	if type(map) ~= "table" then
-		return ""
-	end
 	for key, yes in pairs(map) do
 		if yes and type(key) == "string" then
 			parts[#parts + 1] = esc(key)
@@ -53,7 +47,14 @@ local function writeApl(lines, prefix, root)
 						for mode, rows in pairs(bucket) do
 							if type(mode) == "string" and type(rows) == "table" then
 								if mode == "auto" or mode == "single" or mode == "aoe" then
-									lines[#lines + 1] = prefix .. class .. "." .. spec .. "." .. mode .. "=" .. packSteps(rows)
+									lines[#lines + 1] = prefix
+										.. class
+										.. "."
+										.. spec
+										.. "."
+										.. mode
+										.. "="
+										.. packSteps(rows)
 								end
 							end
 						end

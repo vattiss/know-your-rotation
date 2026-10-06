@@ -40,7 +40,7 @@ The folder must contain `KnowYourRotation.toc`, the `.lua` files and the `images
 | **Weapon buff** | A missing or expiring weapon buff (shaman imbues, rogue poisons on each hand, warlock stones) |
 | **Messages** | A screen message when a cue spell is not on your action bars, and pet reminders for hunters and warlocks |
 
-Swing spells (Heroic Strike, Maul, Raptor Strike) wait for your next swing, Aimed and Multi-Shot avoid clipping Auto Shot, and energy spells account for the next energy tick.
+Aimed Shot, Multi-Shot and Volley avoid clipping Auto Shot, and energy spells account for the next energy tick.
 ### Glow colors
 
 | Color | Meaning |
@@ -113,7 +113,7 @@ KnowYourRotation.toc           # load order
 Locale.lua                     # English strings
 API.lua                        # spell resolve, auras, ready, heals
 Data.lua                       # IDs, racials, interrupts, cleanse
-Physics.lua                    # swing / auto-shot / energy timing
+Physics.lua                    # Auto Shot clip / energy tick timing
 Lists.lua                      # default APLs and defense lists
 APL.lua                        # saved lists, merge, add/remove
 Share.lua                      # profile import / export
@@ -123,6 +123,8 @@ Glow.lua                       # action-bar glow
 Rotations.lua                  # queue and cue builders
 Core.lua                       # profiles, events, auto role / profile
 images/logo.tga                # add-on list icon (128x128, made by art/logo.ps1)
+tests/                         # unit tests and the WoW API stand-in (not shipped)
+tools/, types/                 # dev helpers and LuaLS type definitions (not shipped)
 ```
 
 Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per character).
@@ -137,7 +139,7 @@ Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per c
 
 The player guide above is not the implementation map. Before changing code, read [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Every push runs a check on GitHub (syntax, TOC file list, version match, lint). Releases are built by GitHub Actions from a version tag (`v1.0.0-beta.1`): bump `VERSION.txt` and the TOC, push, then push the tag. The release zip comes with a SHA-256 checksum and a GitHub build attestation (`gh attestation verify <zip> --repo vattiss/know-your-rotation`).
+Every push runs a check on GitHub: syntax, TOC file list, version match, luacheck with the exact list of WoW globals, StyLua formatting, and the unit tests with a minimum line coverage (`tests/MIN_COVERAGE`). Run the tests locally with LuaJIT: `luajit tests/run.lua` (`--uncovered` lists the lines no test reaches). The recommended VS Code extensions (Lua, WoW API, StyLua) are listed in `.vscode/extensions.json`. Releases are built by GitHub Actions from a version tag (`v1.0.0-beta.1`): bump `VERSION.txt` and the TOC, push, then push the tag. The release zip comes with a SHA-256 checksum and a GitHub build attestation (`gh attestation verify <zip> --repo vattiss/know-your-rotation`).
 
 The git repository is the source of truth. The copy under `World of Warcraft\_classic_beta_\Interface\AddOns\KnowYourRotation` must be refreshed from this repo. Do not replace this repo with files taken from the game folder.
 
