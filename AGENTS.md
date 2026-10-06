@@ -59,7 +59,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Reject names containing `TEST`, `(OLD)`, `(PT)` (`junkSpellName`).
 - Buffs in `ns.MAINTENANCE_BUFF_IDS` are stripped from combat lists at load (`stripMaintFromApl`) and refused by `AddAPL`.
 - A spell with its own cooldown is removed by `NoteSpellCast` until the cooldown ends. The GCD does not count. Do not bypass `ns.API.Cooldown` with `filler`. `filler` is still blocked by `ns.Physics.Blocks`.
-- `opt.hold` / `ns.SPELL_HOLD`: after a cast the spell is not offered for N seconds. `0` means no aura delay. Harmful holds are tied to the target GUID. For `nodebuff` / `nobuff` spells a readable aura wins over the hold.
+- `opt.hold` / `ns.SPELL_HOLD`: after a cast the spell is not offered for N seconds. `0` means no aura delay. Harmful holds are tied to the target (GUID when readable, else the current target until it changes). Fillers ignore holds. For `nodebuff` / `nobuff` spells a readable aura wins over the hold.
 - `roleAuto` (default true): role from the name of the talent tree with the most points (Protection = tank; Holy / Discipline / Restoration = heal; else damage) and, for hunter / shaman, range. Druid bear / cat comes from the form. Picking a role on the Behavior page turns it off.
 - Hunter stings do not apply to Mechanical / Elemental targets (`CreatureBlocked`).
 - Rotation pass: a listed spell already cast is marked used for this pass; when nothing is usable the queue restarts. Reset on target change and leaving combat.

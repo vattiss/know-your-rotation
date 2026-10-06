@@ -167,7 +167,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
 | `usable` | The client must report the spell as usable (Exorcism, Holy Wrath, Backstab). If the answer is hidden, the step is skipped. |
 | `manaMax` | Refused if the player's mana percentage is above this threshold (Life Tap). |
 | `hpMin` | Refused if health (player, or `unit`) is under this percentage. |
-| `hold` | Seconds after a successful cast during which the spell is no longer suggested (DoT, HoT, snare). Forever/Classic defaults. Editable next to each spell. `0` = no aura delay. Harmful holds are tied to the GUID. For `nodebuff` / `nobuff`, the readable aura wins; hold = Forever fallback. No CLEU. |
+| `hold` | Seconds after a successful cast during which the spell is no longer suggested (DoT, HoT, snare). Forever/Classic defaults. Editable next to each spell. `0` = no aura delay. Harmful holds are tied to the target: its GUID when readable, otherwise (an NPC's GUID is secret, `SecretWhenUnitIdentityRestricted`) the current target, cleared on every target change. A `filler` is never held, even with a saved hold. For `nodebuff` / `nobuff`, the readable aura wins; hold = Forever fallback. No CLEU. |
 | `anydebuff` | List of IDs. If the target has **any** of them, the step is refused. One sting, one curse. |
 
 `ns.API.Ready`: spell resolved, no own cooldown running, no `noMana`. The GCD (about 1.5 s) does not remove the spell from the queue: it stays the next button to press. A longer cooldown (Judgement, Shock, Aimed Shot, Blast Wave…) removes it until it ends, and the next step in the list is tested. This applies to all classes, racials and defense.

@@ -963,12 +963,21 @@ end
 
 -- Target DoT / snare / mark holds bind to the mob GUID so a new target
 -- (or a dead one) can be marked again. Self HoTs / Slice and Dice stay global.
+-- Bumped on every target change (ClearTargetDebuffs).
+local holdTargetSerial = 0
+
 local function holdTargetGuid()
+	local okE, exists = pcall(UnitExists, "target")
+	if not okE or not exists then
+		return nil
+	end
 	local ok, guid = pcall(UnitGUID, "target")
 	if ok and readable(guid) and type(guid) == "string" then
 		return guid
 	end
-	return nil
+	-- An NPC's GUID is secret (SecretWhenUnitIdentityRestricted): bind the
+	-- hold to the current target instead; a target change clears it.
+	return "target#" .. holdTargetSerial
 end
 
 local function holdBindsToTarget(spellID)
@@ -1764,7 +1773,9 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			return reject("already active")
 		end
 	end
-	local holdLeft = ns.API.HoldRemain(spellID)
+	-- Fillers are spammed by design: a hold (even one saved in a list)
+	-- never holds them back.
+	local holdLeft = (opt.filler == true) and 0 or ns.API.HoldRemain(spellID)
 	if holdLeft > gate then
 		return reject("waiting after the last cast (delay)")
 	end
@@ -2191,6 +2202,7 @@ end
 function ns.API.ClearTargetDebuffs()
 	wipe(heldHarmful)
 	heldHarmfulGuid = nil
+	holdTargetSerial = holdTargetSerial + 1
 	clearTargetBoundHolds()
 end
 

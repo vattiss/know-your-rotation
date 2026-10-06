@@ -932,8 +932,7 @@ do
 		ns.Spell.Priest, ns.Spell.Shaman, ns.Spell.Mage, ns.Spell.Warlock, ns.Spell.Druid
 	local hold = {
 		-- Mage
-		[M.Frostbolt] = 5, -- chill 40% (rank 1 Forever; higher ranks 6-9s)
-		[M.FrostfireBolt] = 9,
+		-- Frostbolt / Frostfire Bolt: fillers, no hold (they are spammed).
 		[M.Pyroblast] = 12,
 		[M.Flamestrike] = 8,
 		[M.FrostNova] = 8,
