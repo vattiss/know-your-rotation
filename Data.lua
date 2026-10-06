@@ -628,203 +628,70 @@ ns.Spell = {
 }
 
 -- Spellbook names (enUS only).
-local function spellNames(map)
-	if map.esMX == nil then
-		map.esMX = map.esES
-	end
-	return map
-end
-
 ns.SPELL_NAME_HINT = {
-	[34428] = spellNames({
-		enUS = "Victory Rush",
-	}),
-	[1310222] = spellNames({
-		enUS = "Spearing Strike",
-	}),
-	[1310903] = spellNames({
-		enUS = "Holy Strike",
-	}),
-	[1310911] = spellNames({
-		enUS = "Light's Vigil",
-	}),
-	[1310897] = spellNames({
-		enUS = "Voice of Truth",
-	}),
-	[1311015] = spellNames({
-		enUS = "Templar's Bulwark",
-	}),
-	[1310994] = spellNames({
-		enUS = "Swift Judgement",
-	}),
-	[21183] = spellNames({
-		enUS = "Judgement of the Crusader",
-	}),
-	[20184] = spellNames({
-		enUS = "Judgement of Justice",
-	}),
-	[20185] = spellNames({
-		enUS = "Judgement of Light",
-	}),
-	[20186] = spellNames({
-		enUS = "Judgement of Wisdom",
-	}),
-	[22959] = spellNames({
-		enUS = "Fire Vulnerability",
-	}),
-	[12579] = spellNames({
-		enUS = "Winter's Chill",
-	}),
-	[19801] = spellNames({
-		enUS = "Tranquilizing Shot",
-	}),
-	[1221404] = spellNames({
-		enUS = "Enchanted Flare",
-	}),
-	[1543] = spellNames({
-		enUS = "Flare",
-	}),
-	[20736] = spellNames({
-		enUS = "Distracting Shot",
-	}),
-	[14185] = spellNames({
-		enUS = "Preparation",
-	}),
-	[1317257] = spellNames({
-		enUS = "Strider Kick",
-	}),
-	[1293241] = spellNames({
-		enUS = "Summon Hawk",
-	}),
-	[1310662] = spellNames({
-		enUS = "Sniper Shot",
-	}),
-	[19503] = spellNames({
-		enUS = "Scatter Shot",
-	}),
-	[1293020] = spellNames({
-		enUS = "Hydra Shot",
-	}),
-	[1317260] = spellNames({
-		enUS = "Lacerate",
-	}),
-	[1329] = spellNames({
-		enUS = "Mutilate",
-	}),
-	[1311401] = spellNames({
-		enUS = "Venom",
-	}),
-	[1277331] = spellNames({
-		enUS = "Chastise",
-	}),
-	[1277455] = spellNames({
-		enUS = "Confounding Flash",
-	}),
-	[1277324] = spellNames({
-		enUS = "Dark Sacrifice",
-	}),
-	[1277370] = spellNames({
-		enUS = "Divine Grace",
-	}),
-	[1277456] = spellNames({
-		enUS = { "Contingency Plan", "Emergency Plan" },
-	}),
-	[47540] = spellNames({
-		enUS = "Penance",
-	}),
-	[33076] = spellNames({
-		enUS = "Prayer of Mending",
-	}),
-	[32546] = spellNames({
-		enUS = "Binding Heal",
-	}),
-	[32379] = spellNames({
-		enUS = { "Shadow Word: Death", "Shadow Word:Death" },
-	}),
-	[66842] = spellNames({
-		enUS = "Call of the Elements",
-	}),
-	[66843] = spellNames({
-		enUS = "Call of the Ancestors",
-	}),
-	[66844] = spellNames({
-		enUS = "Call of the Spirits",
-	}),
-	[36936] = spellNames({
-		enUS = "Totemic Recall",
-	}),
-	[408490] = spellNames({
-		enUS = "Lava Burst",
-	}),
-	[408521] = spellNames({
-		enUS = "Riptide",
-	}),
-	[408510] = spellNames({
-		enUS = "Water Shield",
-	}),
-	[437009] = spellNames({
-		enUS = "Totemic Projection",
-	}),
-	[408341] = spellNames({
-		enUS = { "Fire Nova", "Fire Nova Totem" },
-	}),
-	[401502] = spellNames({
-		enUS = "Frostfire Bolt",
-	}),
-	[400640] = spellNames({
-		enUS = "Ice Lance",
-	}),
-	[400574] = spellNames({
-		enUS = "Arcane Blast",
-	}),
-	[412758] = spellNames({
-		enUS = "Incinerate",
-	}),
-	[980] = spellNames({
-		enUS = { "Bane of Agony", "Curse of Agony" },
-	}),
-	[80240] = spellNames({
-		enUS = "Bane of Havoc",
-	}),
-	[1311501] = spellNames({
-		enUS = "Wrack",
-	}),
-	[713] = spellNames({
-		enUS = "Summon Incubus",
-	}),
-	[414924] = spellNames({
-		enUS = "Feral Charge",
-	}),
-	[414644] = spellNames({
-		enUS = "Lacerate",
-	}),
-	[407995] = spellNames({
-		enUS = { "Mangle", "Mangle (Bear)", "Mangle (Cat)" },
-	}),
-	[417141] = spellNames({
-		enUS = "Berserk",
-	}),
-	[408120] = spellNames({
-		enUS = "Wild Growth",
-	}),
-	[20577] = spellNames({
-		enUS = "Cannibalize",
-	}),
-	[1259813] = spellNames({
-		enUS = { "Eureka!", "Eureka" },
-	}),
-	[1259810] = spellNames({
-		enUS = "Will to Survive",
-	}),
-	[1259680] = spellNames({
-		enUS = "Elune's Light",
-	}),
-	[1259681] = spellNames({
-		enUS = "Shatter Curse",
-	}),
-	[1259682] = spellNames({
-		enUS = "Rapid Regeneration",
-	}),
+	[34428] = "Victory Rush",
+	[1310222] = "Spearing Strike",
+	[1310903] = "Holy Strike",
+	[1310911] = "Light's Vigil",
+	[1310897] = "Voice of Truth",
+	[1311015] = "Templar's Bulwark",
+	[1310994] = "Swift Judgement",
+	[21183] = "Judgement of the Crusader",
+	[20184] = "Judgement of Justice",
+	[20185] = "Judgement of Light",
+	[20186] = "Judgement of Wisdom",
+	[22959] = "Fire Vulnerability",
+	[12579] = "Winter's Chill",
+	[19801] = "Tranquilizing Shot",
+	[1221404] = "Enchanted Flare",
+	[1543] = "Flare",
+	[20736] = "Distracting Shot",
+	[14185] = "Preparation",
+	[1317257] = "Strider Kick",
+	[1293241] = "Summon Hawk",
+	[1310662] = "Sniper Shot",
+	[19503] = "Scatter Shot",
+	[1293020] = "Hydra Shot",
+	[1317260] = "Lacerate",
+	[1329] = "Mutilate",
+	[1311401] = "Venom",
+	[1277331] = "Chastise",
+	[1277455] = "Confounding Flash",
+	[1277324] = "Dark Sacrifice",
+	[1277370] = "Divine Grace",
+	[1277456] = { "Contingency Plan", "Emergency Plan" },
+	[47540] = "Penance",
+	[33076] = "Prayer of Mending",
+	[32546] = "Binding Heal",
+	[32379] = { "Shadow Word: Death", "Shadow Word:Death" },
+	[66842] = "Call of the Elements",
+	[66843] = "Call of the Ancestors",
+	[66844] = "Call of the Spirits",
+	[36936] = "Totemic Recall",
+	[408490] = "Lava Burst",
+	[408521] = "Riptide",
+	[408510] = "Water Shield",
+	[437009] = "Totemic Projection",
+	[408341] = { "Fire Nova", "Fire Nova Totem" },
+	[401502] = "Frostfire Bolt",
+	[400640] = "Ice Lance",
+	[400574] = "Arcane Blast",
+	[412758] = "Incinerate",
+	[980] = { "Bane of Agony", "Curse of Agony" },
+	[80240] = "Bane of Havoc",
+	[1311501] = "Wrack",
+	[713] = "Summon Incubus",
+	[414924] = "Feral Charge",
+	[414644] = "Lacerate",
+	[407995] = { "Mangle", "Mangle (Bear)", "Mangle (Cat)" },
+	[417141] = "Berserk",
+	[408120] = "Wild Growth",
+	[20577] = "Cannibalize",
+	[1259813] = { "Eureka!", "Eureka" },
+	[1259810] = "Will to Survive",
+	[1259680] = "Elune's Light",
+	[1259681] = "Shatter Curse",
+	[1259682] = "Rapid Regeneration",
 }
 
 -- Buffs > 1 min, 60 min, permanent / auras: Defense only, never the combat queue.

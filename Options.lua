@@ -41,9 +41,6 @@ local function makeCard(parent, titleKey, x, y, width, height)
 end
 
 local function copyText(text)
-	if type(text) ~= "string" or text == "" then
-		return false
-	end
 	if CopyToClipboard then
 		pcall(CopyToClipboard, text)
 	end
@@ -564,19 +561,15 @@ function ns.DropSpellOnList(atIndex, mode)
 	if not spellID then
 		return
 	end
-	local added
 	if listKind == "def" or (ns.IsMaintenanceBuff and ns.IsMaintenanceBuff(spellID)) then
-		added = ns.AddDef(spellID, nil, editSpec, atIndex)
+		ns.AddDef(spellID, nil, editSpec, atIndex)
 	else
-		added = ns.AddAPL(spellID, nil, editSpec, mode or editMode, atIndex)
+		ns.AddAPL(spellID, nil, editSpec, mode or editMode, atIndex)
 	end
 	if ClearCursor then
 		pcall(ClearCursor)
 	end
 	ns.RefreshOptions()
-	if not added then
-		return
-	end
 end
 
 function ns.RefreshOptions()

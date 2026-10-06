@@ -342,10 +342,14 @@ objMeta = {
 		if m then
 			return m
 		end
-		-- Any other widget method (SetJustifyH, SetBackdrop, EnableMouse...)
-		-- is accepted and does nothing.
-		if type(key) == "string" and key:match("^[A-Z]") then
-			return noop
+		-- Other widget setters (SetJustifyH, SetBackdrop, EnableMouse...) are
+		-- accepted and do nothing. Fields like "Icon" stay nil, as in game.
+		if type(key) == "string" then
+			for _, prefix in ipairs({ "Set", "Enable", "Disable", "Register", "Highlight", "Clear", "Lock", "Unlock" }) do
+				if key:sub(1, #prefix) == prefix then
+					return noop
+				end
+			end
 		end
 		return nil
 	end,
@@ -545,7 +549,7 @@ function wow.new()
 			return nil
 		end
 		local pct = (d.health or 0) / math.max(1, d.maxHealth or 1)
-		if state.secret.health or state.secret.healthPercent then
+		if state.secret.healthPercent then
 			return SECRET
 		end
 		if curve then
@@ -721,14 +725,21 @@ function wow.new()
 		end
 		return data
 	end
+	-- By name the client only finds spells the player has (the API docs do
+	-- not say it; this is the long-standing game behaviour).
 	local function spellByName(name)
-		local best
-		for id, s in pairs(state.spells) do
-			if s.name == name and (not best or (s.known ~= false and state.spells[best].known == false)) then
-				best = id
+		for _, id in ipairs(state.book) do
+			local s = state.spells[id]
+			if s and s.name == name and s.known ~= false then
+				return id
 			end
 		end
-		return best
+		for id, s in pairs(state.spells) do
+			if s.name == name and s.known ~= false then
+				return id
+			end
+		end
+		return nil
 	end
 	local function spellOf(id)
 		if type(id) == "string" then
@@ -751,6 +762,7 @@ function wow.new()
 				spellID = sid,
 				iconID = s.icon or 136000,
 				originalIconID = s.icon,
+				maxRange = s.maxRange,
 			}
 		end,
 		GetOverrideSpell = function(id)
@@ -1149,6 +1161,12 @@ function wow.new()
 	}
 
 	-- settings -------------------------------------------------------------
+	-- Every control the addon creates, so tests can drive them.
+	w.controls = {}
+	w.control = function(c)
+		w.controls[#w.controls + 1] = c
+		return c
+	end
 	local function newSetting(variable, default, getter, setter)
 		local s = { variable = variable, default = default, getter = getter, setter = setter }
 		function s:GetValue()
@@ -1207,16 +1225,16 @@ function wow.new()
 			return s
 		end,
 		CreateCheckbox = function(_, setting, tooltip)
-			return { setting = setting, tooltip = tooltip, kind = "checkbox" }
+			return w.control({ setting = setting, tooltip = tooltip, kind = "checkbox" })
 		end,
 		CreateDropdown = function(_, setting, options, tooltip)
-			return { setting = setting, options = options, tooltip = tooltip, kind = "dropdown" }
+			return w.control({ setting = setting, options = options, tooltip = tooltip, kind = "dropdown" })
 		end,
 		CreateSlider = function(_, setting, options, tooltip)
-			return { setting = setting, options = options, tooltip = tooltip, kind = "slider" }
+			return w.control({ setting = setting, options = options, tooltip = tooltip, kind = "slider" })
 		end,
 		CreateColorSwatch = function(_, setting, tooltip)
-			return { setting = setting, tooltip = tooltip, kind = "color" }
+			return w.control({ setting = setting, tooltip = tooltip, kind = "color" })
 		end,
 		CreateSliderOptions = function(min, max, step)
 			local o = { min = min, max = max, step = step }
@@ -1320,6 +1338,11 @@ function wow:advance(seconds)
 			t.fn(t)
 		end
 	end
+end
+
+-- Move the clock only: no timers or tickers run (for long jumps in time).
+function wow:clock(seconds)
+	self.state.time = self.state.time + (seconds or 0)
 end
 
 -- Default player: a level-10 character of the given class.

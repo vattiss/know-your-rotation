@@ -19,7 +19,7 @@ If the docs do not answer a question, say so instead of guessing; it can only be
 
 ## Checks (run before you hand back a change)
 
-- **Tests:** `luajit tests/run.lua` runs every `tests/*_spec.lua` against the WoW API stand-in in `tests/wow.lua` and prints the line coverage per file (`--uncovered` lists the missing lines, `--min=N` fails below N %). Every change to addon code comes with tests; the coverage must not drop below `tests/MIN_COVERAGE` (CI enforces it; the goal is 100 %). Secret values are typed sentinels (`wow.SECRET`, `wow.SECRET_STRING`, `wow.SECRET_BOOL`): arithmetic or concatenation on them fails the test, like in game.
+- **Tests:** `luajit tests/run.lua` runs every `tests/*_spec.lua` against the WoW API stand-in in `tests/wow.lua` and prints the line coverage per file (`--uncovered` lists the missing lines, `--min=N` fails below N %). Every change to addon code comes with tests: line coverage is 100 % for every file and must stay there (`tests/MIN_COVERAGE`, enforced by CI). Code that no test can reach is dead code: remove it rather than leave it untested. Secret values are typed sentinels (`wow.SECRET`, `wow.SECRET_STRING`, `wow.SECRET_BOOL`): arithmetic or concatenation on them fails the test, like in game.
 - **Lint:** `luacheck *.lua tests tools types`. `.luacheckrc` lists every WoW global the addon reads; a new Blizzard function must be added there (after checking it in `ref/`).
 - **Format:** `stylua .` (config in `stylua.toml`: tabs, 120 columns). CI runs `stylua --check .`.
 - **Types:** LuaLS (`.luarc.json`; `types/KnowYourRotation.lua` defines `KYR.StepOpt` / `KYR.Step`). Keep it at zero warnings.

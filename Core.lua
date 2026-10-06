@@ -727,10 +727,8 @@ pcall(frame.RegisterEvent, frame, "PLAYER_TOTEM_UPDATE")
 local ticker
 local booted
 
+-- Started once, on the first login event.
 local function startTicker()
-	if ticker then
-		return
-	end
 	ticker = C_Timer.NewTicker(0.2, function()
 		ns.Tick()
 	end)

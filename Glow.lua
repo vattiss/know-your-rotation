@@ -17,7 +17,6 @@ local BARS = {
 local spells = {}
 local spellsByName = {}
 local buttonSlots = {}
-local buttonSpells = {}
 local damageGlowing = {}
 local defenseGlowing = {}
 local kickGlowing = {}
@@ -47,15 +46,8 @@ local function addonLoaded(name)
 	return loaded
 end
 
-local barSpellCount = 0
-local slotsOccupied = 0
-local slotsKnown = 0
-local knownSlot = {}
-local countedSlot = {}
 local spellsByNorm = {}
 local buttonsByIcon = {}
-local nameOwner = {}
-local badNames = {}
 
 local function isToken(value, expected)
 	if value == nil or expected == nil then
@@ -70,114 +62,15 @@ local function isToken(value, expected)
 	return ok and same == true
 end
 
-local ACCENT_FOLD = {
-	["à"] = "a",
-	["á"] = "a",
-	["â"] = "a",
-	["ã"] = "a",
-	["ä"] = "a",
-	["å"] = "a",
-	["À"] = "a",
-	["Á"] = "a",
-	["Â"] = "a",
-	["Ã"] = "a",
-	["Ä"] = "a",
-	["Å"] = "a",
-	["è"] = "e",
-	["é"] = "e",
-	["ê"] = "e",
-	["ë"] = "e",
-	["È"] = "e",
-	["É"] = "e",
-	["Ê"] = "e",
-	["Ë"] = "e",
-	["ì"] = "i",
-	["í"] = "i",
-	["î"] = "i",
-	["ï"] = "i",
-	["Ì"] = "i",
-	["Í"] = "i",
-	["Î"] = "i",
-	["Ï"] = "i",
-	["ò"] = "o",
-	["ó"] = "o",
-	["ô"] = "o",
-	["õ"] = "o",
-	["ö"] = "o",
-	["Ò"] = "o",
-	["Ó"] = "o",
-	["Ô"] = "o",
-	["Õ"] = "o",
-	["Ö"] = "o",
-	["ù"] = "u",
-	["ú"] = "u",
-	["û"] = "u",
-	["ü"] = "u",
-	["Ù"] = "u",
-	["Ú"] = "u",
-	["Û"] = "u",
-	["Ü"] = "u",
-	["ý"] = "y",
-	["ÿ"] = "y",
-	["Ý"] = "y",
-	["ç"] = "c",
-	["Ç"] = "c",
-	["ñ"] = "n",
-	["Ñ"] = "n",
-	["œ"] = "oe",
-	["Œ"] = "oe",
-	["æ"] = "ae",
-	["Æ"] = "ae",
-}
-
-local function foldAccents(name)
-	return (name:gsub("[%z\1-\127\194-\244][\128-\191]*", function(ch)
-		return ACCENT_FOLD[ch] or ch
-	end))
-end
-
+-- name: a readable, non-empty spell name (the callers check).
 local function normKey(name)
-	if type(name) ~= "string" or name == "" then
-		return
+	local lower = strtrim(strlower((name:gsub("%s*%([^)]*%)%s*$", ""))))
+	if lower ~= "" then
+		return lower
 	end
-	if issecretvalue and issecretvalue(name) then
-		return
-	end
-	local n = name:gsub("%s*%([^)]*%)%s*$", "")
-	n = foldAccents(n)
-	local ok, lower = pcall(string.lower, n)
-	if not ok or type(lower) ~= "string" then
-		return
-	end
-	if strtrim then
-		lower = strtrim(lower)
-	end
-	if lower == "" then
-		return
-	end
-	return lower
-end
-
-local function markKnown(button)
-	if not button or knownSlot[button] then
-		return
-	end
-	knownSlot[button] = true
-	slotsKnown = slotsKnown + 1
-end
-
-local function noteOccupied(button)
-	if not button or countedSlot[button] then
-		return
-	end
-	countedSlot[button] = true
-	slotsOccupied = slotsOccupied + 1
 end
 
 local function addSpellName(name, button)
-	if type(name) ~= "string" or name == "" or badNames[name] or not button then
-		return
-	end
 	spellsByName[name] = spellsByName[name] or {}
 	spellsByName[name][#spellsByName[name] + 1] = button
 	local key = normKey(name)
@@ -185,8 +78,6 @@ local function addSpellName(name, button)
 		spellsByNorm[key] = spellsByNorm[key] or {}
 		spellsByNorm[key][#spellsByNorm[key] + 1] = button
 	end
-	barSpellCount = barSpellCount + 1
-	markKnown(button)
 end
 
 local function plainID(value)
@@ -378,16 +269,13 @@ local function addButton(spellID, button, slot)
 	end
 	spells[id] = spells[id] or {}
 	spells[id][#spells[id] + 1] = button
-	buttonSpells[button] = id
 	local name = spellName(id)
-	markKnown(button)
-	if not name or badNames[name] then
+	if not name then
 		if slot then
 			buttonSlots[button] = slot
 		end
 		return
 	end
-	nameOwner[name] = nameOwner[name] or id
 	spellsByName[name] = spellsByName[name] or {}
 	spellsByName[name][#spellsByName[name] + 1] = button
 	local key = normKey(name)
@@ -401,9 +289,6 @@ local function addButton(spellID, button, slot)
 end
 
 local function actionSlot(button)
-	if not button then
-		return
-	end
 	local slot
 	if button.GetAttribute then
 		local ok, value = pcall(button.GetAttribute, button, "action")
@@ -457,9 +342,6 @@ local function addIcon(key, button)
 end
 
 local function indexButtonIcon(button, slot)
-	if not button then
-		return
-	end
 	if slot and GetActionTexture then
 		local ok, tex = pcall(GetActionTexture, slot)
 		if ok then
@@ -503,10 +385,8 @@ local function spellIconKeys(spellID)
 	return keys
 end
 
+-- button: an existing frame (the scan queue only holds real buttons).
 local function addStandard(button)
-	if not button then
-		return
-	end
 	local okType, attrType = pcall(function()
 		return button:GetAttribute("type")
 	end)
@@ -584,7 +464,6 @@ local function addStandard(button)
 	if slot and HasAction then
 		local okHas, has = pcall(HasAction, slot)
 		if okHas and has then
-			noteOccupied(button)
 			indexButtonIcon(button, slot)
 		end
 	end
@@ -617,16 +496,8 @@ function ns.GlowFetch(force)
 	wipe(spells)
 	wipe(spellsByName)
 	wipe(buttonSlots)
-	wipe(buttonSpells)
-	wipe(nameOwner)
-	wipe(badNames)
 	wipe(spellsByNorm)
 	wipe(buttonsByIcon)
-	wipe(knownSlot)
-	wipe(countedSlot)
-	barSpellCount = 0
-	slotsOccupied = 0
-	slotsKnown = 0
 	lastFetch = GetTime()
 
 	local queue = {}
@@ -722,7 +593,7 @@ local function buttonsFor(spellID)
 		take(spells[resolved])
 	end
 	local name = spellName(id) or spellName(resolved)
-	if name and not badNames[name] then
+	if name then
 		take(spellsByName[name])
 		local key = normKey(name)
 		if key then
@@ -1103,36 +974,22 @@ function ns.GlowWeapon(spellID)
 	end
 end
 
+-- true / false from a range answer; nil when unknown. A secret value is
+-- checked first: it must never be compared.
 local function readableFlag(value)
+	if issecretvalue and issecretvalue(value) then
+		return nil
+	end
 	if value == true or value == 1 then
-		if issecretvalue and issecretvalue(value) then
-			return nil
-		end
 		return true
 	end
 	if value == false or value == 0 then
-		if issecretvalue and issecretvalue(value) then
-			return nil
-		end
 		return false
 	end
 	return nil
 end
 
-local function isHealGlow(spellID)
-	if not spellID then
-		return false
-	end
-	if ns.queueHeal and ns.queueHeal[spellID] then
-		return true
-	end
-	return ns.API.IsHealSpell and ns.API.IsHealSpell(spellID)
-end
-
 local function spellInRangeOn(spellID, unit)
-	if not spellID or not unit then
-		return nil
-	end
 	if C_Spell and C_Spell.IsSpellInRange then
 		local ok, result = pcall(C_Spell.IsSpellInRange, spellID, unit)
 		if ok then
@@ -1146,10 +1003,7 @@ local function spellInRangeOn(spellID, unit)
 end
 
 local function rangeUnitFor(spellID)
-	if not spellID then
-		return "target"
-	end
-	if isHealGlow(spellID) then
+	if isHealSpell(spellID) then
 		return ns.API.HealRangeUnit and ns.API.HealRangeUnit() or "player"
 	end
 	if ns.API.IsHelpful and ns.API.IsHelpful(spellID) and not (ns.API.IsHarmful and ns.API.IsHarmful(spellID)) then
@@ -1216,9 +1070,6 @@ function ns.SpellOnBar(spellID)
 		ns.GlowFetch()
 	end
 	local function found(id)
-		if not id then
-			return false
-		end
 		if spells[id] and #spells[id] > 0 then
 			return true
 		end
@@ -1239,85 +1090,4 @@ function ns.SpellOnBar(spellID)
 	-- A bar scan that sometimes reads every button and sometimes does not
 	-- was clearing the rotation, then bringing it back, with no cast and no target.
 	return true
-end
-
-local function slotCommand(slot)
-	slot = tonumber(slot)
-	if not slot then
-		return
-	end
-	if slot >= 1 and slot <= 12 then
-		return "ACTIONBUTTON" .. slot
-	end
-	local bars = {
-		{ 25, 36, "MULTIACTIONBAR3BUTTON" },
-		{ 37, 48, "MULTIACTIONBAR4BUTTON" },
-		{ 49, 60, "MULTIACTIONBAR2BUTTON" },
-		{ 61, 72, "MULTIACTIONBAR1BUTTON" },
-		{ 73, 84, "MULTIACTIONBAR5BUTTON" },
-		{ 85, 96, "MULTIACTIONBAR6BUTTON" },
-		{ 97, 108, "MULTIACTIONBAR7BUTTON" },
-	}
-	for _, row in ipairs(bars) do
-		if slot >= row[1] and slot <= row[2] then
-			return row[3] .. (slot - row[1] + 1)
-		end
-	end
-end
-
-local function shortKey(text)
-	if type(text) ~= "string" or text == "" then
-		return ""
-	end
-	text = text:gsub("SHIFT%-", "S")
-	text = text:gsub("CTRL%-", "C")
-	text = text:gsub("ALT%-", "A")
-	text = text:gsub("MOUSEWHEELUP", "WU")
-	text = text:gsub("MOUSEWHEELDOWN", "WD")
-	text = text:gsub("[Bb][Uu][Tt][Tt][Oo][Nn](%d+)", "M%1")
-	local mouse = text:match("(%d+)%s*$")
-	if mouse and #text > 4 then
-		local low = text:lower()
-		if low:find("button", 1, true) or low:find("mouse", 1, true) then
-			local prefix = text:match("^([SCA]+)")
-			if prefix and #prefix < #text then
-				return prefix .. "M" .. mouse
-			end
-			return "M" .. mouse
-		end
-	end
-	return text
-end
-
-function ns.SpellBinding(spellID)
-	if not spellID then
-		return ""
-	end
-	if lastFetch == 0 then
-		ns.GlowFetch()
-	end
-	local list = buttonsFor(spellID)
-	for _, button in ipairs(list) do
-		local hot = button.HotKey
-		if hot and hot.GetText then
-			local text = hot:GetText()
-			if type(text) == "string" and text ~= "" and text ~= RANGE_INDICATOR and text ~= "●" then
-				return shortKey(text)
-			end
-		end
-		local cmd = slotCommand(buttonSlots[button])
-		if cmd and GetBindingKey then
-			local ok, key = pcall(GetBindingKey, cmd)
-			if ok and type(key) == "string" and key ~= "" then
-				if GetBindingText then
-					local okText, pretty = pcall(GetBindingText, key)
-					if okText and type(pretty) == "string" and pretty ~= "" then
-						return shortKey(pretty)
-					end
-				end
-				return shortKey(key)
-			end
-		end
-	end
-	return ""
 end

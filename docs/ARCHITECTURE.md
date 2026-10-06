@@ -182,16 +182,15 @@ Overpower, Revenge, Riposte, Counterattack and Mongoose Bite (`opt.proc`) are on
 
 A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through the power cost if `IsSpellUsable` is false or absent. A harmful spell with `usable == false` is refused.
 
-`ns.API.Add` stacks at most 3 **already resolved** IDs, without duplicates, and only if `StepOk`.
 
 ## Queues (`Rotations.lua`)
 
 `ns.BuildQueue`: up to 3 slots. The list is read in order; spells **already cast in the current pass** (`ns.NoteRotationCast` / `rotSpent`) are skipped — even if they had not been displayed yet. When no usable step remains in the pass, `rotSpent` is cleared and the queue **restarts from the beginning**. Also reset on target change and when leaving combat.
 
-- ignores an unchecked step, a weapon enchant, a maintenance buff, and (if `barOnly`) a spell missing from the bars already indexed by GlowFetch;
-- the spell being cast is pinned in slot 1, then `PredictConsume` assumes it was cast (DoT, CD / shocks, buff, stealth, combo points);
+- ignores an unchecked step, a weapon enchant, a maintenance buff, and (if `barOnly`) a spell missing from the bars already indexed by GlowFetch. Note: `ns.SpellOnBar` currently always answers true (an unreliable bar scan used to clear the rotation), so `barOnly` has no effect;
+- the spell being cast is not shown again: it counts as used, and `PredictConsume` assumes it was cast (DoT, CD / shocks, buff, stealth, combo points), so slot 1 shows what comes next;
 - a leading **filler** yields to a lower **action** (shock, DoT, CD, proc) as soon as it is ready and in range `in` or unknown (`notOut`) — the shock then moves to slot 1. Starfire / Ice Lance / Swipe / auto racials do not steal;
-- the same spell appears only once in the queue (except `swing`): slots 2–3 show other spells;
+- the same spell appears only once in the queue: slots 2-3 show other spells. A step of an `anybuff` / `anydebuff` group is refused by `StepOk` once the look-ahead (`PredictConsume`) marked another step of that group;
 - `opt.hold` removes a spell after a cast for N seconds (DoT / snare) in addition to the "pass" marking;
 - slot 1 prefers `RangeState` `in`; otherwise `notOut`. `out` → slots 2–3;
 - `ns.ApplyRotationEdit` (Up / Down / Apply) clears the cache and re-evaluates the glows without `/reload`;
@@ -242,7 +241,7 @@ Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`. There is no burst mod
 - `ns.ResolveCombatMode()`: if `auto`, out of combat always `auto` (pull with the single list, so openers like Charge stay first); in combat `aoe` when `EnemyCount() >= autoEnemies` (floor 2), otherwise `auto`.
 - `ns.SetCombatMode` remembers the last manual mode in `lastManualMode` (never `auto`).
 - The Behavior page sets the mode with a dropdown (`ns.SetCombatMode`).
-- `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those fighting you: on your threat table (`UnitThreatSituation`), or targeting you or your pet, with `UnitAffectingCombat` only as a fallback when both are hidden. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
+- `EnemyCount([maxYards])` counts hostile nameplates. Outside player combat, any hostile nameplate counts; in combat, only those fighting you: on your threat table (`UnitThreatSituation`), or targeting you or your pet. A readable "not on your threat table" still checks the pet, then excludes the mob; `UnitAffectingCombat` is only a fallback when threat and the target check are both hidden. With no nameplate, a hostile target counts as 1. Optional `maxYards` (bands 10 / 28 via `TargetRangeBand` / `CheckInteractDistance`). Nameplates must be enabled for auto AoE.
 - `roleAuto` (default true): `ns.SyncAutoRole` picks the role from the name of the talent tree with the most points (`specRole`, `C_SpecializationInfo.GetSpecializationInfo`): Protection = tank; Holy, Discipline or Restoration = heal; anything else = damage. Never by tree position or the client's role field. No talent data (low level) keeps the current role. Druid bear / cat lists come from the form (`ns.ActiveSpec`); shaman and hunter switch melee / ranged by distance (`TargetInMelee`). The Behavior page role dropdown calls `ns.SetRoleChoice`: `auto` sets `roleAuto = true`, any role sets it false and pins that role (`ns.RoleChoice` reads it back).
 - `CombatNotice`: Hunter/Warlock in combat → "call pet" / "pet not attacking" as a screen message.
 - Deferred spellbook index (`RebuildSpellBookIndex`): warmed at login / lazy remap only. **No** `SPELLS_CHANGED` (ConROC neither) — learn / level-up = soft Invalidate + `ButtonFetch` 0.5 s. Glow without action tooltip.
@@ -324,11 +323,11 @@ Overlays `button.WFROverlays` (Blizzard spell-alert glow, tinted):
 1. Override `C_Spell.GetOverrideSpell` if it is a readable number.
 2. If the player knows that ID, keep it.
 3. Otherwise the original ID if known.
-4. Otherwise the ID obtained by name (`C_Spell.GetSpellInfo` or `GetSpellInfo`), if known.
+4. Otherwise the ID obtained by name (`C_Spell.GetSpellInfo`), if known. The names tried are the spell name and its English hint names (`ns.SPELL_NAME_HINT[id]`: a string, or a list of strings, for IDs Forever remaps).
 5. Otherwise a spellbook walk (`GetSpellBookSkillLineInfo`, then index 1–400, banks player/pet/`spell`/`0`/`1`).
 6. Cache `false` if nothing. `Known` is "Resolve ≠ nil".
 
-`CursorSpell` reads `GetCursorInfo`. It requires a `spell` or `spellid` type when a type is present, then finds the spellbook spell by name. A cursor ID whose name the player does not know is rejected.
+`CursorSpell` reads `GetCursorInfo`. It requires a `spell` or `spellid` type when a type is present, then finds the spellbook spell by name (the cursor's own bank first, without changing the cached bank list). A cursor ID whose name the player does not know is rejected.
 
 Auras: `C_UnitAuras.GetPlayerAuraBySpellID` for the player, then `GetAuraDataBySpellName`, otherwise `GetAuraDataByIndex` up to 40. Comparison by resolved ID, normalized name (without "Rank"), or family (`seal`, blessing, aura, aspect, armor).
 

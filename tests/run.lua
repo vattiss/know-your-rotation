@@ -77,13 +77,33 @@ local function executableLines(path)
 	local jutil = require("jit.util")
 	local fn = assert(loadfile(path))
 	local lines = {}
+	-- Opcode names, to skip the jump LuaJIT emits right after a return at
+	-- the end of an if / elseif chain: it can never run.
+	local okDef, vmdef = pcall(require, "jit.vmdef")
+	local function opName(f, pc)
+		if not okDef then
+			return nil
+		end
+		local ins = jutil.funcbc(f, pc)
+		if not ins then
+			return nil
+		end
+		local op = bit.band(ins, 0xff)
+		return (vmdef.bcnames:sub(op * 6 + 1, op * 6 + 6):gsub("%s+", ""))
+	end
 	local function walk(f)
 		local info = jutil.funcinfo(f)
+		local prev
 		for pc = 1, (info.bytecodes or 1) - 1 do
 			local i = jutil.funcinfo(f, pc)
-			if i.currentline then
+			local name = opName(f, pc)
+			local deadJump = name == "JMP"
+				and prev
+				and (prev:sub(1, 3) == "RET" or prev:sub(1, 5) == "CALLT" or prev == "CALLMT")
+			if i.currentline and not deadJump then
 				lines[i.currentline] = true
 			end
+			prev = name
 		end
 		local k = -1
 		while true do

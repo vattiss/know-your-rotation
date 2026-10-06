@@ -108,83 +108,9 @@ local function readBookItem(index, bank)
 	return nil, nil
 end
 
--- Forever lab clients often drop accents (Eclair vs Éclair). Fold so Resolve
--- matches the spellbook for every class spell and racial by name.
-local ACCENT_FOLD = {
-	["à"] = "a",
-	["á"] = "a",
-	["â"] = "a",
-	["ã"] = "a",
-	["ä"] = "a",
-	["å"] = "a",
-	["À"] = "a",
-	["Á"] = "a",
-	["Â"] = "a",
-	["Ã"] = "a",
-	["Ä"] = "a",
-	["Å"] = "a",
-	["è"] = "e",
-	["é"] = "e",
-	["ê"] = "e",
-	["ë"] = "e",
-	["È"] = "e",
-	["É"] = "e",
-	["Ê"] = "e",
-	["Ë"] = "e",
-	["ì"] = "i",
-	["í"] = "i",
-	["î"] = "i",
-	["ï"] = "i",
-	["Ì"] = "i",
-	["Í"] = "i",
-	["Î"] = "i",
-	["Ï"] = "i",
-	["ò"] = "o",
-	["ó"] = "o",
-	["ô"] = "o",
-	["õ"] = "o",
-	["ö"] = "o",
-	["Ò"] = "o",
-	["Ó"] = "o",
-	["Ô"] = "o",
-	["Õ"] = "o",
-	["Ö"] = "o",
-	["ù"] = "u",
-	["ú"] = "u",
-	["û"] = "u",
-	["ü"] = "u",
-	["Ù"] = "u",
-	["Ú"] = "u",
-	["Û"] = "u",
-	["Ü"] = "u",
-	["ý"] = "y",
-	["ÿ"] = "y",
-	["Ý"] = "y",
-	["ç"] = "c",
-	["Ç"] = "c",
-	["ñ"] = "n",
-	["Ñ"] = "n",
-	["œ"] = "oe",
-	["Œ"] = "oe",
-	["æ"] = "ae",
-	["Æ"] = "ae",
-}
-
-local function foldAccents(name)
-	if type(name) ~= "string" or name == "" then
-		return name
-	end
-	return (name:gsub("[%z\1-\127\194-\244][\128-\191]*", function(ch)
-		return ACCENT_FOLD[ch] or ch
-	end))
-end
-
+-- name: a readable, non-empty string (the callers check).
 local function normSpellName(name)
-	name = safe(name, nil)
-	if type(name) ~= "string" or name == "" then
-		return nil
-	end
-	name = foldAccents(name):lower()
+	name = name:lower()
 	name = name:gsub("%s*%([^%)]*%)", "")
 	name = name:gsub("%s*rank%s*%d+", "")
 	name = name:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
@@ -231,10 +157,8 @@ function ns.API.RebuildSpellBookIndex(sync)
 	local banks = bookBanks()
 	lastBookBuildAt = GetTime()
 
+	-- Only reached right after a pump that checked the generation.
 	local function finish()
-		if gen ~= spellBookGen then
-			return
-		end
 		spellBookIndex = index
 		spellBookBuilding = false
 		if ns.API.InvalidateSpells then
@@ -340,9 +264,6 @@ local function findPlayerSpellByName(name)
 		return nil
 	end
 	local want = normSpellName(name)
-	if not want then
-		return nil
-	end
 	if spellBookIndex then
 		return spellBookIndex[want]
 	end
@@ -396,9 +317,10 @@ function ns.API.CursorSpell()
 	end
 
 	local name, slotId
-	local banks = bookBanks()
-	if arg2 ~= nil then
-		table.insert(banks, 1, arg2)
+	-- The cursor names its own bank first; never change the cached list.
+	local banks = { arg2 }
+	for _, bank in ipairs(bookBanks()) do
+		banks[#banks + 1] = bank
 	end
 	for _, bank in ipairs(banks) do
 		local bookName, bookId = readBookItem(arg1, bank)
@@ -475,10 +397,16 @@ function ns.API.EnemyCount(maxYards)
 		if not (okP and pcombat) then
 			return true
 		end
+		-- A readable threat answer is decisive for you; nil means the mob is
+		-- not on your threat table, but it may still be fighting your pet.
+		local threatKnown = false
 		if UnitThreatSituation then
 			local ok, status = pcall(UnitThreatSituation, "player", unit)
 			if ok and plain(status) then
-				return status ~= nil
+				if status ~= nil then
+					return true
+				end
+				threatKnown = true
 			end
 		end
 		local targetUnit = unit .. "target"
@@ -487,6 +415,9 @@ function ns.API.EnemyCount(maxYards)
 			if ok and plain(same) and same == true then
 				return true
 			end
+		end
+		if threatKnown then
+			return false
 		end
 		local okC, combat = pcall(UnitAffectingCombat, unit)
 		return okC and plain(combat) and combat == true or false
@@ -551,8 +482,8 @@ function ns.API.SpellName(spellID)
 	return info and safe(info.name, nil)
 end
 
-local HINT_LOCALES = { "enUS" }
-
+-- ns.SPELL_NAME_HINT: the English spellbook name(s) of a spell, a string or
+-- a list of strings, used when the ID is remapped on Forever.
 local function pushHintName(out, seen, name)
 	if type(name) == "table" then
 		for i = 1, #name do
@@ -566,48 +497,21 @@ local function pushHintName(out, seen, name)
 	end
 end
 
-local function hintLocale()
-	return "enUS"
-end
-
 function ns.API.HintNames(...)
 	local out, seen = {}, {}
 	for n = 1, select("#", ...) do
 		local spellID = select(n, ...)
-		local pack = spellID and ns.SPELL_NAME_HINT and ns.SPELL_NAME_HINT[spellID]
-		if type(pack) == "string" then
-			pushHintName(out, seen, pack)
-		elseif type(pack) == "table" then
-			local loc = hintLocale()
-			pushHintName(out, seen, pack[loc])
-			for i = 1, #HINT_LOCALES do
-				local code = HINT_LOCALES[i]
-				if code ~= loc then
-					pushHintName(out, seen, pack[code])
-				end
-			end
-			for i = 1, #pack do
-				pushHintName(out, seen, pack[i])
-			end
-		end
+		pushHintName(out, seen, spellID and ns.SPELL_NAME_HINT[spellID])
 	end
 	return out
 end
 
 function ns.API.HintName(spellID)
-	local pack = spellID and ns.SPELL_NAME_HINT and ns.SPELL_NAME_HINT[spellID]
-	if type(pack) == "string" then
-		return pack
+	local pack = spellID and ns.SPELL_NAME_HINT[spellID]
+	if type(pack) == "table" then
+		return pack[1]
 	end
-	if type(pack) ~= "table" then
-		return nil
-	end
-	local loc = hintLocale()
-	local hit = pack[loc] or pack.enUS or pack[1]
-	if type(hit) == "table" then
-		return hit[1]
-	end
-	return hit
+	return pack
 end
 
 function ns.API.SpellLabel(spellID)
@@ -677,9 +581,6 @@ function ns.API.InvalidateSpells(full)
 end
 
 local function playerKnows(id)
-	if not id then
-		return false
-	end
 	if IsPlayerSpell then
 		local ok, known = pcall(IsPlayerSpell, id)
 		if ok and known then
@@ -823,16 +724,14 @@ local function baseCooldownSec(spellID)
 	if C_Spell and C_Spell.GetSpellBaseCooldown then
 		local ok, cd, gcd = pcall(C_Spell.GetSpellBaseCooldown, spellID)
 		if ok then
+			local sec
 			if type(cd) == "table" then
-				local sec = parseBaseCooldown(cd.duration or cd.cooldown, cd.gcd)
-				if sec > 0 then
-					return sec
-				end
+				sec = parseBaseCooldown(cd.duration or cd.cooldown, cd.gcd)
 			else
-				local sec = parseBaseCooldown(cd, gcd)
-				if sec > 0 then
-					return sec
-				end
+				sec = parseBaseCooldown(cd, gcd)
+			end
+			if sec > 0 then
+				return sec
 			end
 		end
 	end
@@ -1026,9 +925,6 @@ local function holdTargetGuid()
 end
 
 local function holdBindsToTarget(spellID)
-	if ns.API.IsHelpful(spellID) and not ns.API.IsHarmful(spellID) then
-		return false
-	end
 	return ns.API.IsHarmful(spellID) == true
 end
 
@@ -1074,9 +970,7 @@ end
 
 local function clearTargetBoundHolds()
 	for key, entry in pairs(holdUntil) do
-		if type(entry) == "number" then
-			holdUntil[key] = nil
-		elseif type(entry) == "table" and entry.guid ~= "self" then
+		if entry.guid ~= "self" then
 			holdUntil[key] = nil
 		end
 	end
@@ -1113,35 +1007,17 @@ function ns.API.HoldRemain(spellID)
 	if not entry then
 		return 0
 	end
-	-- Legacy plain number = old global hold; keep time-only behaviour.
-	local exp, guid
-	if type(entry) == "number" then
-		exp = entry
-		guid = "self"
-	elseif type(entry) == "table" then
-		exp = entry.exp
-		guid = entry.guid
-	else
-		clearHoldKeys(spellID)
-		return 0
-	end
-	if not exp then
-		clearHoldKeys(spellID)
-		return 0
-	end
+	-- Entries come from writeHold only: { exp = time, guid = "self" | target | false }.
+	local guid = entry.guid
 	if guid ~= "self" then
-		-- Bound to a mob: new target, no target, or dead sticky target -> re-suggest.
-		if guid == false or guid == nil then
-			clearHoldKeys(spellID)
-			return 0
-		end
+		-- Bound to a mob: no target when cast, new target, or a dead one -> re-suggest.
 		local cur = holdTargetGuid()
-		if not cur or cur ~= guid or unitIsDead("target") then
+		if not guid or not cur or cur ~= guid or unitIsDead("target") then
 			clearHoldKeys(spellID)
 			return 0
 		end
 	end
-	local remain = exp - GetTime()
+	local remain = entry.exp - GetTime()
 	if remain <= 0 then
 		clearHoldKeys(spellID)
 		return 0
@@ -1227,9 +1103,6 @@ function ns.API.Cooldown(spellID)
 end
 
 local function unitExists(unit)
-	if not unit then
-		return false
-	end
 	local ok, exists = pcall(UnitExists, unit)
 	return ok and exists and true or false
 end
@@ -1338,18 +1211,8 @@ local function numberOrNil(value)
 end
 
 function ns.API.SpellMaxRange(spellID)
-	local id = ns.API.Resolve(spellID) or spellID
-	if not id then
-		return nil
-	end
-	local info = ns.API.SpellInfo(id)
-	if info then
-		local maxR = numberOrNil(info.maxRange)
-		if maxR ~= nil then
-			return maxR
-		end
-	end
-	return nil
+	local info = ns.API.SpellInfo(ns.API.Resolve(spellID) or spellID)
+	return info and numberOrNil(info.maxRange) or nil
 end
 
 local function interactInRange(unit, index)
@@ -1408,10 +1271,7 @@ end
 local function rangeUnitFor(spellID, opt)
 	opt = opt or {}
 	if opt.heal or (ns.API.IsHelpful(spellID, opt) and not ns.API.IsHarmful(spellID)) then
-		if ns.API.HealRangeUnit then
-			return ns.API.HealRangeUnit(opt)
-		end
-		return "player"
+		return ns.API.HealRangeUnit(opt)
 	end
 	return "target"
 end
@@ -2005,9 +1865,6 @@ function ns.API.StepOk(spellID, opt, timeShift)
 end
 
 local function auraRemain(aura)
-	if not aura then
-		return 0
-	end
 	local exp = safe(aura.expirationTime, nil)
 	if exp and exp > 0 then
 		local remain = exp - GetTime()
@@ -2020,9 +1877,6 @@ local function auraRemain(aura)
 end
 
 local function auraStacks(aura)
-	if type(aura) ~= "table" then
-		return 0
-	end
 	local n = safe(aura.applications, nil)
 	if n == nil then
 		n = safe(aura.stacks, nil)
@@ -2168,7 +2022,7 @@ function ns.API.PredictEnd()
 end
 
 local function predictMarkDebuff(spellID)
-	if not predict or not spellID then
+	if not spellID then
 		return
 	end
 	predict.debuffs[spellID] = true
@@ -2179,7 +2033,7 @@ local function predictMarkDebuff(spellID)
 end
 
 local function predictMarkBuff(spellID)
-	if not predict or not spellID then
+	if not spellID then
 		return
 	end
 	predict.buffs[spellID] = true
@@ -2352,9 +2206,6 @@ local function familyOf(name)
 end
 
 local function auraIdentity(aura)
-	if type(aura) ~= "table" then
-		return nil, nil, false
-	end
 	local auraID = safe(aura.spellId, nil)
 	local auraName = safe(aura.name, nil)
 	local hidden = (aura.spellId ~= nil and auraID == nil) or (aura.name ~= nil and auraName == nil)
@@ -2776,9 +2627,6 @@ end
 
 function ns.API.HealAmount(spellID)
 	local id = ns.API.Resolve(spellID) or spellID
-	if not id then
-		return nil
-	end
 	local cache = ns.API.healAmountCache
 	if cache[id] ~= nil then
 		return cache[id] or nil
@@ -3420,12 +3268,6 @@ end
 local EAT_AURA = {
 	food = true,
 	drink = true,
-	nourriture = true,
-	boisson = true,
-	essen = true,
-	trinken = true,
-	comida = true,
-	bebida = true,
 }
 
 function ns.API.IsEating()
@@ -3468,10 +3310,6 @@ function ns.API.ShouldHideIdle()
 		return true
 	end
 	return false
-end
-
-function ns.API.UnitFriendly(unit)
-	return unitFriendly(unit)
 end
 
 function ns.API.CastRemain()
@@ -3560,60 +3398,6 @@ function ns.API.TargetCasting()
 	return ns.API.castTarget == true
 end
 
-function ns.API.TargetCastProgress()
-	if not UnitExists or not UnitExists("target") then
-		return nil
-	end
-	local function millis(value)
-		if not readable(value) then
-			return nil
-		end
-		local ok, n = pcall(function()
-			local v = tonumber(value)
-			if type(v) ~= "number" then
-				return nil
-			end
-			return v + 0
-		end)
-		if ok and type(n) == "number" then
-			return n
-		end
-		return nil
-	end
-	local function slice(fn, channel)
-		if type(fn) ~= "function" then
-			return nil
-		end
-		local pack = { pcall(fn, "target") }
-		if not pack[1] or not readable(pack[2]) then
-			return nil
-		end
-		local notKick = channel and pack[8] or pack[9]
-		if readable(notKick) and notKick then
-			return nil
-		end
-		local startMS = millis(pack[5])
-		local endMS = millis(pack[6])
-		if not startMS or not endMS or endMS <= startMS then
-			return nil
-		end
-		local span = endMS - startMS
-		local progress = ((GetTime() * 1000) - startMS) / span
-		if progress < 0 then
-			progress = 0
-		end
-		if progress > 1 then
-			progress = 1
-		end
-		return progress
-	end
-	local cast = slice(UnitCastingInfo, false)
-	if cast then
-		return cast
-	end
-	return slice(UnitChannelInfo, true)
-end
-
 function ns.API.Purgable(stealableOnly)
 	if not UnitExists("target") or not C_UnitAuras or not C_UnitAuras.GetAuraDataByIndex then
 		return false
@@ -3677,9 +3461,6 @@ local function asNumber(value)
 end
 
 local function pickField(t, key, index)
-	if type(t) ~= "table" then
-		return nil
-	end
 	if t[key] ~= nil then
 		return t[key]
 	end
@@ -3871,27 +3652,4 @@ function ns.API.Combo()
 		return predict.combo
 	end
 	return rawCombo()
-end
-
-function ns.API.Power(kind)
-	local map = { Mana = 0, Rage = 1, Focus = 2, Energy = 3 }
-	local token = map[kind] or 0
-	local current = safe(UnitPower("player", token), 0) or 0
-	local max = safe(UnitPowerMax("player", token), 1) or 1
-	return current, max
-end
-
-function ns.API.Add(queue, spellID, opt)
-	spellID = ns.API.Resolve(spellID) or spellID
-	if not spellID or #queue >= 3 then
-		return
-	end
-	for i = 1, #queue do
-		if queue[i] == spellID then
-			return
-		end
-	end
-	if ns.API.StepOk(spellID, opt) then
-		queue[#queue + 1] = spellID
-	end
 end

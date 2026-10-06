@@ -13,15 +13,10 @@ function ns.ClearRotationSpent()
 end
 
 local function sameRotSpell(a, b)
-	if not a or not b then
+	if not a then
 		return false
 	end
-	if a == b then
-		return true
-	end
-	local ra = API.Resolve and API.Resolve(a) or a
-	local rb = API.Resolve and API.Resolve(b) or b
-	return ra and rb and ra == rb
+	return a == b or (API.Resolve(a) or a) == b
 end
 
 -- Mark an APL spell as used for this pass (cast from the bar or suggested).
@@ -30,31 +25,22 @@ function ns.NoteRotationCast(spellID)
 	if not spellID or not ns.GetAPL then
 		return
 	end
-	local resolved = (API.Resolve and API.Resolve(spellID)) or spellID
-	if not resolved then
-		return
-	end
-	local apl = ns.GetAPL()
-	for _, step in ipairs(apl or {}) do
-		if step and step.key and sameRotSpell(step.id, resolved) then
+	local resolved = API.Resolve(spellID) or spellID
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		if step.key and sameRotSpell(step.id, resolved) then
 			rotSpent[step.key] = true
-			if resolved then
-				rotSpent["id:" .. tostring(resolved)] = true
-			end
+			rotSpent["id:" .. tostring(resolved)] = true
 			return
 		end
 	end
 end
 
 local function isRotSpent(step)
-	if not step then
-		return false
-	end
 	if step.key and rotSpent[step.key] then
 		return true
 	end
-	local id = (API.Resolve and API.Resolve(step.id)) or step.id
-	return id and rotSpent["id:" .. tostring(id)] or false
+	local id = API.Resolve(step.id) or step.id
+	return id ~= nil and rotSpent["id:" .. tostring(id)] == true
 end
 
 function ns.InvalidateBuffCaches()
@@ -132,56 +118,35 @@ function ns.BuildQueue()
 		return q
 	end
 	local apl = ns.GetAPL()
+	-- Spell IDs already in the queue or being cast: a spell shows at most once,
+	-- so the queue walks the list (1 → 2 → 3) instead of repeating a cast.
 	local used = {}
-	local blocked = {}
 	local stepById = {}
 	local function markHeal(id, opt)
-		if not id or not (API.IsHealSpell and API.IsHealSpell(id, opt)) then
+		if not API.IsHealSpell(id, opt) then
 			return
 		end
 		ns.queueHeal[id] = true
-		local resolved = API.Resolve and API.Resolve(id)
+		local resolved = API.Resolve(id)
 		if resolved then
 			ns.queueHeal[resolved] = true
 		end
 	end
+	-- Only called after pressable(), which already refuses a used ID.
 	local function take(step)
-		local id = (API.Resolve and API.Resolve(step.id)) or step.id
-		if not id then
-			return false
-		end
-		local opt = step.opt or {}
-		-- Only next-swing fillers may appear more than once. Every other spell
-		-- shows at most once so the HUD walks the list (1 → 2 → 3…) instead of
-		-- stacking the same cast three times.
-		local canRepeat = opt.swing == true
-		if not canRepeat and (used[id] or used[step.key]) then
-			return false
-		end
-		local group = opt.anybuff or opt.anydebuff
-		if group and blocked[group] then
-			return false
-		end
+		local id = API.Resolve(step.id) or step.id
 		q[#q + 1] = id
 		stepById[id] = step
-		if not canRepeat then
-			used[id] = true
-			used[step.key] = true
-		end
-		if group then
-			blocked[group] = true
-		end
-		markHeal(id, opt)
+		used[id] = true
+		markHeal(id, step.opt)
+		API.PredictConsume(step.id, step.opt)
 		return true
 	end
 	local function onBar(id)
-		if ns.db.barOnly == false then
+		if ns.db.barOnly == false or not ns.SpellOnBar then
 			return true
 		end
-		if ns.SpellOnBar then
-			return ns.SpellOnBar(id)
-		end
-		return true
+		return ns.SpellOnBar(id)
 	end
 	local function consider(step)
 		return ns.IsStepEnabled(step)
@@ -190,218 +155,108 @@ function ns.BuildQueue()
 			and not ns.IsMaintenanceBuff(step.id)
 			and onBar(step.id)
 	end
-	if API.PredictBegin then
-		API.PredictBegin()
-	end
-	local function inQueue(id)
-		if not id then
+	API.PredictBegin()
+	-- mode: "in" = confirmed reach (slot 1), "notOut" = unknown reach is
+	-- fine, "any" = out of range is fine too (slots 2-3).
+	local function pressable(step, shift, mode)
+		if not consider(step) or not API.StepOk(step.id, step.opt, shift) then
 			return false
 		end
-		for i = 1, #q do
-			if q[i] == id then
-				return true
-			end
-		end
-		return false
+		local id = API.Resolve(step.id) or step.id
+		return not used[id] and API.InSpellRange(id, step.opt, mode)
 	end
-	-- "in" = confirmed reach (slot 1). "notOut" = unknown ok. "any" = OOR ok (slots 2-3).
-	local function rangeMode(mustRange)
-		if mustRange == true or mustRange == "in" then
-			return "in"
-		end
-		if mustRange == "notOut" then
-			return "notOut"
-		end
-		return "any"
-	end
-	local function rangeOk(id, opt, mustRange)
-		if API.InSpellRange then
-			return API.InSpellRange(id, opt, rangeMode(mustRange))
-		end
-		if not ns.SpellInRange then
-			return true
-		end
-		return ns.SpellInRange(id) == true or rangeMode(mustRange) ~= "in"
-	end
-	local function rangeState(id, opt)
-		if API.RangeState then
-			return API.RangeState(id, opt)
-		end
-		return "unknown"
-	end
-	local function pressable(step, shift, mustRange, allowDup)
-		if not consider(step) then
-			return false
-		end
-		if not API.StepOk(step.id, step.opt, shift) then
-			return false
-		end
-		local id = (API.Resolve and API.Resolve(step.id)) or step.id
-		if not allowDup and inQueue(id) then
-			return false
-		end
-		if not rangeOk(id, step.opt, mustRange) then
-			return false
-		end
-		return true
-	end
-	local function laterInRange(from, shift)
-		for j = from + 1, #apl do
-			local step = apl[j]
-			if not isRotSpent(step) and pressable(step, shift, "in", false) then
-				return true
-			end
-		end
-		return false
-	end
+	-- A ready action (shock, DoT, cooldown, proc) listed after position "from".
 	local function laterAction(from, shift)
 		for j = from + 1, #apl do
 			local step = apl[j]
 			if
 				not isRotSpent(step)
-				and API.IsRotationAction
 				and API.IsRotationAction(step.id, step.opt, step.racial)
+				and (pressable(step, shift, "in") or pressable(step, shift, "notOut"))
 			then
-				-- Confirmed in-range, or unknown (notOut): a ready shock/DoT/CD
-				-- must still beat a filler listed above it.
-				if pressable(step, shift, "in", false) or pressable(step, shift, "notOut", false) then
-					return true
-				end
+				return true
 			end
 		end
 		return false
 	end
-	local function tryPick(step, shift, mustRange, allowDup)
-		if not pressable(step, shift, mustRange, allowDup) then
-			return false
-		end
-		if take(step) then
-			if API.PredictConsume then
-				API.PredictConsume(step.id, step.opt)
-			end
-			return true
-		end
-		return false
-	end
-	local function pickOne(shift, mustRange, allowDup, skipSpent)
+	-- First unspent step that can be taken. Fillers (Lightning Bolt,
+	-- Fireball, Heroic Strike, …) yield to a later ready action so that spell
+	-- becomes slot 1; Ice Lance / Starfire stay in list order (not actions).
+	local function pickOne(shift, mode)
 		for i, step in ipairs(apl) do
-			if (not skipSpent or not isRotSpent(step)) and pressable(step, shift, mustRange, allowDup) then
-				local id = (API.Resolve and API.Resolve(step.id)) or step.id
-				local opt = step.opt or {}
-				-- Fillers (Lightning Bolt, Fireball, Heroic Strike, …) yield to a
-				-- later ready action (shock, DoT, CD, proc) so that spell becomes
-				-- slot 1. Ice Lance / Starfire stay list-order (not actions).
-				local skipFiller = API.IsFallback and API.IsFallback(opt) and laterAction(i, shift)
-				local unknown = rangeState(id, step.opt) == "unknown"
-				local skipUnknown = rangeMode(mustRange) == "in" and unknown and laterInRange(i, shift)
-				if not skipFiller and not skipUnknown and tryPick(step, shift, mustRange, allowDup) then
+			if not isRotSpent(step) and pressable(step, shift, mode) then
+				if not (API.IsFallback(step.opt) and laterAction(i, shift)) then
+					take(step)
 					return true
 				end
 			end
 		end
 		return false
 	end
-	-- Prefer unspent steps (continue after a manual cast). If the pass is
-	-- exhausted, wipe and restart from the top of the list.
-	local function pickNext(shift, mustRange, allowDup)
-		if pickOne(shift, mustRange, allowDup, true) then
+	-- Continue after a manual cast; when the pass is used up, restart from
+	-- the top of the list.
+	local function pickNext(shift, mode)
+		if pickOne(shift, mode) then
 			return true
 		end
 		if next(rotSpent) then
 			wipe(rotSpent)
-			return pickOne(shift, mustRange, allowDup, true)
+			return pickOne(shift, mode)
 		end
-		return pickOne(shift, mustRange, allowDup, false)
+		return false
 	end
 	local function fillSlots()
-		local shift = 0.2
-		if API.CastRemain then
-			local left = API.CastRemain()
-			if left > shift then
-				shift = left
-			end
-		end
+		local shift = math.max(0.2, API.CastRemain())
 		-- The spell being cast right now is not glowed again: it only counts as
 		-- used for the look-ahead, so the glow already shows what comes next.
-		if API.CastingSpell then
-			for _, step in ipairs(apl) do
-				if consider(step) and API.CastingSpell(step.id) then
-					local castId = (API.Resolve and API.Resolve(step.id)) or step.id
-					if castId and step.opt and step.opt.swing ~= true then
-						used[castId] = true
-						used[step.key] = true
-					end
-					if API.PredictConsume then
-						API.PredictConsume(step.id, step.opt)
-					end
-					break
+		for _, step in ipairs(apl) do
+			if consider(step) and API.CastingSpell(step.id) then
+				if not (step.opt and step.opt.swing) then
+					used[API.Resolve(step.id) or step.id] = true
 				end
+				API.PredictConsume(step.id, step.opt)
+				break
 			end
 		end
-		if #q == 0 then
-			pickNext(shift, "in", false)
+		if not pickNext(shift, "in") then
+			pickNext(shift, "notOut")
 		end
-		if #q == 0 then
-			pickNext(shift, "notOut", false)
-		end
-		-- Never allowDup: the next slots must be later spells in the list.
 		while #q < 3 do
-			if not pickNext(shift, "any", false) then
-				break
+			if not pickNext(shift, "any") then
+				return
 			end
 		end
 	end
 	pcall(fillSlots)
-	if API.PredictEnd then
-		API.PredictEnd()
-	end
-	local healFirst = false
-	-- Remember whether the spell that will be flashed (slot 1, set after the
-	-- heal reorder below) can actually be pressed right now.
-	local function pressableNow(id)
-		local step = id and stepById[id]
-		if not step then
-			return false
-		end
-		if not API.Ready(id, step.opt) then
-			return false
-		end
-		if API.RangeState and API.RangeState(id, step.opt) == "out" then
-			return false
-		end
-		return true
-	end
+	API.PredictEnd()
 	-- Only slot 1 glows: a needed heal moves there even when it already sits
 	-- in slot 2 or 3.
-	if q[1] and ns.queueHeal[q[1]] then
-		healFirst = true
-	end
-	if not healFirst then
+	if not (q[1] and ns.queueHeal[q[1]]) then
 		for _, step in ipairs(apl) do
 			if
 				consider(step)
-				and API.IsHealSpell
 				and API.IsHealSpell(step.id, step.opt)
-				and not (API.CastingSpell and API.CastingSpell(step.id))
+				and not API.CastingSpell(step.id)
 				and API.StepOk(step.id, step.opt, 0.2)
 			then
-				local id = (API.Resolve and API.Resolve(step.id)) or step.id
-				if id then
-					for i = #q, 1, -1 do
-						if q[i] == id then
-							table.remove(q, i)
-						end
+				local id = API.Resolve(step.id) or step.id
+				for i = #q, 1, -1 do
+					if q[i] == id then
+						table.remove(q, i)
 					end
-					table.insert(q, 1, id)
-					stepById[id] = step
-					while #q > 3 do
-						q[#q] = nil
-					end
-					markHeal(id, step.opt)
 				end
+				table.insert(q, 1, id)
+				stepById[id] = step
+				q[4] = nil
+				markHeal(id, step.opt)
 				break
 			end
 		end
+	end
+	-- Whether the spell that will be flashed (slot 1) can be pressed right now.
+	local function pressableNow(id)
+		local step = id and stepById[id]
+		return step ~= nil and API.Ready(id, step.opt) and API.RangeState(id, step.opt) ~= "out"
 	end
 	local okGlow, glowOk = pcall(pressableNow, q[1])
 	ns.queueGlowOk = okGlow and glowOk == true
@@ -751,9 +606,6 @@ function ns.SelectedWeaponBuff(offhand)
 end
 
 local function rememberWeaponApply(entry)
-	if not entry then
-		return
-	end
 	local now = GetTime()
 	ns.weaponGrace = now + 3
 	ns.weaponCastAt = now
@@ -839,33 +691,12 @@ function ns.ClearWeaponMemory()
 	ns.weaponRecheckDrop = nil
 end
 
-local function entryHasEnchant(entry, enchId)
-	if not entry or not enchId or enchId == 0 then
-		return false
-	end
-	if ns.WEAPON_ENCHANT_IDS and ns.WEAPON_ENCHANT_IDS[enchId] == entry then
-		return true
-	end
-	if entry.enchants then
-		for _, id in ipairs(entry.enchants) do
-			if id == enchId then
-				return true
-			end
-		end
-	end
-	return false
-end
-
 local function handState(entry, offhand)
 	local has, remain, enchId = API.WeaponEnchant(offhand)
 	if has == true then
-		if
-			enchId
-			and enchId > 0
-			and ns.WEAPON_ENCHANT_IDS
-			and ns.WEAPON_ENCHANT_IDS[enchId]
-			and not entryHasEnchant(entry, enchId)
-		then
+		-- An enchant ID we know that belongs to another buff: a different imbue.
+		local owner = enchId and ns.WEAPON_ENCHANT_IDS[enchId]
+		if owner and owner ~= entry then
 			return "other", 0
 		end
 		return "up", remain
@@ -877,7 +708,7 @@ local function handState(entry, offhand)
 end
 
 local function weaponMatchTokens(entry)
-	if entry and tokenCache[entry] then
+	if tokenCache[entry] then
 		return tokenCache[entry]
 	end
 	local tokens, seen = {}, {}
@@ -905,15 +736,11 @@ local function weaponMatchTokens(entry)
 	end
 	for _, id in ipairs(ids) do
 		add(API.SpellName(id))
-		if API.HintNames then
-			for _, name in ipairs(API.HintNames(id)) do
-				add(name)
-			end
+		for _, name in ipairs(API.HintNames(id)) do
+			add(name)
 		end
 	end
-	if entry then
-		tokenCache[entry] = tokens
-	end
+	tokenCache[entry] = tokens
 	return tokens
 end
 
@@ -1013,14 +840,13 @@ function ns.BuildWeapon()
 		ns.weaponNeedLast = need
 		return spellID, remain, need
 	end
+	-- A WEAPON_ENCHANT_CHANGED we did not cause: believe the drop at once.
 	if ns.weaponRecheckDrop then
 		ns.weaponRecheckDrop = nil
-		if status ~= "up" then
-			ns.weaponSeenUntil = 0
-			ns.weaponGrace = 0
-			ns.weaponNeedLast = true
-			return spellID, 0, true
-		end
+		ns.weaponSeenUntil = 0
+		ns.weaponGrace = 0
+		ns.weaponNeedLast = true
+		return spellID, 0, true
 	end
 	local now = GetTime()
 	if status == "missing" then
