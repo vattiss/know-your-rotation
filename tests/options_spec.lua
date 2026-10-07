@@ -332,10 +332,6 @@ describe("Options list editor", function()
 			return nil
 		end
 		H.eq(why(frame.aplRows[1]), ns.T("WHY_READY"))
-		ns.SpellOnBar = function()
-			return false
-		end
-		H.eq(why(frame.aplRows[1]), ns.T("WHY_NOT_ON_BAR"))
 		frame.aplRows[1].stepId = nil
 		frame.aplRows[1]:Fire("OnEnter")
 		local _ = w

@@ -418,8 +418,6 @@ local function aplRow(parent, index)
 			text, r, g, b = ns.T("WHY_NOT_KNOWN"), 0.7, 0.7, 0.7
 		elseif not self.stepOn then
 			text, r, g, b = ns.T("WHY_SWITCHED_OFF"), 0.7, 0.7, 0.7
-		elseif ns.db.barOnly ~= false and ns.SpellOnBar and not ns.SpellOnBar(self.stepId) then
-			text, r, g, b = ns.T("WHY_NOT_ON_BAR"), 1, 0.4, 0.4
 		else
 			local why = API.WhyNot and API.WhyNot(self.stepId, self.stepOpt)
 			if why then
@@ -954,7 +952,6 @@ local function registerBehavior(root)
 	end)
 
 	header(layout, "HDR_SUGGESTIONS")
-	featureCheckbox(category, "barOnly", "OPT_BAR_ONLY", "TIP_BAR_ONLY")
 	featureCheckbox(category, "autoHeal", "OPT_AUTO_HEAL", "TIP_AUTO_HEAL")
 	featureCheckbox(category, "showPhysics", "OPT_PHYSICS", "TIP_PHYSICS")
 end

@@ -76,9 +76,6 @@ local function defaults()
 	if ns.db.autoHeal == nil then
 		ns.db.autoHeal = true
 	end
-	if ns.db.barOnly == nil then
-		ns.db.barOnly = true
-	end
 	if ns.db.autoProfile == nil then
 		ns.db.autoProfile = true
 	end
@@ -509,13 +506,6 @@ local function playAlert(kind, spellID)
 	local key = ALERT_SOUND_KEY[kind]
 	if key and ns.db then
 		ns.PlayAlertSound(ns.db[key])
-	end
-	-- A glow needs a button: say so when the spell is on no action bar.
-	if spellID and UIErrorsFrame and ns.SpellOnBar and not ns.SpellOnBar(spellID) then
-		local name = ns.API.SpellName(spellID)
-		if name then
-			UIErrorsFrame:AddMessage(ns.T("NOTICE_OFF_BAR"):format(name), 1, 0.82, 0)
-		end
 	end
 end
 

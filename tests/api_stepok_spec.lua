@@ -457,6 +457,10 @@ describe("StepOk cooldown and readiness", function()
 		end
 		check(A, 1, {}, true, "out of range: still a queue candidate")
 		ns.API.RangeState = function()
+			return "unknown"
+		end
+		check(A, 1, {}, false, "not usable right now")
+		ns.API.RangeState = function()
 			return "in"
 		end
 		ns.Physics = {

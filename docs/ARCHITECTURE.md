@@ -187,7 +187,7 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 
 `ns.BuildQueue`: up to 3 slots. The list is read in order; spells **already cast in the current pass** (`ns.NoteRotationCast` / `rotSpent`) are skipped — even if they had not been displayed yet. When no usable step remains in the pass, `rotSpent` is cleared and the queue **restarts from the beginning**. Also reset on target change and when leaving combat.
 
-- ignores an unchecked step, a weapon enchant, a maintenance buff, and (if `barOnly`) a spell missing from the bars already indexed by GlowFetch. Note: `ns.SpellOnBar` currently always answers true (an unreliable bar scan used to clear the rotation), so `barOnly` has no effect;
+- ignores an unchecked step, a weapon enchant and a maintenance buff;
 - the spell being cast is not shown again: it counts as used, and `PredictConsume` assumes it was cast (DoT, CD / shocks, buff, stealth, combo points), so slot 1 shows what comes next;
 - a leading **filler** yields to a lower **action** (shock, DoT, CD, proc) as soon as it is ready and in range `in` or unknown (`notOut`) — the shock then moves to slot 1. Starfire / Ice Lance / Swipe / auto racials do not steal;
 - the same spell appears only once in the queue: slots 2-3 show other spells. A step of an `anybuff` / `anydebuff` group is refused by `StepOk` once the look-ahead (`PredictConsume`) marked another step of that group;
@@ -354,7 +354,7 @@ listVersion          = 4
 profile              = "pve" | "pvp"
 showRotation, showDefense, showInterrupt, showPurge,
 showCleanse, showWeapon
-barOnly, autoProfile, cleanseGroup, showPhysics
+autoProfile, cleanseGroup, showPhysics
 soundKick, soundCleanse, soundWeapon = sound key from `ns.SOUNDS` ("none" = off)
 colors.next / heal / def / weapon
 role, combatMode, lastManualMode, autoEnemies, weaponBuff

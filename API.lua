@@ -1850,13 +1850,11 @@ function ns.API.StepOk(spellID, opt, timeShift)
 			return true
 		end
 	end
-	-- Out of range is still a queue candidate for slots 2-3. Slot 1
-	-- requires RangeState "in" separately. IsSpellUsable is false when OOR.
-	if hasResources(spellID) and ns.API.RangeState then
-		local reach = ns.API.RangeState(spellID, opt)
-		if reach == "out" or reach == "unknown" then
-			return true
-		end
+	-- Certainly out of range is still a queue candidate for slots 2-3 (the
+	-- client calls it unusable). An unknown range proves nothing: the spell
+	-- may be unusable for another reason, such as the wrong stance.
+	if hasResources(spellID) and ns.API.RangeState(spellID, opt) == "out" then
+		return true
 	end
 	if ns.Physics and ns.Physics.EnergySoon and ns.Physics.EnergySoon(spellID) then
 		return true
@@ -1896,7 +1894,10 @@ end
 local AURA_FAMILIES = {
 	{ key = "seal", tokens = { "seal" } },
 	{ key = "blessing", tokens = { "blessing" } },
-	{ key = "palaura", tokens = { "aura" } },
+	{
+		key = "palaura",
+		tokens = { "devotion aura", "retribution aura", "concentration aura", "sanctity aura", "resistance aura" },
+	},
 	{ key = "aspect", tokens = { "aspect" } },
 	{ key = "magearmor", tokens = { "ice armor", "frost armor", "mage armor" } },
 	{ key = "lockarmor", tokens = { "demon skin", "demon armor" } },

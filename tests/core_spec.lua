@@ -351,15 +351,11 @@ describe("Core tick", function()
 		ns.API.CombatNotice = function()
 			return "NOTICE_CALL_PET"
 		end
-		ns.SpellOnBar = function()
-			return false
-		end
 		w.spell(6552, { name = "Pummel" })
 		ns.Tick()
 		ns.Tick()
 		H.eq(#w.sounds, 3, "kick, cleanse and weapon sound once each")
 		H.contains(w.messages, ns.T("NOTICE_CALL_PET"))
-		H.contains(w.messages, ns.T("NOTICE_OFF_BAR"):format("Pummel"))
 		ns.BuildWeapon = function()
 			return 8017, 0, false
 		end

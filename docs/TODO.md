@@ -15,12 +15,12 @@ Every change since the 1.0.0-beta.1 push was checked only by syntax checks and t
 - **Creature type:** if `UnitCreatureType` is secret for mobs, Serpent Sting on elementals, Exorcism restrictions and bleed immunity cannot work (nothing more to fix in code).
 - Suggested test characters: hunter 10, shaman 10, rogue 10 (then warlock, priest, mage, druid).
 
-## 2. Open decisions
+## 2. Open decisions (done)
 
-1. **"Only suggest spells on your action bars"** (`barOnly`): `ns.SpellOnBar` always returns true (an unreliable bar scan used to clear the rotation), so the Behavior switch and the "not on a bar" warning do nothing. Either remove the switch and code, or make `SpellOnBar` real and test the flicker.
-2. **Aura families:** every buff with "aura" in its name counts as a paladin aura, "blessing" as a blessing. Another paladin's Devotion Aura can hide a hunter's Trueshot Aura; another paladin's Kings can hide your Might.
-3. **Unusable spell with unknown range:** `StepOk` lets it through (comment: the client says "unusable" out of range). The API docs say `IsSpellUsable` ignores range, so a spell in the wrong stance may be offered. Check in game, then tighten.
-4. **Dying mobs in combat:** the "skip DoTs on an almost dead target" rule cannot work while target health is hidden. Idea: fade the DoT glow below 20 % target health with the same curve trick as finishers, and light the next list spell instead. Decided against for now.
+1. `barOnly` removed: `ns.SpellOnBar` always answered true, so the switch, the "not on a bar" tooltip and the off-bar warning did nothing.
+2. The paladin aura family now holds only the real paladin auras (Trueshot Aura no longer counts). One blessing still stands for all blessings (another paladin's Kings hides your Might).
+3. An unusable spell is a queue candidate only when its range is certainly "out"; an unknown range no longer lets a wrong-stance spell through.
+4. Still open: dying mobs in combat (DoT skip rule cannot work while target health is hidden).
 
 ## 3. Tooling still to do
 

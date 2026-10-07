@@ -142,18 +142,8 @@ function ns.BuildQueue()
 		API.PredictConsume(step.id, step.opt)
 		return true
 	end
-	local function onBar(id)
-		if ns.db.barOnly == false or not ns.SpellOnBar then
-			return true
-		end
-		return ns.SpellOnBar(id)
-	end
 	local function consider(step)
-		return ns.IsStepEnabled(step)
-			and step.id
-			and not ns.IsWeaponBuff(step.id)
-			and not ns.IsMaintenanceBuff(step.id)
-			and onBar(step.id)
+		return ns.IsStepEnabled(step) and step.id and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id)
 	end
 	API.PredictBegin()
 	-- mode: "in" = confirmed reach (slot 1), "notOut" = unknown reach is
@@ -280,7 +270,6 @@ function ns.BuildHiddenHeal()
 			and not (API.CastingSpell and API.CastingSpell(step.id))
 			and not ns.IsWeaponBuff(step.id)
 			and not ns.IsMaintenanceBuff(step.id)
-			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
 		then
 			local copy = {}
 			for k, v in pairs(opt) do
@@ -308,13 +297,7 @@ function ns.BuildHiddenExecute()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if
-			opt.unit == "target"
-			and (opt.hp or opt.hpPerCombo)
-			and step.id
-			and ns.IsStepEnabled(step)
-			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
-		then
+		if opt.unit == "target" and (opt.hp or opt.hpPerCombo) and step.id and ns.IsStepEnabled(step) then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -345,7 +328,6 @@ function ns.BuildHiddenPet()
 			and step.id
 			and ns.IsStepEnabled(step)
 			and not (API.CastingSpell and API.CastingSpell(step.id))
-			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
 		then
 			local copy = {}
 			for k, v in pairs(opt) do
@@ -367,7 +349,7 @@ function ns.BuildHiddenMana()
 	end
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local opt = step.opt or {}
-		if opt.manaMax and step.id and ns.IsStepEnabled(step) and (not ns.SpellOnBar or ns.SpellOnBar(step.id)) then
+		if opt.manaMax and step.id and ns.IsStepEnabled(step) then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v
@@ -387,13 +369,7 @@ function ns.BuildHiddenDefense()
 	end
 	for _, step in ipairs(ns.GetDef() or {}) do
 		local opt = step.opt or {}
-		if
-			opt.hp
-			and (not opt.unit or opt.unit == "player")
-			and step.id
-			and ns.IsStepEnabled(step)
-			and (not ns.SpellOnBar or ns.SpellOnBar(step.id))
-		then
+		if opt.hp and (not opt.unit or opt.unit == "player") and step.id and ns.IsStepEnabled(step) then
 			local copy = {}
 			for k, v in pairs(opt) do
 				copy[k] = v

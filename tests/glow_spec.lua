@@ -50,9 +50,6 @@ describe("Glow bar scan", function()
 		H.eq(ns.SpellBarSlot(3), 3, "macro body")
 		H.eq(ns.SpellBarSlot(99), nil)
 		H.eq(ns.SpellBarSlot(nil), nil)
-		H.eq(ns.SpellOnBar(nil), false)
-		H.eq(ns.SpellOnBar(1), true)
-		H.eq(ns.SpellOnBar(99), true, "never hides a spell because of a bar scan")
 		local _ = w
 	end)
 
@@ -108,7 +105,6 @@ describe("Glow bar scan", function()
 		H.eq(ns.SpellBarSlot(1), 13)
 		H.eq(ns.SpellBarSlot(2), 14)
 		H.eq(ns.SpellBarSlot(3), 15)
-		H.eq(ns.SpellOnBar(768), true)
 		ns.GlowFetch()
 		w.env.GetShapeshiftFormInfo = nil
 		w.env.GetNumShapeshiftForms = function()
@@ -421,10 +417,6 @@ describe("Glow edge cases", function()
 		button(w, "ActionButton1", 1, { type = "spell", id = 11 })
 		button(w, "ActionButton2", 2, { type = "spell", id = 12 })
 		H.eq(ns.SpellBarSlot(10), 1, "first use scans the bars")
-		H.eq(ns.SpellOnBar(10), true)
-		H.eq(ns.SpellOnBar(13), true, "same name")
-		w.state.secret.spellName = true
-		H.eq(ns.SpellOnBar(13), true, "secret name")
 	end)
 
 	it("scans many buttons in steps and drops an outdated scan", function()

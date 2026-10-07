@@ -113,9 +113,6 @@ local function spellName(spellID)
 	if type(name) ~= "string" or name == "" then
 		return
 	end
-	if issecretvalue and issecretvalue(name) then
-		return
-	end
 	return name
 end
 
@@ -1060,34 +1057,4 @@ function ns.SpellBarSlot(spellID)
 		end
 	end
 	return nil
-end
-
-function ns.SpellOnBar(spellID)
-	if not spellID then
-		return false
-	end
-	if lastFetch == 0 then
-		ns.GlowFetch()
-	end
-	local function found(id)
-		if spells[id] and #spells[id] > 0 then
-			return true
-		end
-		local name = spellName(id)
-		if name and spellsByName[name] and #spellsByName[name] > 0 then
-			return true
-		end
-		local key = name and normKey(name)
-		return key and spellsByNorm[key] and #spellsByNorm[key] > 0
-	end
-	if found(spellID) then
-		return true
-	end
-	local resolved = API.Resolve and API.Resolve(spellID)
-	if resolved and resolved ~= spellID and found(resolved) then
-		return true
-	end
-	-- A bar scan that sometimes reads every button and sometimes does not
-	-- was clearing the rotation, then bringing it back, with no cast and no target.
-	return true
 end

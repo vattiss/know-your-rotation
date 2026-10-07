@@ -19,7 +19,6 @@ local function setup(extra)
 	w:load()
 	w:fire("PLAYER_LOGIN")
 	local ns = w.ns
-	ns.db.barOnly = false
 	return w, ns
 end
 
@@ -65,7 +64,7 @@ describe("Rotation queue", function()
 		H.eq(ns.queueGlowOk, false, "but does not glow")
 	end)
 
-	it("skips disabled, weapon, maintenance and off-bar spells", function()
+	it("skips disabled, weapon and maintenance spells", function()
 		local _, ns = setup()
 		useList(ns, {
 			step("Off", 4, nil, false),
@@ -75,13 +74,6 @@ describe("Rotation queue", function()
 			step("Filler", 1, { filler = true }),
 		})
 		H.same(ns.BuildQueue(), { 1 })
-		ns.db.barOnly = true
-		ns.SpellOnBar = function(id)
-			return id ~= 1
-		end
-		H.same(ns.BuildQueue(), {})
-		ns.SpellOnBar = nil
-		H.same(ns.BuildQueue(), { 1 }, "no bar check available")
 	end)
 
 	it("shows a spell once, next-swing attacks included", function()
