@@ -301,6 +301,8 @@ Options (`KnowYourRotationOptions`, inside the Settings panel):
 
 ## Highlight (`Glow.lua`)
 
+`ns.GlowFetch` reads the action buttons of the default bars (`Action`, `MultiBar*`), the shaman's totem bar (`MultiCastActionButton1-12`), the stance bar and, when loaded, Dominos, Bartender4 and ElvUI. A spell that is on none of them has no button to glow.
+
 `ns.GlowFetch` (at most every 2 s, or forced) scans:
 
 - `ActionButton1-12`, `MultiBarBottomLeft/BottomRight/Right/Left`, `MultiBar5-7`;

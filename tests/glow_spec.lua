@@ -115,6 +115,17 @@ describe("Glow bar scan", function()
 		w:advance(0)
 	end)
 
+	it("scans the shaman's totem bar", function()
+		local w, ns = boot("SHAMAN", function(w)
+			w.spell(8071, { name = "Stoneskin Totem", icon = 136098 })
+			button(w, "MultiCastActionButton2", 133, { type = "spell", id = 8071 })
+		end)
+		ns.GlowFetch(true)
+		H.eq(ns.SpellBarSlot(8071), 133, "found on the totem bar")
+		ns.GlowSpell(8071)
+		H.eq(overlayOf(w.env.MultiCastActionButton2, "next"):IsShown(), true)
+	end)
+
 	it("scans without timers and finds icons on the button frame", function()
 		local w, ns = boot("WARRIOR", function(w)
 			w.env.C_Timer.After = nil

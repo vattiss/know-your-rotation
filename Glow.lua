@@ -503,6 +503,10 @@ function ns.GlowFetch(force)
 			queue[#queue + 1] = _G[bar .. "Button" .. i]
 		end
 	end
+	-- The shaman's totem bar: its buttons are action buttons too.
+	for i = 1, 12 do
+		queue[#queue + 1] = _G["MultiCastActionButton" .. i]
+	end
 	if GetNumShapeshiftForms then
 		local ok, count = pcall(GetNumShapeshiftForms)
 		if ok and count then
