@@ -59,6 +59,8 @@ describe("StepOk basics", function()
 		local w, _, A = setup()
 		check(A, 1, { minLevel = 10 }, true)
 		check(A, 1, { minLevel = 11 }, false, "from level 11")
+		check(A, 1, { maxLevel = 10 }, true)
+		check(A, 1, { maxLevel = 9 }, false, "up to level 9")
 		w.state.level = wow.SECRET
 		check(A, 1, { minLevel = 11 }, true)
 		w.env.UnitLevel = function()

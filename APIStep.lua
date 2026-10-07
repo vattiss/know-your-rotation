@@ -120,6 +120,18 @@ local STEP_CHECKS = {
 			end
 		end,
 	},
+	-- maxLevel = up to this character level (a lower-level stand-in, like
+	-- Stoneskin Totem until Strength of Earth Totem is worth its mana).
+	{
+		"maxLevel",
+		function(c)
+			local ok, level = pcall(UnitLevel, "player")
+			level = ok and tonumber(safe(level, nil)) or nil
+			if level and level > c.opt.maxLevel then
+				return ("up to level %d"):format(c.opt.maxLevel)
+			end
+		end,
+	},
 	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
 	-- is already running (pressing it again would stop it).
 	{

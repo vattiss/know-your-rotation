@@ -12,6 +12,7 @@
 ---@field hpPerCombo? number Target health threshold per combo point.
 ---@field manaMax? number Offered at or below this mana percent.
 ---@field minLevel? integer From this character level on.
+---@field maxLevel? integer Up to this character level.
 ---@field nobuff? boolean|integer Not while this buff is up (true = the spell itself).
 ---@field nodebuff? boolean|integer Not while this debuff is on the target (true = the spell itself).
 ---@field needbuff? integer Needs this buff on the player.

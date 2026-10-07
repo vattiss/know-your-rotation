@@ -316,6 +316,7 @@ ns.APLDefaults = {
 	},
 	SHAMAN = {
 		caster = {
+			step("Stoneskin", Sh.Stoneskin, { totem = true, engaged = true, maxLevel = 29 }),
 			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
 			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true, minLevel = 40 }),
 			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
@@ -329,6 +330,7 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80, heal = true }),
 		},
 		melee = {
+			step("Stoneskin", Sh.Stoneskin, { totem = true, engaged = true, maxLevel = 29 }),
 			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
 			step("GraceofAir", Sh.GraceofAir, { totem = true, engaged = true }, false),
 			step("WindfuryTotem", Sh.WindfuryTotem, { totem = true, engaged = true }, false),
