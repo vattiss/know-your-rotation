@@ -348,6 +348,7 @@ Target debuffs on an enemy count only when **you** applied them (`HARMFUL|PLAYER
 
 `ns.API.Cooldown`: after a cast the addon tracks the spell's base cooldown, which also covers secret readings. When the client reports a readable real cooldown (longer than the GCD), that value wins, so talent-shortened cooldowns (Reverberation, Improved Fire Blast) are not held back. Heals (`opt.heal`) keep looking at the ally to heal.
 
+In combat the client may hide cooldowns (`SecretWhenCooldownsRestricted`), and a hidden cooldown used to count as ready, so a racial on cooldown (Blood Fury) came back now and then. Now every cooldown read while the client allows it is remembered until its end and used when the next reads are secret; casts also start a tracked cooldown, and the racials have fallback lengths in `ns.COOLDOWNS` (found by name, so the class's own spell ID does not matter).
 The queue imitates ConROC: the 1st spell is the one to cast now, the 2nd and 3rd are the next ones **after** this simulated press. A spell outside the list does not cut the suggestion: on the next tick, the priority is recomputed.
 
 Heals — unit (`ns.API.HealUnit`, also used by `HealHealth` and `HealRangeUnit`): the unit a press from the bar would heal. `opt.unit` if present, otherwise a friendly `mouseover` (only with the client's `enableMouseoverCast` on), otherwise a friendly `target`, otherwise `player` (an enemy target or no target heals yourself). Health, auras and range all come from that one unit. A dead or attackable unit is not friendly.

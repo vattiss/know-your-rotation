@@ -144,7 +144,7 @@ describe("API cast tracking and cooldowns", function()
 		w.state.spells[12].cooldown = { w.state.time, 6.5 }
 		H.eq(A.Cooldown(12), 6.5)
 		w.state.secret.cooldown = true
-		H.eq(A.Cooldown(12), 8, "secret: the estimate")
+		H.eq(A.Cooldown(12), 6.5, "secret now: the real value it read")
 		w:advance(9)
 		H.eq(A.Cooldown(12), 0, "secret and nothing tracked")
 	end)
@@ -160,6 +160,7 @@ describe("API cast tracking and cooldowns", function()
 			return { start = 1000, duration = 20 }
 		end
 		H.eq(A.Cooldown(14), 20, "start field name")
+		w:advance(25)
 		w.env.C_Spell.GetSpellCooldown = function()
 			return {}
 		end
@@ -184,6 +185,30 @@ describe("API cast tracking and cooldowns", function()
 		H.eq(A.Cooldown(16), 10, "ID key")
 		w.env.strtrim = nil
 		A.NoteSpellCast(17)
+	end)
+end)
+
+describe("API cooldowns the client hides in combat", function()
+	it("keeps counting a cooldown it read while it could", function()
+		local w, _, A = api(function(w)
+			w.spell(20572, { name = "Blood Fury", cooldown = { 1000, 120 } })
+		end)
+		H.eq(A.Cooldown(20572), 120, "readable")
+		w.state.secret.cooldown = true
+		w:advance(30)
+		H.eq(A.Cooldown(20572), 90, "secret now: the remembered end")
+		w:advance(100)
+		H.eq(A.Cooldown(20572), 0, "over")
+	end)
+
+	it("knows racial cooldowns after a cast, whatever the spell ID", function()
+		local w, _, A = api(function(w)
+			w.spell(33697, { name = "Blood Fury" })
+			w.spell(20572, { name = "Blood Fury", known = false, inBook = false })
+		end)
+		w.state.secret.cooldown = true
+		A.NoteSpellCast(33697)
+		H.eq(A.Cooldown(33697), 120, "found by name in the table")
 	end)
 end)
 

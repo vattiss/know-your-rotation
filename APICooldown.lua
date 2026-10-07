@@ -410,6 +410,13 @@ function ns.API.Cooldown(spellID)
 	if not secret and apiDuration and apiDuration > 1.51 then
 		cdKnown[key] = apiDuration
 	end
+	-- A cooldown read while the client allowed it is remembered, so it still
+	-- counts when the next reads are secret (in combat).
+	if not secret and apiDuration > 1.51 and apiRemain > 0.2 then
+		local ends = GetTime() + apiRemain
+		cdUntil[key] = ends
+		cdUntil["id:" .. tostring(spellID)] = ends
+	end
 	local tracked = trackedRemain(spellID)
 	if I.predict then
 		local pred = I.predict.cd[I.cdKey(spellID)] or I.predict.cd["id:" .. tostring(spellID)]

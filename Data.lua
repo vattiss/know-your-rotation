@@ -1027,6 +1027,16 @@ do
 	local L = ns.Spell.Warlock
 	local D = ns.Spell.Druid
 	ns.COOLDOWNS = {
+		-- Racials (found by name too, whatever the class's spell ID is).
+		[20572] = 120, -- Blood Fury
+		[20554] = 180, -- Berserking
+		[20549] = 120, -- War Stomp
+		[20594] = 180, -- Stoneform
+		[7744] = 120, -- Will of the Forsaken
+		[20589] = 105, -- Escape Artist
+		[20600] = 180, -- Perception
+		[20580] = 10, -- Shadowmeld
+		[20577] = 120, -- Cannibalize
 		[P.Judgement] = 8,
 		[P.HammerofJustice] = 60,
 		[P.HammerofWrath] = 6,
