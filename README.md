@@ -66,7 +66,7 @@ Heals in your lists light up when they are needed:
 
 - **Smart heal threshold** (Behavior page, on by default): a heal is offered once the health you are missing is about what that heal restores, so it is not wasted. The heal size comes from the spell text and your maximum health is remembered out of combat.
 - Emergency heals keep their own low threshold (for example Lay on Hands around 20%).
-- In combat the client hides health values from add-ons. The heal glow then follows **your own** health, faded in and out by the game itself. Defensive spells that wait for low health (Power Word: Shield, Shield Wall, …) work the same way, in the defense color.
+- The game hides your health and mana from add-ons (the debug mode showed it is hidden all the time, not only in combat). The heal glow therefore follows **your own** health, faded in and out by the game itself. Defensive spells that wait for low health (Power Word: Shield, Shield Wall, …) work the same way, in the defense color.
 - Out of combat a heal follows the unit it would land on: a friendly target, or a friendly mouseover when the game's mouseover cast is on, otherwise you.
 
 Full health → no heal suggestion, the damage rotation stays visible.

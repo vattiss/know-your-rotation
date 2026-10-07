@@ -414,15 +414,13 @@ local STEP_CHECKS = {
 				needHp = ns.API.AutoHealThreshold(c.id, opt.unit or ns.API.HealUnit(opt), needHp or 99)
 			end
 			if needHp then
-				local hp
-				if opt.unit then
-					hp = ns.API.Health(opt.unit)
-				elseif c.helpful or opt.heal then
-					hp = ns.API.HealHealth(opt)
-				else
-					hp = ns.API.Health("player")
-				end
-				if hp > needHp then
+				local unit = opt.unit or ((c.helpful or opt.heal) and ns.API.HealUnit(opt)) or "player"
+				if ns.API.Health(unit) > needHp then
+					-- Health reads as 100 when the game hides it: say so, the
+					-- coloured glow (BuildHidden*) follows the real value.
+					if ns.API.HealthHiddenFor(unit) then
+						return "health is hidden by the game (the coloured glow follows it)"
+					end
 					return "health is above the heal threshold"
 				end
 			end

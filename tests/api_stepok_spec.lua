@@ -334,6 +334,17 @@ describe("StepOk health", function()
 		check(A, 6, { hp = 80 }, true, "heal by ID")
 	end)
 
+	it("says when the game hides the health instead of claiming it is high", function()
+		local w, _, A = setup()
+		w.state.secret.health = true
+		w.state.secret.healthPercent = true
+		check(A, 1, { hp = 70 }, false, "health is hidden by the game")
+		check(A, 1, { hp = 70, noHpGate = true }, true, "the hidden-value glow decides")
+		w.state.secret.healthPercent = false
+		w.state.units.player.health = 90
+		check(A, 1, { hp = 70 }, false, "health is above")
+	end)
+
 	it("scales a finisher threshold by combo points", function()
 		local w, ns, A = setup()
 		ns.API.Combo = function()

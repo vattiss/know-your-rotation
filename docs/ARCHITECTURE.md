@@ -399,7 +399,11 @@ Check in game: `/reload`, checked spell, unchecked spell, removed spell (it must
 
 ## Heal threshold and hidden health
 
-`UnitHealth` is hidden by the client in combat. `ns.API.Health` falls back to `UnitHealthPercent`, then to 100.
+Measured with the debug mode on a level 2 shaman (client 1.60.1): `UnitHealth("player")`, `UnitHealth("target")` and `UnitPower("player", mana)` are **secret all the time**, in combat and out, with or without a target. Only `UnitHealthMax` / `UnitPowerMax` of the player are readable. `ns.API.Health` therefore falls back to `UnitHealthPercent` (also secret) and then answers 100, and `ns.API.HealthHidden()` is true. What follows from it:
+
+- Every rule that compares health or mana in numbers cannot decide in the queue: `hp` (heals, defensives, Drain Life), `hpMin` (Bloodrage, Life Tap, Hellfire), `skipLow` (no DoT on an almost dead mob), `manaMax`. `hp` and `manaMax` steps are shown by the hidden-value glows instead (`ns.BuildHiddenHeal`, `Defense`, `Execute`, `Pet`, `Mana`); the WhyNot tooltip says "health is hidden by the game". `hpMin` and `skipLow` always pass, so Bloodrage / Hellfire are not held back at low health and DoTs are not skipped on dying mobs.
+- The glow follows **your own** health (and the target's or pet's for finishers and Mend Pet), not a party member's.
+- Other reads that work in combat (same data): `UnitCreatureType`, `UnitGUID`, `UnitThreatSituation`, `UnitIsUnit`, `UnitReaction`, `UnitLevel`, `UnitClassification`, `GetComboPoints`, `IsSpellUsable`. Secret in combat: `GetSpellCooldown`, `GetTotemInfo`, `UnitAttackSpeed`, `UnitRangedDamage`; `C_UnitAuras.GetAuraDataByIndex` raises an error in combat.
 
 - `ns.API.AutoHealThreshold(spellID, unit, fallback)` returns `100 - healSize / maxHealth * 100`, clamped to 30–92. The heal size is parsed from `C_Spell.GetSpellDescription` (`ns.API.HealAmount`, cached, wiped by `InvalidateSpells`). Max health is remembered by `ns.API.MaxHealth` while readable. Steps with their own `hp` below 50 (emergency heals) keep it. `autoHeal = false` turns it off.
 - When health is hidden, `ns.BuildHiddenHeal` picks the heal to cast and `ns.GlowHiddenHeal` shows its glow with an alpha taken from `UnitHealthPercent("player", true, curve)`: the curve is 1 below the threshold and 0 above, and the result goes straight into `SetAlpha` without being read.
