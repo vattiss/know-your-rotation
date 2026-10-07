@@ -253,138 +253,132 @@ function ns.BuildQueue()
 	return q
 end
 
--- When the client hides health values (combat), pick the heal the player
--- would cast so Glow.lua can show it with a client-driven alpha: visible only
--- below the step's health threshold, with no number ever compared by us.
+-- Hidden values (health or mana in combat): pick the step the player would
+-- press, so Glow.lua can show it with an alpha the client drives from the
+-- hidden value (a curve through UnitHealthPercent / UnitPowerPercent): lit
+-- only past the step's threshold, with no number ever compared by us.
+--
+-- spec.wants(opt)         does this step wait for the hidden value?
+-- spec.gate               opt flag that switches the step's own value check off
+-- spec.clear              opt key dropped from the copy (optional)
+-- spec.skipCasting        skip the spell being cast right now (optional)
+-- spec.skipBuffs          skip weapon and maintenance buffs (optional)
+-- spec.threshold(opt, id) percent where the glow turns on; nil skips the step
+local function hiddenPick(steps, spec)
+	for _, step in ipairs(steps or {}) do
+		local opt = step.opt or {}
+		if
+			spec.wants(opt)
+			and step.id
+			and ns.IsStepEnabled(step)
+			and not (spec.skipCasting and API.CastingSpell(step.id))
+			and not (spec.skipBuffs and (ns.IsWeaponBuff(step.id) or ns.IsMaintenanceBuff(step.id)))
+		then
+			local copy = {}
+			for k, v in pairs(opt) do
+				copy[k] = v
+			end
+			copy[spec.gate] = true
+			if spec.clear then
+				copy[spec.clear] = nil
+			end
+			if API.StepOk(step.id, copy, 0.2) then
+				local threshold = spec.threshold(opt, step.id)
+				if threshold then
+					return API.Resolve(step.id) or step.id, threshold
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- Heal (or a step on your own health, like Drain Life) while your health is hidden.
 function ns.BuildHiddenHeal()
-	if not ns.GetAPL or not ns.API.HealthHidden() then
+	if not ns.GetAPL or not API.HealthHidden() then
 		return nil
 	end
-	for _, step in ipairs(ns.GetAPL() or {}) do
-		local opt = step.opt or {}
-		local ownHealth = opt.heal or (opt.hp and not opt.unit)
-		if
-			ownHealth
-			and step.id
-			and ns.IsStepEnabled(step)
-			and not (API.CastingSpell and API.CastingSpell(step.id))
-			and not ns.IsWeaponBuff(step.id)
-			and not ns.IsMaintenanceBuff(step.id)
-		then
-			local copy = {}
-			for k, v in pairs(opt) do
-				copy[k] = v
-			end
-			copy.noHpGate = true
-			if API.StepOk(step.id, copy, 0.2) then
-				local threshold = tonumber(opt.hp) or 80
-				if opt.heal then
-					threshold = API.AutoHealThreshold(step.id, "player", threshold)
-				end
-				return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
-			end
-		end
-	end
-	return nil
+	return hiddenPick(ns.GetAPL(), {
+		wants = function(opt)
+			return opt.heal or (opt.hp and not opt.unit)
+		end,
+		gate = "noHpGate",
+		skipCasting = true,
+		skipBuffs = true,
+		threshold = function(opt, id)
+			local threshold = tonumber(opt.hp) or 80
+			return opt.heal and API.AutoHealThreshold(id, "player", threshold) or threshold
+		end,
+	})
 end
 
--- Same idea for the target: a step that waits for a low target ("hp" with
--- unit "target", or "hpPerCombo") when the client hides the target's health.
--- Returns the spell and the health percent where it should light up.
+-- A step waiting for a low target ("hp" with unit "target", or "hpPerCombo")
+-- while the target's health is hidden. Returns the spell and the percent.
 function ns.BuildHiddenExecute()
-	if not ns.GetAPL or not API.Hostile() or not ns.API.HealthHiddenFor("target") then
+	if not ns.GetAPL or not API.Hostile() or not API.HealthHiddenFor("target") then
 		return nil
 	end
-	for _, step in ipairs(ns.GetAPL() or {}) do
-		local opt = step.opt or {}
-		if opt.unit == "target" and (opt.hp or opt.hpPerCombo) and step.id and ns.IsStepEnabled(step) then
-			local copy = {}
-			for k, v in pairs(opt) do
-				copy[k] = v
-			end
-			copy.noHpGate = true
-			copy.hpPerCombo = nil
-			if API.StepOk(step.id, copy, 0.2) then
-				local threshold = opt.hpPerCombo and (API.Combo() * opt.hpPerCombo) or tonumber(opt.hp) or 20
-				if threshold > 0 then
-					return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
-				end
-			end
-		end
-	end
-	return nil
+	return hiddenPick(ns.GetAPL(), {
+		wants = function(opt)
+			return opt.unit == "target" and (opt.hp or opt.hpPerCombo)
+		end,
+		gate = "noHpGate",
+		clear = "hpPerCombo",
+		threshold = function(opt)
+			local threshold = opt.hpPerCombo and (API.Combo() * opt.hpPerCombo) or tonumber(opt.hp) or 20
+			return threshold > 0 and threshold or nil
+		end,
+	})
 end
 
--- Pet heal (Mend Pet) when the client hides the pet's health.
+-- Pet heal (Mend Pet) while the pet's health is hidden.
 function ns.BuildHiddenPet()
-	if not ns.GetAPL or not UnitExists("pet") or not ns.API.HealthHiddenFor("pet") then
+	if not ns.GetAPL or not UnitExists("pet") or not API.HealthHiddenFor("pet") then
 		return nil
 	end
-	for _, step in ipairs(ns.GetAPL() or {}) do
-		local opt = step.opt or {}
-		if
-			opt.unit == "pet"
-			and opt.hp
-			and step.id
-			and ns.IsStepEnabled(step)
-			and not (API.CastingSpell and API.CastingSpell(step.id))
-		then
-			local copy = {}
-			for k, v in pairs(opt) do
-				copy[k] = v
-			end
-			copy.noHpGate = true
-			if API.StepOk(step.id, copy, 0.2) then
-				return (API.Resolve and API.Resolve(step.id)) or step.id, tonumber(opt.hp) or 40
-			end
-		end
-	end
-	return nil
+	return hiddenPick(ns.GetAPL(), {
+		wants = function(opt)
+			return opt.unit == "pet" and opt.hp
+		end,
+		gate = "noHpGate",
+		skipCasting = true,
+		threshold = function(opt)
+			return tonumber(opt.hp) or 40
+		end,
+	})
 end
 
--- Mana step (Life Tap) when the client hides your mana.
+-- Mana step (Life Tap) while your mana is hidden.
 function ns.BuildHiddenMana()
-	if not ns.GetAPL or not ns.API.ManaHidden() then
+	if not ns.GetAPL or not API.ManaHidden() then
 		return nil
 	end
-	for _, step in ipairs(ns.GetAPL() or {}) do
-		local opt = step.opt or {}
-		if opt.manaMax and step.id and ns.IsStepEnabled(step) then
-			local copy = {}
-			for k, v in pairs(opt) do
-				copy[k] = v
-			end
-			copy.noManaGate = true
-			if API.StepOk(step.id, copy, 0.2) then
-				return (API.Resolve and API.Resolve(step.id)) or step.id, tonumber(opt.manaMax)
-			end
-		end
-	end
-	return nil
+	return hiddenPick(ns.GetAPL(), {
+		wants = function(opt)
+			return opt.manaMax
+		end,
+		gate = "noManaGate",
+		threshold = function(opt)
+			return tonumber(opt.manaMax)
+		end,
+	})
 end
 
+-- Defensive step on your own health while it is hidden.
 function ns.BuildHiddenDefense()
-	if not ns.GetDef or not ns.API.HealthHidden() then
+	if not ns.GetDef or not API.HealthHidden() then
 		return nil
 	end
-	for _, step in ipairs(ns.GetDef() or {}) do
-		local opt = step.opt or {}
-		if opt.hp and (not opt.unit or opt.unit == "player") and step.id and ns.IsStepEnabled(step) then
-			local copy = {}
-			for k, v in pairs(opt) do
-				copy[k] = v
-			end
-			copy.noHpGate = true
-			if API.StepOk(step.id, copy, 0.2) then
-				local threshold = tonumber(opt.hp) or 50
-				if opt.heal then
-					threshold = API.AutoHealThreshold(step.id, "player", threshold)
-				end
-				return (API.Resolve and API.Resolve(step.id)) or step.id, threshold
-			end
-		end
-	end
-	return nil
+	return hiddenPick(ns.GetDef(), {
+		wants = function(opt)
+			return opt.hp and (not opt.unit or opt.unit == "player")
+		end,
+		gate = "noHpGate",
+		threshold = function(opt, id)
+			local threshold = tonumber(opt.hp) or 50
+			return opt.heal and API.AutoHealThreshold(id, "player", threshold) or threshold
+		end,
+	})
 end
 
 function ns.BuildDefense()

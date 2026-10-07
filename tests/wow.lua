@@ -1306,6 +1306,14 @@ end
 function wow:fire(event, ...)
 	for _, o in ipairs(self.objects) do
 		local reg = o._events[event]
+		-- RegisterUnitEvent: only the listed units (the first argument).
+		if type(reg) == "table" then
+			local wanted, unit = false, ...
+			for _, u in ipairs(reg) do
+				wanted = wanted or u == unit
+			end
+			reg = wanted
+		end
 		if reg and o._scripts.OnEvent then
 			o._scripts.OnEvent(o, event, ...)
 		end

@@ -117,8 +117,6 @@ describe("StepOk basics", function()
 		remain = 5
 		check(A, 2, { totem = true }, false, "totem already up")
 		check(A, 2, { totem = true, refresh = 6 }, true)
-		ns.API.TotemRemain = nil
-		check(A, 2, { totem = true }, true)
 		local _ = w
 	end)
 

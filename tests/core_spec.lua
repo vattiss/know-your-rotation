@@ -390,6 +390,27 @@ describe("Core tick", function()
 end)
 
 describe("Core events", function()
+	it("greets on login only, and listens to the right units", function()
+		local w = wow.new()
+		w:player("WARRIOR")
+		local ns = w:load()
+		w:fire("PLAYER_LOGIN")
+		local greetings = #w.printed
+		H.eq(greetings, 2)
+		w:fire("PLAYER_ENTERING_WORLD", false, false)
+		H.eq(#w.printed, greetings, "no second greeting")
+		local ticks = 0
+		ns.API.WipeAuraScan = function()
+			ticks = ticks + 1
+		end
+		w:fire("UNIT_AURA", "player")
+		w:fire("UNIT_AURA", "party1")
+		w:fire("UNIT_AURA", "nameplate3")
+		w:fire("UNIT_SPELLCAST_SUCCEEDED", "target", "guid", 1)
+		H.eq(ticks, 1, "only the registered units")
+		w:fire("NOT_AN_EVENT")
+	end)
+
 	it("reacts to learning, bars, logout and the login sequence", function()
 		local w, ns = boot()
 		local flushed, fetched = 0, 0

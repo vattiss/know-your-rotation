@@ -686,33 +686,42 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-pcall(frame.RegisterEvent, frame, "PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 frame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-pcall(frame.RegisterEvent, frame, "WEAPON_ENCHANT_CHANGED")
-pcall(frame.RegisterEvent, frame, "UNIT_AURA")
-pcall(frame.RegisterEvent, frame, "UNIT_INVENTORY_CHANGED")
-pcall(frame.RegisterEvent, frame, "UNIT_SPELLCAST_START")
-pcall(frame.RegisterEvent, frame, "LEARNED_SPELL_IN_SKILL_LINE")
--- Do NOT register SPELLS_CHANGED: Forever fires it in storms on quest
--- turn-in / level-up and it is what froze the client. ConROC core also
--- ignores SPELLS_CHANGED and only reacts to learn / level-up.
-pcall(frame.RegisterEvent, frame, "SPELL_PUSHED_TO_ACTIONBAR")
-pcall(frame.RegisterEvent, frame, "PLAYER_TALENT_UPDATE")
-pcall(frame.RegisterEvent, frame, "PLAYER_LEVEL_UP")
-pcall(frame.RegisterEvent, frame, "PLAYER_LOGOUT")
-pcall(frame.RegisterEvent, frame, "PLAYER_DEAD")
-pcall(frame.RegisterEvent, frame, "PLAYER_ALIVE")
-pcall(frame.RegisterEvent, frame, "PLAYER_UNGHOST")
-pcall(frame.RegisterEvent, frame, "PLAYER_UPDATE_RESTING")
-pcall(frame.RegisterEvent, frame, "PLAYER_MOUNT_DISPLAY_CHANGED")
-pcall(frame.RegisterEvent, frame, "ZONE_CHANGED_NEW_AREA")
-pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
-pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
-pcall(frame.RegisterEvent, frame, "PLAYER_TOTEM_UPDATE")
+for _, event in ipairs({
+	"PLAYER_REGEN_ENABLED",
+	"WEAPON_ENCHANT_CHANGED",
+	"LEARNED_SPELL_IN_SKILL_LINE",
+	-- Do NOT register SPELLS_CHANGED: Forever fires it in storms on quest
+	-- turn-in / level-up and it is what froze the client. ConROC core also
+	-- ignores SPELLS_CHANGED and only reacts to learn / level-up.
+	"SPELL_PUSHED_TO_ACTIONBAR",
+	"PLAYER_TALENT_UPDATE",
+	"PLAYER_LEVEL_UP",
+	"PLAYER_LOGOUT",
+	"PLAYER_DEAD",
+	"PLAYER_ALIVE",
+	"PLAYER_UNGHOST",
+	"PLAYER_UPDATE_RESTING",
+	"PLAYER_MOUNT_DISPLAY_CHANGED",
+	"ZONE_CHANGED_NEW_AREA",
+	"UI_ERROR_MESSAGE",
+	"PLAYER_TOTEM_UPDATE",
+}) do
+	pcall(frame.RegisterEvent, frame, event)
+end
+-- Unit events: only the units the addon reads, not every nameplate and party member.
+for _, event in ipairs({
+	"UNIT_SPELLCAST_SUCCEEDED",
+	"UNIT_SPELLCAST_START",
+	"UNIT_INVENTORY_CHANGED",
+	"UNIT_POWER_UPDATE",
+}) do
+	pcall(frame.RegisterUnitEvent, frame, event, "player")
+end
+pcall(frame.RegisterUnitEvent, frame, "UNIT_AURA", "player", "target", "focus", "mouseover")
 
 local ticker
 local booted
@@ -826,217 +835,181 @@ local function weaponItemId(slot)
 	return nil
 end
 
-local function liveAuraUnit(unit)
-	-- Player + current targets only. Party auras were wiping caches constantly
-	-- in groups and forcing extra work that felt like input lag.
-	return unit == "player" or unit == "target" or unit == "focus" or unit == "mouseover"
+-- One function per event, called with the event's own arguments.
+local handlers = {}
+
+local function onSpellsLearned()
+	scheduleSpellFlush()
+end
+handlers.LEARNED_SPELL_IN_SKILL_LINE = onSpellsLearned
+handlers.PLAYER_TALENT_UPDATE = onSpellsLearned
+handlers.PLAYER_LEVEL_UP = onSpellsLearned
+
+-- ConROC: bar map only, no spellbook walk.
+handlers.SPELL_PUSHED_TO_ACTIONBAR = scheduleBarFlush
+handlers.ACTIONBAR_SLOT_CHANGED = scheduleBarFlush
+handlers.ACTIONBAR_PAGE_CHANGED = scheduleBarFlush
+handlers.UPDATE_SHAPESHIFT_FORM = scheduleBarFlush
+
+function handlers.PLAYER_LOGOUT()
+	stopTicker()
+	ns.FlushProfile()
 end
 
-frame:SetScript("OnEvent", function(_, event, unit, powerToken, spellID)
-	if event == "PLAYER_LOGOUT" then
-		stopTicker()
-		if ns.FlushProfile then
-			ns.FlushProfile()
+local function onLogin(greet)
+	defaults()
+	if not booted then
+		booted = true
+		ns.booted = true
+		ns.API.InvalidateSpells(true)
+		ns.API.RebuildSpellBookIndex(false)
+		local okOptions, errOptions = pcall(ns.RegisterOptions)
+		if not okOptions then
+			ns.Print(errOptions)
 		end
-		return
+		ns.GlowFetch(true)
+		startTicker()
 	end
-	if event == "LEARNED_SPELL_IN_SKILL_LINE" or event == "PLAYER_TALENT_UPDATE" or event == "PLAYER_LEVEL_UP" then
-		scheduleSpellFlush()
-		return
+	ns.weaponItemMain = weaponItemId(16)
+	ns.weaponItemOff = weaponItemId(17)
+	ns.ApplyAutoProfile()
+	if greet then
+		local token, _, localized = ns.ClassToken()
+		ns.Print(ns.T("INIT"))
+		ns.Print(format(ns.T("MODULE"), localized or token or "?"))
 	end
-	if event == "SPELL_PUSHED_TO_ACTIONBAR" then
-		-- ConROC: bar map only — no spellbook walk.
-		scheduleBarFlush()
-		return
+	ns.Tick()
+end
+function handlers.PLAYER_LOGIN()
+	onLogin(true)
+end
+
+function handlers.PLAYER_ENTERING_WORLD()
+	onLogin(false)
+end
+
+function handlers.ZONE_CHANGED_NEW_AREA()
+	ns.ApplyAutoProfile()
+	forceTick()
+end
+
+local function onStateChanged()
+	forceTick()
+end
+handlers.PLAYER_ALIVE = onStateChanged
+handlers.PLAYER_UNGHOST = onStateChanged
+handlers.PLAYER_UPDATE_RESTING = onStateChanged
+handlers.PLAYER_MOUNT_DISPLAY_CHANGED = onStateChanged
+
+function handlers.PLAYER_DEAD()
+	-- Totems vanish when you die.
+	ns.API.ClearTotems()
+	forceTick()
+end
+
+function handlers.PLAYER_TARGET_CHANGED()
+	-- Classic combo points stay on the old target.
+	ns.API.ResetComboEstimate()
+	ns.ApplyAutoProfile()
+	ns.API.castTarget = false
+	ns.API.ClearTargetDebuffs()
+	ns.ClearRotationSpent()
+	forceTick()
+end
+
+function handlers.PLAYER_REGEN_ENABLED()
+	ns.API.ResetComboEstimate()
+	ns.ApplyAutoProfile()
+	ns.ClearRotationSpent()
+	forceTick()
+end
+
+-- No forced Tick: aura storms plus a full queue rebuild feel like input lag;
+-- the 0.2 s ticker rebuilds with a fresh scan.
+function handlers.UNIT_AURA(unit)
+	ns.API.WipeAuraScan(unit)
+end
+
+function handlers.UNIT_INVENTORY_CHANGED()
+	ns.API.ClearWeaponTooltipCache()
+	requestTick()
+end
+
+function handlers.UNIT_SPELLCAST_START()
+	local ok, name = pcall(UnitCastingInfo, "player")
+	if ok and type(name) == "string" then
+		lastPlayerCastName = name
 	end
-	if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
-		defaults()
-		if not booted then
-			booted = true
-			ns.booted = true
-			if ns.API and ns.API.InvalidateSpells then
-				ns.API.InvalidateSpells(true)
-			end
-			if ns.API and ns.API.RebuildSpellBookIndex then
-				ns.API.RebuildSpellBookIndex(false)
-			end
-			if ns.RegisterOptions then
-				local okMini, errMini = pcall(ns.RegisterOptions)
-				if not okMini then
-					ns.Print(errMini)
-				end
-			end
-			if ns.GlowFetch then
-				ns.GlowFetch(true)
-			end
-			startTicker()
-		end
-		ns.weaponItemMain = weaponItemId(16)
-		ns.weaponItemOff = weaponItemId(17)
-		if ns.ApplyAutoProfile then
-			ns.ApplyAutoProfile()
-		end
-		if event == "PLAYER_LOGIN" then
-			local token, _, localized = ns.ClassToken()
-			ns.Print(ns.T("INIT"))
-			ns.Print(format(ns.T("MODULE"), localized or token or "?"))
-		end
-		ns.Tick()
-	elseif event == "ZONE_CHANGED_NEW_AREA" then
-		if ns.ApplyAutoProfile then
-			ns.ApplyAutoProfile()
-		end
-		forceTick()
-	elseif
-		event == "PLAYER_DEAD"
-		or event == "PLAYER_ALIVE"
-		or event == "PLAYER_UNGHOST"
-		or event == "PLAYER_UPDATE_RESTING"
-		or event == "PLAYER_MOUNT_DISPLAY_CHANGED"
-	then
-		-- Totems vanish when you die.
-		if event == "PLAYER_DEAD" and ns.API and ns.API.ClearTotems then
-			ns.API.ClearTotems()
-		end
-		forceTick()
-	elseif event == "PLAYER_TARGET_CHANGED" then
-		-- Classic combo points stay on the old target.
-		if ns.API and ns.API.ResetComboEstimate then
-			ns.API.ResetComboEstimate()
-		end
-		if ns.ApplyAutoProfile then
-			ns.ApplyAutoProfile()
-		end
-		ns.API.castTarget = false
-		if ns.API and ns.API.ClearTargetDebuffs then
-			ns.API.ClearTargetDebuffs()
-		end
-		if ns.ClearRotationSpent then
-			ns.ClearRotationSpent()
-		end
-		forceTick()
-	elseif event == "PLAYER_REGEN_ENABLED" then
-		if ns.API and ns.API.ResetComboEstimate then
-			ns.API.ResetComboEstimate()
-		end
-		if ns.ApplyAutoProfile then
-			ns.ApplyAutoProfile()
-		end
-		if ns.ClearRotationSpent then
-			ns.ClearRotationSpent()
-		end
-		forceTick()
-	elseif event == "UNIT_AURA" then
-		if liveAuraUnit(unit) then
-			if ns.API and ns.API.WipeAuraScan then
-				ns.API.WipeAuraScan(unit)
-			end
-			-- Do not force Tick here: aura storms + full queue rebuild feel like
-			-- input lag. The 0.2s ticker rebuilds with a fresh aura scan.
-		end
-	elseif event == "UNIT_INVENTORY_CHANGED" then
-		if unit == "player" then
-			if ns.API and ns.API.ClearWeaponTooltipCache then
-				ns.API.ClearWeaponTooltipCache()
-			end
-			requestTick()
-		end
-	elseif event == "UNIT_SPELLCAST_START" then
-		if unit == "player" and UnitCastingInfo then
-			local ok, name = pcall(UnitCastingInfo, "player")
-			if ok and type(name) == "string" then
-				lastPlayerCastName = name
-			end
-		end
-	elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-		if unit == "player" then
-			local castName = lastPlayerCastName
-			lastPlayerCastName = nil
-			local id = spellID
-			if
-				(id == nil or (issecretvalue and issecretvalue(id)))
-				and castName
-				and ns.API
-				and ns.API.ResolveFromName
-			then
-				id = ns.API.ResolveFromName(castName)
-			end
-			if ns.API and ns.API.NoteSelfBuff then
-				ns.API.NoteSelfBuff(id)
-			end
-			if ns.API and ns.API.NoteSpellCast then
-				ns.API.NoteSpellCast(id or spellID)
-			end
-			if ns.API and ns.API.NoteTotemCast then
-				ns.API.NoteTotemCast(id)
-			end
-			if ns.NoteRotationCast then
-				ns.NoteRotationCast(id or spellID)
-			end
-			if ns.API and ns.API.NoteTargetDebuff and ns.API.IsHarmful and id and ns.API.IsHarmful(id) then
-				ns.API.NoteTargetDebuff(id)
-			end
-			if ns.NoteWeaponCast then
-				ns.NoteWeaponCast(id or spellID, castName)
-			end
-			if ns.API and ns.API.WipeAuraScan then
-				ns.API.WipeAuraScan("player")
-				ns.API.WipeAuraScan("target")
-			end
-			requestTick()
-		end
-	elseif event == "PLAYER_TOTEM_UPDATE" then
-		-- Payload: the totem slot. Out of combat the slot is readable.
-		if ns.API and ns.API.NoteTotemSlot then
-			ns.API.NoteTotemSlot(unit)
-		end
-		requestTick()
-	elseif event == "UI_ERROR_MESSAGE" then
-		-- "You must be behind your target" (Backstab / Shred wait a moment),
-		-- "Your pet is dead" (Revive Pet instead of Call Pet).
-		if ns.API and ns.API.NoteUIError and ns.API.NoteUIError(powerToken) then
-			lastTickSig = nil
-			requestTick()
-		end
-	elseif event == "UNIT_POWER_UPDATE" then
-		if unit ~= "player" or powerToken ~= "COMBO_POINTS" then
-			return
-		end
+end
+
+function handlers.UNIT_SPELLCAST_SUCCEEDED(_, _, spellID)
+	local castName = lastPlayerCastName
+	lastPlayerCastName = nil
+	local id = spellID
+	if id == nil or issecretvalue(id) then
+		id = castName and ns.API.ResolveFromName(castName)
+	end
+	ns.API.NoteSelfBuff(id)
+	ns.API.NoteSpellCast(id or spellID)
+	ns.API.NoteTotemCast(id)
+	ns.NoteRotationCast(id or spellID)
+	if id and ns.API.IsHarmful(id) then
+		ns.API.NoteTargetDebuff(id)
+	end
+	ns.NoteWeaponCast(id or spellID, castName)
+	ns.API.WipeAuraScan("player")
+	ns.API.WipeAuraScan("target")
+	requestTick()
+end
+
+-- Payload: the totem slot. Out of combat the slot is readable.
+function handlers.PLAYER_TOTEM_UPDATE(slot)
+	ns.API.NoteTotemSlot(slot)
+	requestTick()
+end
+
+-- "You must be behind your target" (Backstab / Shred wait a moment),
+-- "Your pet is dead" (Revive Pet instead of Call Pet).
+function handlers.UI_ERROR_MESSAGE(_, message)
+	if ns.API.NoteUIError(message) then
 		lastTickSig = nil
 		requestTick()
-	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
-		local slot = unit
-		if slot == 16 or slot == 17 then
-			local id = weaponItemId(slot)
-			local prev = slot == 16 and ns.weaponItemMain or ns.weaponItemOff
-			if id ~= prev then
-				if slot == 16 then
-					ns.weaponItemMain = id
-				else
-					ns.weaponItemOff = id
-				end
-				if ns.ClearWeaponMemory then
-					ns.ClearWeaponMemory()
-				end
-			end
-			if ns.API and ns.API.ClearWeaponTooltipCache then
-				ns.API.ClearWeaponTooltipCache()
-			end
-		end
+	end
+end
+
+function handlers.UNIT_POWER_UPDATE(_, powerToken)
+	if powerToken == "COMBO_POINTS" then
+		lastTickSig = nil
 		requestTick()
-	elseif event == "WEAPON_ENCHANT_CHANGED" then
-		if ns.API and ns.API.ClearWeaponTooltipCache then
-			ns.API.ClearWeaponTooltipCache()
+	end
+end
+
+function handlers.PLAYER_EQUIPMENT_CHANGED(slot)
+	if slot == 16 or slot == 17 then
+		local id = weaponItemId(slot)
+		local prev = slot == 16 and ns.weaponItemMain or ns.weaponItemOff
+		if id ~= prev then
+			if slot == 16 then
+				ns.weaponItemMain = id
+			else
+				ns.weaponItemOff = id
+			end
+			ns.ClearWeaponMemory()
 		end
-		if ns.NoteWeaponEnchantChanged then
-			ns.NoteWeaponEnchantChanged()
-		end
-		requestTick()
-	elseif
-		event == "ACTIONBAR_SLOT_CHANGED"
-		or event == "ACTIONBAR_PAGE_CHANGED"
-		or event == "UPDATE_SHAPESHIFT_FORM"
-	then
-		scheduleBarFlush()
+		ns.API.ClearWeaponTooltipCache()
+	end
+	requestTick()
+end
+
+function handlers.WEAPON_ENCHANT_CHANGED()
+	ns.API.ClearWeaponTooltipCache()
+	ns.NoteWeaponEnchantChanged()
+	requestTick()
+end
+
+frame:SetScript("OnEvent", function(_, event, ...)
+	local handler = handlers[event]
+	if handler then
+		handler(...)
 	end
 end)

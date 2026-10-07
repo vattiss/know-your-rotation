@@ -192,14 +192,12 @@ end
 
 local frame = CreateFrame("Frame")
 pcall(frame.RegisterEvent, frame, "PLAYER_REGEN_ENABLED")
-pcall(frame.RegisterEvent, frame, "UNIT_POWER_UPDATE")
-pcall(frame.RegisterEvent, frame, "UNIT_SPELLCAST_SUCCEEDED")
+pcall(frame.RegisterUnitEvent, frame, "UNIT_POWER_UPDATE", "player")
+pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_SUCCEEDED", "player")
 
-frame:SetScript("OnEvent", function(_, event, unit, _, spellID)
+frame:SetScript("OnEvent", function(_, event, _, _, spellID)
 	if event == "PLAYER_REGEN_ENABLED" then
 		shotAt = 0
-	elseif unit ~= "player" then
-		return
 	elseif event == "UNIT_POWER_UPDATE" then
 		local ok, cur = pcall(UnitPower, "player", ENERGY)
 		if ok then

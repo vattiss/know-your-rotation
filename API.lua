@@ -1490,6 +1490,509 @@ function ns.API.WhyNot(spellID, opt)
 	return rejectReason or "unknown"
 end
 
+-- Step conditions, checked in this order. A check returns the reason the step
+-- is refused, or nil. The first entry is the option the check belongs to (the
+-- check only runs when the step has it); nil = always runs. c is the context:
+-- c.id (resolved spell), c.opt, c.gate (look-ahead seconds), c.helpful and
+-- c.auraUnit (the unit a helpful spell would land on).
+---@type { [1]: string?, [2]: fun(c: table): string? }[]
+local STEP_CHECKS = {
+	{
+		"hostile",
+		function()
+			if not ns.API.Hostile() then
+				return "needs an enemy target"
+			end
+		end,
+	},
+	-- Some spells only pay off later while leveling (longer fights, bigger
+	-- mana pool): minLevel = from this character level on.
+	{
+		"minLevel",
+		function(c)
+			local ok, level = pcall(UnitLevel, "player")
+			level = ok and tonumber(safe(level, nil)) or nil
+			if level and level < c.opt.minLevel then
+				return ("from level %d"):format(c.opt.minLevel)
+			end
+		end,
+	},
+	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
+	-- is already running (pressing it again would stop it).
+	{
+		"autoRepeat",
+		function(c)
+			local repeating = false
+			local check = (C_Spell and C_Spell.IsAutoRepeatSpell) or IsAutoRepeatSpell
+			if check then
+				local ok, on = pcall(check, c.id)
+				repeating = ok and on == true
+			end
+			if not repeating and IsAutoRepeatSpell and check ~= IsAutoRepeatSpell then
+				local ok, on = pcall(IsAutoRepeatSpell, ns.API.SpellName(c.id) or c.id)
+				repeating = ok and on == true
+			end
+			if repeating then
+				return "already on"
+			end
+		end,
+	},
+	-- Fight-only buffs (seals, totems, Tiger's Fury): in combat, or right
+	-- before a pull with an enemy targeted. Never while just walking around.
+	{
+		"engaged",
+		function()
+			if not ns.API.InCombat() and not ns.API.Hostile() then
+				return "only in combat or with an enemy targeted"
+			end
+		end,
+	},
+	-- An attackable target is needed, without making the spell range-checked
+	-- (Stealth / Prowl are cast on yourself).
+	{
+		"enemyTarget",
+		function()
+			if not ns.API.Hostile() then
+				return "only with an enemy targeted"
+			end
+		end,
+	},
+	-- At least one of these must be learned (e.g. an opener to use from Stealth).
+	{
+		"needKnownAny",
+		function(c)
+			for _, other in pairs(c.opt.needKnownAny) do
+				if other and ns.API.Known(other) then
+					return nil
+				end
+			end
+			return "nothing to use it for yet"
+		end,
+	},
+	{
+		"nocreature",
+		function(c)
+			if ns.API.CreatureBlocked(c.opt.nocreature) then
+				return "no effect on this creature type"
+			end
+		end,
+	},
+	{
+		"creature",
+		function(c)
+			if not ns.API.CreatureMatch(c.opt.creature) then
+				return "only for another creature type"
+			end
+		end,
+	},
+	{
+		"totem",
+		function(c)
+			local refreshAt = tonumber(c.opt.refresh)
+			if refreshAt == nil then
+				refreshAt = 1
+			end
+			if ns.API.TotemRemain(c.id) > refreshAt then
+				return "totem already up"
+			end
+		end,
+	},
+	{
+		"enemiesMin",
+		function(c)
+			if (ns.API.EnemyCount(c.opt.enemiesYards) or 0) < c.opt.enemiesMin then
+				return "not enough enemies near you"
+			end
+		end,
+	},
+	{
+		"skipLow",
+		function()
+			if ns.API.Hostile() then
+				local floorHp = ns.API.IsRaidmob() and 5 or 20
+				if ns.API.Health("target") < floorHp then
+					return "target is almost dead"
+				end
+			end
+		end,
+	},
+	{
+		"targetMana",
+		function()
+			local okCur, current = pcall(UnitPower, "target", 0)
+			local okMax, maxp = pcall(UnitPowerMax, "target", 0)
+			if not okCur or not readable(current) or current <= 0 then
+				return "target has no mana"
+			end
+			if okMax and readable(maxp) and maxp <= 0 then
+				return "target has no mana"
+			end
+		end,
+	},
+	{
+		"ifTargeting",
+		function()
+			if ns.API.TargetAttacksYou() ~= true then
+				return "only when the target attacks you"
+			end
+		end,
+	},
+	-- Backstab / Shred: only from behind. A mob faces whoever it attacks, so
+	-- not while it attacks you; after a "must be behind" error, wait a moment.
+	{
+		"behind",
+		function()
+			if ns.API.NotBehindRecently() then
+				return "you were not behind the target"
+			end
+			if ns.API.TargetAttacksYou() ~= false then
+				return "the target is facing you"
+			end
+		end,
+	},
+	-- Cast-time spells a melee build only uses to pull.
+	{
+		"notMelee",
+		function()
+			if ns.API.TargetInMelee() then
+				return "not in melee range"
+			end
+		end,
+	},
+	-- Point-blank spells (Frost Nova): only once the target has reached you.
+	{
+		"inMelee",
+		function()
+			if not ns.API.TargetInMelee() then
+				return "only when the target is in melee range"
+			end
+		end,
+	},
+	-- Replaced by a better spell once that one is learned (Imp -> Voidwalker).
+	{
+		"notKnown",
+		function(c)
+			if ns.API.Known(c.opt.notKnown) then
+				return "a better spell is learned"
+			end
+		end,
+	},
+	-- Not for this talent tree (word in the name of the tree with the most points).
+	{
+		"notTree",
+		function(c)
+			local tree = ns.API.MainTree()
+			if tree and tree:find(c.opt.notTree, 1, true) then
+				return "not for your talent tree"
+			end
+		end,
+	},
+	{
+		"swimming",
+		function()
+			local ok, swimming = pcall(IsSwimming)
+			if not ok or safe(swimming, false) ~= true then
+				return "only while swimming"
+			end
+		end,
+	},
+	-- Threat drops (Fade, Feint, Disengage) do nothing with nobody else around.
+	{
+		"inGroup",
+		function(c)
+			local ok, grouped = pcall(IsInGroup)
+			grouped = ok and safe(grouped, false) == true
+			if not grouped and not (c.opt.orPet and unitExists("pet")) then
+				return "only in a group"
+			end
+		end,
+	},
+	{
+		"petDead",
+		function()
+			if not ns.API.PetDead() then
+				return "your pet is not dead"
+			end
+		end,
+	},
+	{
+		"notPetDead",
+		function()
+			if ns.API.PetDead() then
+				return "your pet is dead"
+			end
+		end,
+	},
+	-- Aura-first (ConROC-style): readable missing aura -> allow; up with remain
+	-- above refresh -> block. stacks=N keeps applying until count reaches N.
+	-- Hold is only a Forever fallback when auras lie.
+	{
+		"nobuff",
+		function(c)
+			local opt = c.opt
+			local buffUnit = "player"
+			if opt.heal then
+				buffUnit = opt.unit or c.auraUnit
+			end
+			local found, remain, unreadable, _, stacks = ns.API.FindAura(c.id, buffUnit, "HELPFUL")
+			if found then
+				local needStacks = tonumber(opt.stacks)
+				local refreshAt = tonumber(opt.refresh) or 0
+				if needStacks and (stacks or 0) < needStacks then
+					if ns.API.HoldRemain(c.id) > 0 then
+						clearHoldKeys(c.id)
+					end
+				elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
+					return "already active"
+				end
+			elseif not unreadable and ns.API.HoldRemain(c.id) > 0 then
+				clearHoldKeys(c.id)
+			end
+			if not found and (unreadable or ns.API.InCombat()) and ns.API.HasAura(c.id, buffUnit, "HELPFUL") then
+				return "already active"
+			end
+		end,
+	},
+	{
+		"nodebuff",
+		function(c)
+			local opt = c.opt
+			local debuff = opt.nodebuff == true and c.id or opt.nodebuff
+			---@cast debuff integer
+			-- Seals / buffs are "helpful" but judgement/DoT checks always use the enemy.
+			local debuffUnit = opt.unit or ((c.helpful and opt.heal) and c.auraUnit or "target")
+			local found, remain, unreadable, _, stacks = ns.API.FindAura(debuff, debuffUnit, "HARMFUL")
+			if found then
+				local needStacks = tonumber(opt.stacks)
+				local refreshAt = tonumber(opt.refresh)
+				if refreshAt == nil then
+					refreshAt = 6
+				end
+				if needStacks and (stacks or 0) < needStacks then
+					clearHoldKeys(c.id)
+				elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
+					return "already active"
+				else
+					clearHoldKeys(c.id)
+				end
+			elseif not unreadable then
+				clearHoldKeys(c.id)
+			elseif ns.API.HasAura(debuff, debuffUnit, "HARMFUL") then
+				return "already active"
+			end
+		end,
+	},
+	-- Fillers are spammed by design: a hold (even one saved in a list)
+	-- never holds them back.
+	{
+		nil,
+		function(c)
+			if c.opt.filler ~= true and ns.API.HoldRemain(c.id) > c.gate then
+				return "waiting after the last cast (delay)"
+			end
+		end,
+	},
+	-- Health threshold: your own, the healed unit's, or the target's.
+	{
+		nil,
+		function(c)
+			local opt = c.opt
+			local needHp = opt.hp
+			if opt.hpPerCombo then
+				needHp = ns.API.Combo() * opt.hpPerCombo
+			end
+			if opt.noHpGate then
+				-- Health is hidden: the caller checks the threshold another way.
+				needHp = nil
+			elseif opt.heal or ns.API.IsHealSpell(c.id, opt) then
+				needHp = ns.API.AutoHealThreshold(c.id, opt.unit or ns.API.HealUnit(opt), needHp or 99)
+			end
+			if needHp then
+				local hp
+				if opt.unit then
+					hp = ns.API.Health(opt.unit)
+				elseif c.helpful or opt.heal then
+					hp = ns.API.HealHealth(opt)
+				else
+					hp = ns.API.Health("player")
+				end
+				if hp > needHp then
+					return "health is above the heal threshold"
+				end
+			end
+		end,
+	},
+	{
+		"form",
+		function(c)
+			if not ns.API.Form(c.opt.form) then
+				return "wrong form or stance"
+			end
+		end,
+	},
+	{
+		"noform",
+		function(c)
+			if ns.API.Form(c.opt.noform) then
+				return "not in this form or stance"
+			end
+		end,
+	},
+	{
+		"combat",
+		function()
+			if not ns.API.InCombat() then
+				return "only in combat"
+			end
+		end,
+	},
+	{
+		"comboMin",
+		function(c)
+			if ns.API.Combo() < c.opt.comboMin then
+				local have, source = ns.API.ComboDebug()
+				return ("not enough combo points (%d of %d, read from %s)"):format(have, c.opt.comboMin, source)
+			end
+		end,
+	},
+	{
+		"pet",
+		function()
+			if not unitExists("pet") then
+				return "needs your pet"
+			end
+		end,
+	},
+	{
+		"nopet",
+		function()
+			if unitExists("pet") then
+				return "pet is already out"
+			end
+		end,
+	},
+	{
+		"nocombat",
+		function()
+			if ns.API.InCombat() then
+				return "only out of combat"
+			end
+		end,
+	},
+	{
+		"needbuff",
+		function(c)
+			if not ns.API.HasAura(c.opt.needbuff, "player", "HELPFUL") then
+				return "needs a buff you do not have"
+			end
+		end,
+	},
+	{
+		"needanybuff",
+		function(c)
+			for _, other in ipairs(c.opt.needanybuff) do
+				if ns.API.HasAura(other, "player", "HELPFUL") then
+					return nil
+				end
+			end
+			return "needs a buff you do not have"
+		end,
+	},
+	-- require / requireAny are NOT used to hide list spells. List order is
+	-- authoritative: if the player put Frostbolt above Fireball, Frostbolt wins
+	-- when it is known and ready. School gating lived here before and skipped
+	-- fillers the player had explicitly ordered.
+	{
+		"needdebuff",
+		function(c)
+			if not ns.API.HasAura(c.opt.needdebuff, c.opt.unit or "target", "HARMFUL") then
+				return "needs a debuff on the target first"
+			end
+		end,
+	},
+	{
+		nil,
+		function(c)
+			if c.opt.proc or c.opt.usable then
+				local usable = readUsable(C_Spell and C_Spell.IsSpellUsable, c.id)
+				if usable ~= true then
+					if c.opt.proc then
+						return "waiting for its proc"
+					end
+					if ns.API.CastRemain() <= 0 then
+						local last = ns.API.lastCastAt
+						if not last or (GetTime() - last) >= 1.55 then
+							return "not usable right now"
+						end
+					end
+				end
+			end
+		end,
+	},
+	{
+		"manaMax",
+		function(c)
+			if c.opt.noManaGate then
+				return nil
+			end
+			local okCur, current = pcall(UnitPower, "player", 0)
+			local okMax, maxp = pcall(UnitPowerMax, "player", 0)
+			if not okCur or not okMax or not readable(current) or not readable(maxp) then
+				-- Hidden in combat: ns.GlowHiddenMana shows it instead.
+				return "mana is hidden right now"
+			end
+			if maxp <= 0 or (current / maxp) * 100 > c.opt.manaMax then
+				return "mana is still high"
+			end
+		end,
+	},
+	{
+		"hpMin",
+		function(c)
+			if ns.API.Health(c.opt.unit or "player") < c.opt.hpMin then
+				return "health too low for it"
+			end
+		end,
+	},
+	{
+		"anybuff",
+		function(c)
+			for _, other in ipairs(c.opt.anybuff) do
+				if ns.API.HasAura(other, "player", "HELPFUL") then
+					return "a buff from the same group is already up"
+				end
+			end
+		end,
+	},
+	{
+		"anydebuff",
+		function(c)
+			for _, other in ipairs(c.opt.anydebuff) do
+				if ns.API.HasAura(other, c.opt.unit or "target", "HARMFUL") then
+					return "a debuff from the same group is already on the target"
+				end
+			end
+		end,
+	},
+	{
+		nil,
+		function(c)
+			local remain = ns.API.Cooldown(c.id)
+			if ns.API.CastingSpell(c.id) then
+				remain = 0
+			else
+				local castLeft = ns.API.CastRemain()
+				if castLeft > 0 and remain > 0 and remain <= castLeft + 0.45 then
+					remain = 0
+				end
+			end
+			if not c.opt.swing and remain > c.gate then
+				return "on cooldown"
+			end
+		end,
+	},
+}
+
 ---Is this list step offered right now? Fills the WhyNot reason when not.
 ---@param spellID integer
 ---@param opt? KYR.StepOpt
@@ -1501,336 +2004,21 @@ function ns.API.StepOk(spellID, opt, timeShift)
 		return reject("not learned yet")
 	end
 	opt = opt or {}
-	local gate = tonumber(timeShift) or 0.2
-	if gate < 0.2 then
-		gate = 0.2
-	end
-	if opt.hostile and not ns.API.Hostile() then
-		return reject("needs an enemy target")
-	end
-	-- Level gate: some spells only pay off later while leveling (longer fights,
-	-- bigger mana pool). minLevel = from this character level on.
-	if opt.minLevel then
-		local ok, level = pcall(UnitLevel, "player")
-		level = ok and tonumber(safe(level, nil)) or nil
-		if level and level < opt.minLevel then
-			return reject(("from level %d"):format(opt.minLevel))
-		end
-	end
-	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
-	-- is already running (pressing it again would stop it).
-	if opt.autoRepeat then
-		local repeating = false
-		local check = (C_Spell and C_Spell.IsAutoRepeatSpell) or IsAutoRepeatSpell
-		if check then
-			local ok, on = pcall(check, spellID)
-			repeating = ok and on == true
-		end
-		if not repeating and IsAutoRepeatSpell and check ~= IsAutoRepeatSpell then
-			local ok, on = pcall(IsAutoRepeatSpell, ns.API.SpellName(spellID) or spellID)
-			repeating = ok and on == true
-		end
-		if repeating then
-			return reject("already on")
-		end
-	end
-	-- Fight-only buffs (seals, totems, Tiger's Fury): in combat, or right
-	-- before a pull with an enemy targeted. Never while just walking around.
-	if opt.engaged and not ns.API.InCombat() and not ns.API.Hostile() then
-		return reject("only in combat or with an enemy targeted")
-	end
-	-- An attackable target is needed, without making the spell range-checked
-	-- (Stealth / Prowl are cast on yourself).
-	if opt.enemyTarget and not ns.API.Hostile() then
-		return reject("only with an enemy targeted")
-	end
-	-- At least one of these must be learned (e.g. an opener to use from Stealth).
-	if opt.needKnownAny then
-		local anyKnown = false
-		for _, other in pairs(opt.needKnownAny) do
-			if other and ns.API.Known(other) then
-				anyKnown = true
-				break
+	local c = {
+		id = spellID,
+		opt = opt,
+		gate = math.max(tonumber(timeShift) or 0.2, 0.2),
+		helpful = ns.API.IsHelpful(spellID, opt),
+	}
+	c.auraUnit = c.helpful and ns.API.HealUnit(opt) or "player"
+	for _, check in ipairs(STEP_CHECKS) do
+		local key = check[1]
+		if key == nil or opt[key] then
+			local why = check[2](c)
+			if why then
+				return reject(why)
 			end
 		end
-		if not anyKnown then
-			return reject("nothing to use it for yet")
-		end
-	end
-	if opt.nocreature and ns.API.CreatureBlocked and ns.API.CreatureBlocked(opt.nocreature) then
-		return reject("no effect on this creature type")
-	end
-	if opt.creature and ns.API.CreatureMatch and not ns.API.CreatureMatch(opt.creature) then
-		return reject("only for another creature type")
-	end
-	if opt.totem then
-		local refreshAt = tonumber(opt.refresh)
-		if refreshAt == nil then
-			refreshAt = 1
-		end
-		local remain = ns.API.TotemRemain and ns.API.TotemRemain(spellID) or 0
-		if remain > refreshAt then
-			return reject("totem already up")
-		end
-	end
-	if opt.enemiesMin then
-		local n = ns.API.EnemyCount(opt.enemiesYards)
-		if (n or 0) < opt.enemiesMin then
-			return reject("not enough enemies near you")
-		end
-	end
-	if opt.skipLow and ns.API.Hostile() then
-		local floorHp = (ns.API.IsRaidmob and ns.API.IsRaidmob()) and 5 or 20
-		if ns.API.Health("target") < floorHp then
-			return reject("target is almost dead")
-		end
-	end
-	if opt.targetMana then
-		local okCur, current = pcall(UnitPower, "target", 0)
-		local okMax, maxp = pcall(UnitPowerMax, "target", 0)
-		if not okCur or not readable(current) or current <= 0 then
-			return reject("target has no mana")
-		end
-		if okMax and readable(maxp) and maxp <= 0 then
-			return reject("target has no mana")
-		end
-	end
-	if opt.ifTargeting and ns.API.TargetAttacksYou() ~= true then
-		return reject("only when the target attacks you")
-	end
-	-- Backstab / Shred: only from behind. A mob faces whoever it attacks, so
-	-- not while it attacks you; after a "must be behind" error, wait a moment.
-	if opt.behind then
-		if ns.API.NotBehindRecently() then
-			return reject("you were not behind the target")
-		end
-		if ns.API.TargetAttacksYou() ~= false then
-			return reject("the target is facing you")
-		end
-	end
-	-- Cast-time spells a melee build only uses to pull.
-	if opt.notMelee and ns.API.TargetInMelee() then
-		return reject("not in melee range")
-	end
-	-- Point-blank spells (Frost Nova): only once the target has reached you.
-	if opt.inMelee and not ns.API.TargetInMelee() then
-		return reject("only when the target is in melee range")
-	end
-	-- Replaced by a better spell once that one is learned (Imp -> Voidwalker).
-	if opt.notKnown and ns.API.Known(opt.notKnown) then
-		return reject("a better spell is learned")
-	end
-	-- Not for this talent tree (word in the name of the tree with the most points).
-	if opt.notTree then
-		local tree = ns.API.MainTree()
-		if tree and tree:find(opt.notTree, 1, true) then
-			return reject("not for your talent tree")
-		end
-	end
-	if opt.swimming then
-		local ok, swimming = pcall(IsSwimming)
-		if not ok or safe(swimming, false) ~= true then
-			return reject("only while swimming")
-		end
-	end
-	-- Threat drops (Fade, Feint, Disengage) do nothing with nobody else around.
-	if opt.inGroup then
-		local ok, grouped = pcall(IsInGroup)
-		grouped = ok and safe(grouped, false) == true
-		if not grouped and not (opt.orPet and unitExists("pet")) then
-			return reject("only in a group")
-		end
-	end
-	if opt.petDead and not ns.API.PetDead() then
-		return reject("your pet is not dead")
-	end
-	if opt.notPetDead and ns.API.PetDead() then
-		return reject("your pet is dead")
-	end
-	local helpful = ns.API.IsHelpful(spellID, opt)
-	local auraUnit = helpful and ns.API.HealUnit(opt) or "player"
-	-- Aura-first (ConROC-style): readable missing aura -> allow; up with remain
-	-- above refresh -> block. stacks=N keeps applying until count reaches N.
-	-- Hold is only a Forever fallback when auras lie.
-	if opt.nobuff then
-		local buffUnit = "player"
-		if opt.heal then
-			buffUnit = opt.unit or auraUnit
-		end
-		local found, remain, unreadable, _, stacks = ns.API.FindAura(spellID, buffUnit, "HELPFUL")
-		if found then
-			local needStacks = tonumber(opt.stacks)
-			local refreshAt = tonumber(opt.refresh) or 0
-			if needStacks and (stacks or 0) < needStacks then
-				if ns.API.HoldRemain(spellID) > 0 then
-					clearHoldKeys(spellID)
-				end
-			elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
-				return reject("already active")
-			end
-		elseif not found and not unreadable then
-			if ns.API.HoldRemain(spellID) > 0 then
-				clearHoldKeys(spellID)
-			end
-		end
-		if not found and (unreadable or ns.API.InCombat()) and ns.API.HasAura(spellID, buffUnit, "HELPFUL") then
-			return reject("already active")
-		end
-	end
-	if opt.nodebuff then
-		local debuff = opt.nodebuff == true and spellID or opt.nodebuff
-		---@cast debuff integer
-		-- Seals / buffs are "helpful" but judgement/DoT checks always use the enemy.
-		local debuffUnit = opt.unit or ((helpful and opt.heal) and auraUnit or "target")
-		local found, remain, unreadable, _, stacks = ns.API.FindAura(debuff, debuffUnit, "HARMFUL")
-		if found then
-			local needStacks = tonumber(opt.stacks)
-			local refreshAt = tonumber(opt.refresh)
-			if refreshAt == nil then
-				refreshAt = 6
-			end
-			if needStacks and (stacks or 0) < needStacks then
-				clearHoldKeys(spellID)
-			elseif remain >= 9000 or refreshAt <= 0 or remain > refreshAt then
-				return reject("already active")
-			else
-				clearHoldKeys(spellID)
-			end
-		elseif not found and not unreadable then
-			clearHoldKeys(spellID)
-		elseif not found and unreadable and ns.API.HasAura(debuff, debuffUnit, "HARMFUL") then
-			return reject("already active")
-		end
-	end
-	-- Fillers are spammed by design: a hold (even one saved in a list)
-	-- never holds them back.
-	local holdLeft = (opt.filler == true) and 0 or ns.API.HoldRemain(spellID)
-	if holdLeft > gate then
-		return reject("waiting after the last cast (delay)")
-	end
-	local needHp = opt.hp
-	if opt.hpPerCombo then
-		needHp = ns.API.Combo() * opt.hpPerCombo
-	end
-	if opt.noHpGate then
-		-- Health is hidden: the caller checks the threshold another way.
-		needHp = nil
-	elseif opt.heal or ns.API.IsHealSpell(spellID, opt) then
-		needHp = ns.API.AutoHealThreshold(spellID, opt.unit or ns.API.HealUnit(opt), needHp or 99)
-	end
-	if needHp then
-		local hp
-		if opt.unit then
-			hp = ns.API.Health(opt.unit)
-		elseif helpful or opt.heal then
-			hp = ns.API.HealHealth(opt)
-		else
-			hp = ns.API.Health("player")
-		end
-		if hp > needHp then
-			return reject("health is above the heal threshold")
-		end
-	end
-	if opt.form and not ns.API.Form(opt.form) then
-		return reject("wrong form or stance")
-	end
-	if opt.noform and ns.API.Form(opt.noform) then
-		return reject("not in this form or stance")
-	end
-	if opt.combat and not ns.API.InCombat() then
-		return reject("only in combat")
-	end
-	if opt.comboMin and ns.API.Combo() < opt.comboMin then
-		local have, source = ns.API.ComboDebug()
-		return reject(("not enough combo points (%d of %d, read from %s)"):format(have, opt.comboMin, source))
-	end
-	if opt.pet and not unitExists("pet") then
-		return reject("needs your pet")
-	end
-	if opt.nopet and unitExists("pet") then
-		return reject("pet is already out")
-	end
-	if opt.nocombat and ns.API.InCombat() then
-		return reject("only out of combat")
-	end
-	if opt.needbuff and not ns.API.HasAura(opt.needbuff, "player", "HELPFUL") then
-		return reject("needs a buff you do not have")
-	end
-	if opt.needanybuff then
-		local okBuff = false
-		for _, other in ipairs(opt.needanybuff) do
-			if ns.API.HasAura(other, "player", "HELPFUL") then
-				okBuff = true
-				break
-			end
-		end
-		if not okBuff then
-			return reject("needs a buff you do not have")
-		end
-	end
-	-- require / requireAny are NOT used to hide list spells. List order is
-	-- authoritative: if the player put Frostbolt above Fireball, Frostbolt wins
-	-- when it is known and ready. School gating lived here before and skipped
-	-- fillers the player had explicitly ordered.
-	if opt.needdebuff and not ns.API.HasAura(opt.needdebuff, opt.unit or "target", "HARMFUL") then
-		return reject("needs a debuff on the target first")
-	end
-	if opt.proc or opt.usable then
-		local usable = readUsable(C_Spell and C_Spell.IsSpellUsable, spellID)
-		if usable ~= true then
-			if opt.proc then
-				return reject("waiting for its proc")
-			end
-			if ns.API.CastRemain() <= 0 then
-				local last = ns.API.lastCastAt
-				if not last or (GetTime() - last) >= 1.55 then
-					return reject("not usable right now")
-				end
-			end
-		end
-	end
-	if opt.manaMax and not opt.noManaGate then
-		local okCur, current = pcall(UnitPower, "player", 0)
-		local okMax, maxp = pcall(UnitPowerMax, "player", 0)
-		if not okCur or not okMax or not readable(current) or not readable(maxp) then
-			-- Hidden in combat: ns.GlowHiddenMana shows it instead.
-			return reject("mana is hidden right now")
-		end
-		if maxp <= 0 or (current / maxp) * 100 > opt.manaMax then
-			return reject("mana is still high")
-		end
-	end
-	if opt.hpMin then
-		local hp = ns.API.Health(opt.unit or "player")
-		if hp < opt.hpMin then
-			return reject("health too low for it")
-		end
-	end
-	if opt.anybuff then
-		for _, other in ipairs(opt.anybuff) do
-			if ns.API.HasAura(other, "player", "HELPFUL") then
-				return reject("a buff from the same group is already up")
-			end
-		end
-	end
-	if opt.anydebuff then
-		for _, other in ipairs(opt.anydebuff) do
-			if ns.API.HasAura(other, opt.unit or "target", "HARMFUL") then
-				return reject("a debuff from the same group is already on the target")
-			end
-		end
-	end
-	local remain = ns.API.Cooldown(spellID)
-	if ns.API.CastingSpell(spellID) then
-		remain = 0
-	else
-		local castLeft = ns.API.CastRemain()
-		if castLeft > 0 and remain > 0 and remain <= castLeft + 0.45 then
-			remain = 0
-		end
-	end
-	if not opt.swing and remain > gate then
-		return reject("on cooldown")
 	end
 	if opt.ready == false then
 		return true

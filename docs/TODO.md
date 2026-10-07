@@ -22,13 +22,14 @@ Every change since the 1.0.0-beta.1 push was checked only by syntax checks and t
 3. An unusable spell is a queue candidate only when its range is certainly "out"; an unknown range no longer lets a wrong-stance spell through.
 4. Still open: dying mobs in combat (DoT skip rule cannot work while target health is hidden).
 
-## 3. Tooling still to do
+## 3. Structure (mostly done)
 
-- Event handling: `Core.lua` has one long `if / elseif` chain. A table of handlers is cleaner, and `RegisterUnitEvent("UNIT_AURA", "player", "target")` cuts useless calls.
-- Split `API.lua` (about 2400 lines) by topic: spellbook, cooldowns / holds, auras, units, totems.
-- Turn `StepOk` (about 370 lines) into a table of small condition functions, one per option, each with its own reject text; the ARCHITECTURE option table could come from it.
-- The five `BuildHidden*` functions repeat one loop: share a helper.
-- Add the new CI pieces to the release workflow check if wanted (release already runs the syntax check only).
+Done: `Core.lua` events are a table of handlers with unit-filtered registrations; `StepOk` is a list of small checks (`STEP_CHECKS`); the five `BuildHidden*` functions share `hiddenPick`.
+
+Still to do:
+
+- Split `API.lua` (about 2500 lines) by topic: spellbook, cooldowns / holds, auras, units, totems. The file shares many `local` helpers (`readable`, `safe`, `unitExists`, the hold and aura tables), so the split needs a small internal table (`ns.API.internal`) first.
+- The release workflow runs only the syntax check; the unit tests, luacheck and StyLua could run there too.
 
 ## 4. Release
 

@@ -20,7 +20,7 @@ The reference for this API is the `ref/wow-ui-source` submodule (`forever` branc
 
 ## Lifecycle
 
-`Core.lua` creates an invisible frame.
+`Core.lua` creates an invisible frame and a table `handlers`, one function per event (`handlers.PLAYER_LOGIN`, `handlers.UNIT_AURA`, ...); the frame's `OnEvent` only looks the event up. Events about the player alone (`UNIT_SPELLCAST_SUCCEEDED`, `UNIT_SPELLCAST_START`, `UNIT_INVENTORY_CHANGED`, `UNIT_POWER_UPDATE`) are registered with `RegisterUnitEvent(..., "player")`, and `UNIT_AURA` for `player`, `target`, `focus` and `mouseover` only, so nameplates and party members do not wake the addon.
 
 On `PLAYER_LOGIN` and `PLAYER_ENTERING_WORLD`:
 
@@ -117,7 +117,7 @@ The lists come from a ConROC Classic style Era core, levels 1–60. No SoD and n
 
 ## Step options (`opt`)
 
-Evaluated by `ns.API.StepOk` in order. A missing field is ignored.
+Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The conditions are the list `STEP_CHECKS` in `API.lua`: each entry is the option it belongs to (or nil = always) and a small function that returns the reason the step is refused (shown as the WhyNot tooltip), or nil. The cooldown, readiness and range logic that follows is plain code at the end of `StepOk`. A new option is one new entry in that list.
 
 | Field | Effect |
 | --- | --- |
@@ -416,4 +416,4 @@ In combat the client may return no auras at all, which looks like "buff missing"
 
 Defense steps that wait for low health (`hp`, on the player: Power Word: Shield, Shield Wall, Divine Protection, …) get the same treatment when health is hidden: `ns.BuildHiddenDefense` picks the first ready one from `ns.GetDef()` and `ns.GlowHiddenDefense` lights it in the defense color with the player-health curve.
 
-`ns.BuildHiddenHeal` also takes rotation steps with `hp` on the player that are not heals (Drain Life at 40 %). Two more glows use the same `hiddenGlow` builder in `Glow.lua`: `ns.BuildHiddenPet` / `ns.GlowHiddenPet` for `hp` with `unit = "pet"` (Mend Pet, pet-health curve), and `ns.BuildHiddenMana` / `ns.GlowHiddenMana` for `manaMax` steps (Life Tap) when `ns.API.ManaHidden()`: the alpha comes from `UnitPowerPercent("player", 0, false, curve)`. `StepOk` refuses `manaMax` while mana is hidden unless the builder passes `noManaGate`.
+The five hidden-value builders (`BuildHiddenHeal`, `Execute`, `Pet`, `Mana`, `Defense`) share one loop, `hiddenPick` in `Rotations.lua`, and differ only in which steps they want, which `opt` flag switches the step's own value check off, and how the threshold is computed. `ns.BuildHiddenHeal` also takes rotation steps with `hp` on the player that are not heals (Drain Life at 40 %). Two more glows use the same `hiddenGlow` builder in `Glow.lua`: `ns.BuildHiddenPet` / `ns.GlowHiddenPet` for `hp` with `unit = "pet"` (Mend Pet, pet-health curve), and `ns.BuildHiddenMana` / `ns.GlowHiddenMana` for `manaMax` steps (Life Tap) when `ns.API.ManaHidden()`: the alpha comes from `UnitPowerPercent("player", 0, false, curve)`. `StepOk` refuses `manaMax` while mana is hidden unless the builder passes `noManaGate`.
