@@ -255,7 +255,7 @@ local STEP_CHECKS = {
 	},
 	-- Cast-time spells a melee build only uses to pull. A spell ID as the value
 	-- limits this to characters who already know that spell (melee shaman:
-	-- Earth Shock); before that there is nothing else to press in melee.
+	-- Stormstrike); before that melee is weak and the shocks leave gaps.
 	{
 		"notMelee",
 		function(c)
