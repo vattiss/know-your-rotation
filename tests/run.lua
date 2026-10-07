@@ -38,6 +38,7 @@ local ADDON_FILES = {
 	"Options.lua",
 	"Glow.lua",
 	"Rotations.lua",
+	"Debug.lua",
 	"Core.lua",
 }
 

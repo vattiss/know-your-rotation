@@ -110,6 +110,7 @@ wow.ADDON_FILES = {
 	"Options.lua",
 	"Glow.lua",
 	"Rotations.lua",
+	"Debug.lua",
 	"Core.lua",
 }
 
@@ -1081,7 +1082,13 @@ function wow.new()
 		IsAddOnLoaded = function(name)
 			return state.addons[name] == true
 		end,
+		GetAddOnMetadata = function(_, field)
+			return field == "Version" and "1.0.0-test" or nil
+		end,
 	}
+	env.GetBuildInfo = function()
+		return "1.14.0", "54321", "Jan 1 2026", 16001, "Classic", ""
+	end
 	env.C_CurveUtil = {
 		CreateCurve = function()
 			return newCurve()
@@ -1189,7 +1196,10 @@ function wow.new()
 	local function newSetting(variable, default, getter, setter)
 		local s = { variable = variable, default = default, getter = getter, setter = setter }
 		function s:GetValue()
-			return self.getter and self.getter() or self.value
+			if self.getter then
+				return self.getter()
+			end
+			return self.value
 		end
 		function s:SetValue(v)
 			self.value = v

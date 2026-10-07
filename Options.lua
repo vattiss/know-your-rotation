@@ -349,6 +349,23 @@ local function ensureOptions()
 	end)
 	frame.importBtn = importBtn
 
+	local debugBtn = makeGoldBtn(shareCard, 140, 22, ns.T("OPT_DEBUG_REPORT"))
+	debugBtn:SetPoint("LEFT", importBtn, "RIGHT", 24, 0)
+	debugBtn:SetScript("OnClick", function()
+		edit:SetText(ns.Debug.Report())
+		edit:HighlightText()
+		edit:SetFocus()
+	end)
+	frame.debugBtn = debugBtn
+
+	local clearBtn = makeGoldBtn(shareCard, 140, 22, ns.T("OPT_DEBUG_CLEAR"))
+	clearBtn:SetPoint("LEFT", debugBtn, "RIGHT", 8, 0)
+	clearBtn:SetScript("OnClick", function()
+		ns.Debug.Clear()
+		ns.Print(ns.T("OPT_DEBUG_CLEARED"))
+	end)
+	frame.clearBtn = clearBtn
+
 	function frame.RelocalizeChrome()
 		if frame.shareHint then
 			frame.shareHint:SetText(ns.T("OPT_EXPORT_HINT"))
@@ -365,6 +382,8 @@ local function ensureOptions()
 		if frame.importBtn then
 			frame.importBtn:SetText(ns.T("OPT_IMPORT"))
 		end
+		frame.debugBtn:SetText(ns.T("OPT_DEBUG_REPORT"))
+		frame.clearBtn:SetText(ns.T("OPT_DEBUG_CLEAR"))
 		for _, card in ipairs({ shareCard }) do
 			if card and card.title and card.titleKey then
 				card.title:SetText(ns.T(card.titleKey))
@@ -954,6 +973,14 @@ local function registerBehavior(root)
 	header(layout, "HDR_SUGGESTIONS")
 	featureCheckbox(category, "autoHeal", "OPT_AUTO_HEAL", "TIP_AUTO_HEAL")
 	featureCheckbox(category, "showPhysics", "OPT_PHYSICS", "TIP_PHYSICS")
+
+	header(layout, "HDR_DEBUG")
+	checkbox(category, "debugMode", "OPT_DEBUG", "TIP_DEBUG", false, function()
+		return ns.db.debugMode == true
+	end, function(value)
+		ns.db.debugMode = value and true or nil
+		ns.Debug.Apply()
+	end)
 end
 
 function ns.RegisterOptions()

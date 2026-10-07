@@ -1,0 +1,365 @@
+local addonName, ns = ...
+local I = ns.API.I
+local readable = I.readable
+
+-- Debug mode: samples what the client really answers (secret, nil, value,
+-- error) once a second and counts the events it really sends, so questions
+-- like "is UnitCreatureType secret on mobs?" are answered by data from the
+-- game instead of guessing. Nothing is printed: the numbers live in
+-- ns.db.debug (SavedVariables) and ns.Debug.Report() turns them into text
+-- (Profiles page, "Debug report").
+ns.Debug = ns.Debug or {}
+local D = ns.Debug
+
+local MAX_KEYS = 700
+local MAX_TEXTS = 60
+local SAMPLE_SECONDS = 1
+
+local ticker
+local frame
+
+local function store()
+	ns.db.debug = ns.db.debug or { counts = {}, texts = {}, keys = 0, textKeys = 0, dropped = 0, samples = 0 }
+	return ns.db.debug
+end
+
+-- "number", "SECRET number", "nil", "boolean=true" ...: what kind of value
+-- came back. Never reads a secret value.
+local function classify(value)
+	if value == nil then
+		return "nil"
+	end
+	local kind = type(value)
+	if issecretvalue(value) then
+		return "SECRET " .. kind
+	end
+	if kind == "boolean" then
+		return "boolean=" .. tostring(value)
+	end
+	return kind
+end
+
+-- All return values of a pcall, classified and joined.
+local function summarize(ok, ...)
+	if not ok then
+		return "ERROR " .. tostring((...)):sub(1, 70)
+	end
+	local count = select("#", ...)
+	if count == 0 then
+		return "no return"
+	end
+	local parts = {}
+	for i = 1, count do
+		parts[i] = classify((select(i, ...)))
+	end
+	return table.concat(parts, ",")
+end
+
+local function count(probe, context, result)
+	local d = store()
+	local key = probe .. "\t" .. context .. "\t" .. result
+	if d.counts[key] == nil then
+		if d.keys >= MAX_KEYS then
+			d.dropped = d.dropped + 1
+			return
+		end
+		d.keys = d.keys + 1
+		d.counts[key] = 0
+	end
+	d.counts[key] = d.counts[key] + 1
+end
+
+-- Short texts the client sends (error messages): the exact wording matters.
+local function text(label, message)
+	local d = store()
+	if type(message) ~= "string" or not readable(message) then
+		return
+	end
+	local key = label .. ": " .. message:sub(1, 80)
+	if d.texts[key] == nil then
+		if d.textKeys >= MAX_TEXTS then
+			return
+		end
+		d.textKeys = d.textKeys + 1
+		d.texts[key] = 0
+	end
+	d.texts[key] = d.texts[key] + 1
+end
+
+local function context()
+	local target = "no target"
+	if UnitExists("target") then
+		target = ns.API.Hostile() and "enemy" or "friend"
+	end
+	return (ns.API.InCombat() and "combat" or "idle") .. ", " .. target
+end
+
+local function probe(name, ctx, fn)
+	count(name, ctx, summarize(pcall(fn)))
+end
+
+-- First few enabled, learned steps of the current rotation.
+local function sampleSpells(ctx)
+	local shown = 0
+	for _, step in ipairs(ns.GetAPL() or {}) do
+		local id = ns.IsStepEnabled(step) and step.id and ns.API.Resolve(step.id)
+		if id and shown < 4 then
+			shown = shown + 1
+			local name = ns.API.SpellName(id) or tostring(id)
+			probe("C_Spell.IsSpellUsable | " .. name, ctx, function()
+				return C_Spell.IsSpellUsable(id)
+			end)
+			probe("C_Spell.IsSpellInRange(target) | " .. name, ctx, function()
+				return C_Spell.IsSpellInRange(id, "target")
+			end)
+			probe("C_Spell.GetSpellCooldown start,duration | " .. name, ctx, function()
+				local info = C_Spell.GetSpellCooldown(id)
+				return info and info.startTime, info and info.duration
+			end)
+			-- The question behind several rules: does "unusable" mean "out of range"?
+			local _, usable, noMana = pcall(C_Spell.IsSpellUsable, id)
+			local _, inRange = pcall(C_Spell.IsSpellInRange, id, "target")
+			count(
+				"usable vs range vs addon | " .. name,
+				ctx,
+				("usable=%s noMana=%s inRange=%s addonRange=%s"):format(
+					classify(usable),
+					classify(noMana),
+					classify(inRange),
+					ns.API.RangeState(id, { hostile = true })
+				)
+			)
+			local why = ns.API.WhyNot(id, step.opt)
+			count("addon says | " .. name, ctx, why or "offered")
+		end
+	end
+end
+
+local function sampleUnit(ctx, unit)
+	probe("UnitHealth(" .. unit .. ")", ctx, function()
+		return UnitHealth(unit)
+	end)
+	probe("UnitHealthMax(" .. unit .. ")", ctx, function()
+		return UnitHealthMax(unit)
+	end)
+	probe("UnitHealthPercent(" .. unit .. ", curve)", ctx, function()
+		return UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+	end)
+end
+
+local function sampleTarget(ctx)
+	sampleUnit(ctx, "target")
+	probe("UnitGUID(target)", ctx, function()
+		return UnitGUID("target")
+	end)
+	probe("UnitCreatureType(target)", ctx, function()
+		return UnitCreatureType("target")
+	end)
+	probe("UnitClassification(target)", ctx, function()
+		return UnitClassification("target")
+	end)
+	probe("UnitLevel(target)", ctx, function()
+		return UnitLevel("target")
+	end)
+	probe("UnitReaction(player, target)", ctx, function()
+		return UnitReaction("player", "target")
+	end)
+	probe("UnitCanAttack(player, target)", ctx, function()
+		return UnitCanAttack("player", "target")
+	end)
+	probe("UnitThreatSituation(player, target)", ctx, function()
+		return UnitThreatSituation("player", "target")
+	end)
+	probe("UnitIsUnit(targettarget, player)", ctx, function()
+		return UnitIsUnit("targettarget", "player")
+	end)
+	probe("UnitDistanceSquared(target) distance,checked", ctx, function()
+		return UnitDistanceSquared("target")
+	end)
+	probe("CheckInteractDistance(target, 3)", ctx, function()
+		return CheckInteractDistance("target", 3)
+	end)
+	probe("UnitCastingInfo(target) name,notInterruptible", ctx, function()
+		local info = { UnitCastingInfo("target") }
+		return info[1], info[8]
+	end)
+	probe("UnitChannelInfo(target) name,notInterruptible", ctx, function()
+		local info = { UnitChannelInfo("target") }
+		return info[1], info[7]
+	end)
+	probe("GetComboPoints(player, target)", ctx, function()
+		return GetComboPoints("player", "target")
+	end)
+	probe("C_UnitAuras debuff 1 name,spellId,expirationTime", ctx, function()
+		local aura = C_UnitAuras.GetAuraDataByIndex("target", 1, "HARMFUL")
+		return aura and aura.name, aura and aura.spellId, aura and aura.expirationTime
+	end)
+	probe("C_UnitAuras own debuff 1 (HARMFUL|PLAYER)", ctx, function()
+		local aura = C_UnitAuras.GetAuraDataByIndex("target", 1, "HARMFUL|PLAYER")
+		return aura and aura.name, aura and aura.spellId
+	end)
+end
+
+-- One sample of everything worth knowing; runs once a second in debug mode.
+function D.Sample()
+	local d = store()
+	d.samples = d.samples + 1
+	local ctx = context()
+	sampleUnit(ctx, "player")
+	probe("UnitPower(player, mana)", ctx, function()
+		return UnitPower("player", 0)
+	end)
+	probe("UnitPowerMax(player, mana)", ctx, function()
+		return UnitPowerMax("player", 0)
+	end)
+	probe("UnitPowerPercent(player, mana)", ctx, function()
+		return UnitPowerPercent("player", 0, false)
+	end)
+	probe("UnitPower(player, combo points)", ctx, function()
+		return UnitPower("player", 4)
+	end)
+	probe("UnitAttackSpeed(player)", ctx, function()
+		return UnitAttackSpeed("player")
+	end)
+	probe("UnitRangedDamage(player) speed", ctx, function()
+		return (UnitRangedDamage("player"))
+	end)
+	probe("UnitCastingInfo(player) name,endTime", ctx, function()
+		local info = { UnitCastingInfo("player") }
+		return info[1], info[5]
+	end)
+	probe("C_UnitAuras buff 1 name,spellId,expirationTime", ctx, function()
+		local aura = C_UnitAuras.GetAuraDataByIndex("player", 1, "HELPFUL")
+		return aura and aura.name, aura and aura.spellId, aura and aura.expirationTime
+	end)
+	if ns.ClassToken() == "SHAMAN" then
+		for slot = 1, 4 do
+			probe("GetTotemInfo(" .. slot .. ") have,name,start,duration", ctx, function()
+				local have, name, start, duration = GetTotemInfo(slot)
+				return have, name, start, duration
+			end)
+		end
+	end
+	if UnitExists("pet") then
+		sampleUnit(ctx, "pet")
+	end
+	if UnitExists("target") then
+		sampleTarget(ctx)
+	end
+	sampleSpells(ctx)
+end
+
+local EVENTS = {
+	"UNIT_ATTACK",
+	"UNIT_COMBAT",
+	"UNIT_SPELLCAST_SUCCEEDED",
+	"PLAYER_TOTEM_UPDATE",
+	"UI_ERROR_MESSAGE",
+}
+
+local function onEvent(_, event, ...)
+	local ctx = context()
+	if event == "UNIT_SPELLCAST_SUCCEEDED" then
+		count("event " .. event .. " spellID", ctx, classify((select(3, ...))))
+	elseif event == "UI_ERROR_MESSAGE" then
+		local message = select(2, ...)
+		count("event " .. event .. " message", ctx, classify(message))
+		text("UI_ERROR_MESSAGE", message)
+	elseif event == "UNIT_COMBAT" then
+		local action = select(2, ...)
+		count("event " .. event, ctx, "fired")
+		text("UNIT_COMBAT action", action)
+	else
+		count("event " .. event, ctx, "fired")
+	end
+end
+
+local function info()
+	local d = store()
+	local ok, version, build, _, interface = pcall(GetBuildInfo)
+	d.info = {
+		client = ok and ("%s (build %s, interface %s)"):format(tostring(version), tostring(build), tostring(interface))
+			or "unknown",
+		addon = tostring(C_AddOns.GetAddOnMetadata(addonName, "Version")),
+		class = tostring(ns.ClassToken()),
+		level = tostring(UnitLevel("player")),
+	}
+end
+
+-- Starts or stops the collecting, following ns.db.debugMode.
+function D.Apply()
+	if ns.db.debugMode == true then
+		info()
+		if not frame then
+			frame = CreateFrame("Frame")
+			frame:SetScript("OnEvent", onEvent)
+		end
+		for _, event in ipairs(EVENTS) do
+			if event:find("^UNIT_") then
+				frame:RegisterUnitEvent(event, "player")
+			else
+				frame:RegisterEvent(event)
+			end
+		end
+		if not ticker then
+			ticker = C_Timer.NewTicker(SAMPLE_SECONDS, function()
+				pcall(D.Sample)
+			end)
+		end
+	else
+		if frame then
+			frame:UnregisterAllEvents()
+		end
+		if ticker then
+			ticker:Cancel()
+			ticker = nil
+		end
+	end
+end
+
+function D.Clear()
+	ns.db.debug = nil
+end
+
+-- The collected data as text, to copy and send along with a bug report.
+function D.Report()
+	local d = store()
+	local lines = { "Know Your Rotation debug report" }
+	local i = d.info or {}
+	lines[#lines + 1] = ("client: %s | addon: %s | %s level %s"):format(
+		i.client or "?",
+		i.addon or "?",
+		i.class or "?",
+		i.level or "?"
+	)
+	lines[#lines + 1] = ("samples: %d, keys: %d, dropped: %d"):format(d.samples, d.keys, d.dropped)
+	local probes, byProbe = {}, {}
+	for key, n in pairs(d.counts) do
+		local name, ctx, result = key:match("^(.-)\t(.-)\t(.*)$")
+		if not byProbe[name] then
+			byProbe[name] = {}
+			probes[#probes + 1] = name
+		end
+		byProbe[name][#byProbe[name] + 1] = ("  %s -> %s  x%d"):format(ctx, result, n)
+	end
+	table.sort(probes)
+	for _, name in ipairs(probes) do
+		lines[#lines + 1] = name
+		table.sort(byProbe[name])
+		for _, line in ipairs(byProbe[name]) do
+			lines[#lines + 1] = line
+		end
+	end
+	local texts = {}
+	for key, n in pairs(d.texts) do
+		texts[#texts + 1] = ("%s  x%d"):format(key, n)
+	end
+	table.sort(texts)
+	if #texts > 0 then
+		lines[#lines + 1] = "texts the client sent"
+		for _, line in ipairs(texts) do
+			lines[#lines + 1] = "  " .. line
+		end
+	end
+	return table.concat(lines, "\n")
+end

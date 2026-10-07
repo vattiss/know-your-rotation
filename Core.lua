@@ -873,6 +873,7 @@ local function onLogin(greet)
 	ns.weaponItemMain = weaponItemId(16)
 	ns.weaponItemOff = weaponItemId(17)
 	ns.ApplyAutoProfile()
+	ns.Debug.Apply()
 	if greet then
 		local token, _, localized = ns.ClassToken()
 		ns.Print(ns.T("INIT"))

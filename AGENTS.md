@@ -41,7 +41,7 @@ If they diverge, the repo wins: copy the repo into AddOns. Never overwrite the r
 
 ## Load order
 
-`Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`
+`Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Debug.lua` → `Core.lua`
 
 All shared state lives in the `ns` table (second value of `...`). `Core.lua` runs a `C_Timer.NewTicker(0.2)`. No `OnUpdate` on the whole HUD; only the physics gauge (50 ms) when `showPhysics` is on.
 
@@ -65,6 +65,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 | Options pages (native and canvas), spell drag | `Options.lua` |
 | Glow on action bars | `Glow.lua` |
 | Profiles, auto role / profile, migrations | `Core.lua` |
+| Debug mode (what the API really answers) | `Debug.lua` |
 | Player text | `Locale.lua` |
 
 ## Pitfalls

@@ -42,7 +42,7 @@ Each builder honors its `ns.db.show*` switch. A missing `show*` means shown (`~=
 
 ## Files
 
-Load order (single TOC): `Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`.
+Load order (single TOC): `Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Debug.lua` → `Core.lua`.
 
 | File | Role |
 | --- | --- |
@@ -53,6 +53,7 @@ Load order (single TOC): `Locale.lua` → `API.lua` → `APICooldown.lua` → `A
 | `APIUnit.lua` | Health, range, enemy count, heal unit, roles (`SyncAutoRole`), creature types, casts, purge. |
 | `APITotem.lua` | Shaman totems kept through combat. |
 | `APIWeapon.lua` | Weapon enchants and weapon tooltips. |
+| `Debug.lua` | Debug mode (Behavior page, off by default): once a second it classifies what the API answers (value, SECRET, nil, error) in the current context (combat / idle, enemy / friend / no target) and counts selected events (`UNIT_ATTACK`, `UNIT_COMBAT`, `UNIT_SPELLCAST_SUCCEEDED`, `PLAYER_TOTEM_UPDATE`, `UI_ERROR_MESSAGE`) plus the client's error texts. Counts live in `ns.db.debug`, capped at 700 keys and 60 texts. `ns.Debug.Report()` turns them into text (Profiles page, "Debug report" button; "Clear debug data" empties them). No chat command. |
 | `APIStep.lua` | `Ready`, `StepOk` and `STEP_CHECKS`, `WhyNot`. |
 | `Data.lua` | IDs, roles, colors, racials, interrupts, purges, cleanses, enchants, long buffs, heals. |
 | `Physics.lua` | Auto Shot clip, energy tick. Option `ns.db.showPhysics`. No combat log. |

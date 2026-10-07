@@ -4,6 +4,8 @@ State: 261 unit tests, 100 % line coverage on all 12 addon files (CI enforces it
 
 ## 1. Try it in game (most important)
 
+Turn on **Behavior > Debug > Collect debug data** first. It samples the API once a second and counts events. After testing, open **Profiles > Debug report**, copy the text and send it: it answers the open questions below with data (is `GetTotemInfo`, `UnitCreatureType`, `UnitGUID`, `UnitThreatSituation` secret in combat; what `IsSpellUsable` says out of range; which error texts the client sends).
+
 Every change since the 1.0.0-beta.1 push was checked only by syntax checks and the unit tests with the WoW API stand-in (`tests/wow.lua`). The stand-in follows the API docs, but the real client can differ. Things to watch:
 
 - **Shaman in combat:** does the rotation still glow while totems are down (secret `GetTotemInfo`)? Walk 25+ yards from a Searing Totem: a new one must be suggested.

@@ -124,6 +124,7 @@ UI.lua                         # shared ns.UI table (no HUD window)
 Options.lua                    # configuration
 Glow.lua                       # action-bar glow
 Rotations.lua                  # queue and cue builders
+Debug.lua                      # debug mode: what the game API really answers
 Core.lua                       # profiles, events, auto role / profile
 images/logo.tga                # add-on list icon (128x128, made by art/logo.ps1)
 tests/                         # unit tests and the WoW API stand-in (not shipped)

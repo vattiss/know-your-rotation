@@ -48,6 +48,7 @@ read_globals = {
 	"GetActionInfo",
 	"GetActionTexture",
 	"GetBindingKey",
+	"GetBuildInfo",
 	"GetBindingText",
 	"GetCVarBool",
 	"GetComboPoints",
