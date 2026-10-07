@@ -615,6 +615,15 @@ local function buttonsFor(spellID)
 	return out
 end
 
+-- Names of the buttons a spell would glow on (the debug report shows them).
+function ns.GlowButtonNames(spellID)
+	local names = {}
+	for _, button in ipairs(buttonsFor(spellID)) do
+		names[#names + 1] = button:GetName() or "unnamed"
+	end
+	return names
+end
+
 function ns.GlowClear()
 	for button in pairs(damageGlowing) do
 		hideDamage(button)

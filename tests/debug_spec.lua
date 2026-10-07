@@ -114,6 +114,41 @@ describe("Debug sampling", function()
 	end)
 end)
 
+describe("Debug totem bar and glow buttons", function()
+	it("records what the totem bar buttons hold and where a spell would glow", function()
+		local w, ns = boot("SHAMAN", function(w)
+			w.spell(8071, { name = "Stoneskin Totem" })
+		end)
+		useSteps(ns)
+		ns.GetAPL = function()
+			return { { key = "Stoneskin", id = 8071, opt = {}, on = true } }
+		end
+		local b = w.env.CreateFrame("CheckButton", "MultiCastActionButton2")
+		b.action = 133
+		w.state.actions[133] = { type = "spell", id = 8071 }
+		ns.GlowFetch(true)
+		local broken = w.env.CreateFrame("CheckButton", "MultiCastActionButton3")
+		broken.GetAttribute = function()
+			error("no attribute")
+		end
+		local hidden = w.env.CreateFrame("CheckButton", "MultiCastActionButton4")
+		hidden.action = wow.SECRET
+		ns.Debug.Sample()
+		local c = counts(ns)
+		H.truthy(c["MultiCastActionButton2 | idle, no target | slot=133 type=spell id=8071 shown=true"])
+		local found
+		for key in pairs(c) do
+			if key:find("MultiCastActionButton3 | idle, no target | ERROR", 1, true) then
+				found = true
+			end
+		end
+		H.truthy(found, "a failing button is recorded, not thrown")
+		H.truthy(c["glows on buttons | Stoneskin Totem | idle, no target | MultiCastActionButton2"])
+		H.truthy(c["UnitAffectingCombat(player) | idle, no target | boolean=false"])
+		H.truthy(c["UnitExists(target) | idle, no target | boolean=false"])
+	end)
+end)
+
 describe("Debug mode switch and events", function()
 	it("starts and stops collecting with the setting", function()
 		local w, ns = boot()

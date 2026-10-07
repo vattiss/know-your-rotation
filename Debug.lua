@@ -103,7 +103,7 @@ local function sampleSpells(ctx)
 	local shown = 0
 	for _, step in ipairs(ns.GetAPL() or {}) do
 		local id = ns.IsStepEnabled(step) and step.id and ns.API.Resolve(step.id)
-		if id and shown < 4 then
+		if id and shown < 16 then
 			shown = shown + 1
 			local name = ns.API.SpellName(id) or tostring(id)
 			probe("C_Spell.IsSpellUsable | " .. name, ctx, function()
@@ -131,6 +131,8 @@ local function sampleSpells(ctx)
 			)
 			local why = ns.API.WhyNot(id, step.opt)
 			count("addon says | " .. name, ctx, why or "offered")
+			local buttons = ns.GlowButtonNames(id)
+			count("glows on buttons | " .. name, ctx, #buttons > 0 and table.concat(buttons, ", ") or "none")
 		end
 	end
 end
@@ -200,6 +202,32 @@ local function sampleTarget(ctx)
 	end)
 end
 
+-- The value itself (for slot numbers and IDs), unless it is secret.
+local function shown(value)
+	return issecretvalue(value) and "SECRET" or tostring(value)
+end
+
+-- What each totem bar button says about itself: the action slot, what the slot
+-- holds and its icon. The addon reads these buttons like action buttons.
+local function sampleTotemBar(ctx)
+	for i = 1, 12 do
+		local button = _G["MultiCastActionButton" .. i]
+		if button then
+			local ok, line = pcall(function()
+				local slot = button.action or button:GetAttribute("action")
+				local kind, id = GetActionInfo(slot)
+				return ("slot=%s type=%s id=%s shown=%s"):format(
+					shown(slot),
+					shown(kind),
+					shown(id),
+					shown(button:IsShown())
+				)
+			end)
+			count("MultiCastActionButton" .. i, ctx, ok and line or "ERROR " .. tostring(line):sub(1, 70))
+		end
+	end
+end
+
 -- One sample of everything worth knowing; runs once a second in debug mode.
 function D.Sample()
 	local d = store()
@@ -240,6 +268,15 @@ function D.Sample()
 			end)
 		end
 	end
+	if ns.ClassToken() == "SHAMAN" then
+		sampleTotemBar(ctx)
+	end
+	probe("UnitAffectingCombat(player)", ctx, function()
+		return UnitAffectingCombat("player")
+	end)
+	probe("UnitExists(target)", ctx, function()
+		return UnitExists("target")
+	end)
 	if UnitExists("pet") then
 		sampleUnit(ctx, "pet")
 	end
