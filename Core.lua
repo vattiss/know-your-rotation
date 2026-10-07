@@ -155,8 +155,11 @@ function ns.ProfileKey()
 	return "pve"
 end
 
+-- True while WithProfile has another profile's lists bound.
+local swapping = false
+
 function ns.FlushProfile()
-	if not ns.db then
+	if not ns.db or swapping then
 		return
 	end
 	ns.db.profiles = ns.db.profiles or {}
@@ -195,6 +198,32 @@ function ns.BindProfile()
 	ns.db.autoEnemies = tonumber(p.autoEnemies) or 3
 	ns.db.weaponBuff = p.weaponBuff
 	ns.db.weaponBuffOff = p.weaponBuffOff
+end
+
+-- Runs fn(...) with the rotation and defense lists of profile `key` bound, so
+-- the list editor can change the PvP lists while PvE is the one in use. The
+-- active profile is saved first and bound again afterwards; the glows do not
+-- tick and nothing is flushed in between. Returns what fn returns.
+function ns.WithProfile(key, fn, ...)
+	if not ns.ValidProfile(key) or key == ns.ProfileKey() then
+		return fn(...)
+	end
+	ns.FlushProfile()
+	local active = ns.db.profiles[ns.ProfileKey()]
+	local other = ns.db.profiles[key] or {}
+	ns.db.profiles[key] = other
+	swapping = true
+	ns.db.apl, ns.db.aplDrop, ns.db.def, ns.db.defDrop = other.apl, other.aplDrop, other.def, other.defDrop
+	ns.InvalidateAPLCache()
+	local results = { pcall(fn, ...) }
+	other.apl, other.aplDrop, other.def, other.defDrop = ns.db.apl, ns.db.aplDrop, ns.db.def, ns.db.defDrop
+	ns.db.apl, ns.db.aplDrop, ns.db.def, ns.db.defDrop = active.apl, active.aplDrop, active.def, active.defDrop
+	swapping = false
+	ns.InvalidateAPLCache()
+	if not results[1] then
+		error(results[2], 0)
+	end
+	return unpack(results, 2)
 end
 
 function ns.SetProfile(key)
@@ -550,7 +579,7 @@ function ns.ApplyAutoProfile()
 end
 
 function ns.Tick()
-	if not ns.booted then
+	if not ns.booted or swapping then
 		return
 	end
 	-- Remember max health while the client still lets us read it.

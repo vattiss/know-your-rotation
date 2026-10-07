@@ -257,6 +257,8 @@ Combat modes (`ns.COMBAT_MODES`): `auto`, `single`, `aoe`. There is no burst mod
 
 ## Profiles (`Core.lua`)
 
+The Rotation and Defense pages have a Profile dropdown that picks which profile's lists are shown and edited (`editProfile` in `Options.lua`), independent of the profile in use; opening a page starts on the profile in use. Every list call of the editor goes through `ns.WithProfile(key, fn, ...)`: it saves the profile in use, binds the lists (`apl`, `aplDrop`, `def`, `defDrop`) of `key`, runs `fn`, writes them back to `key` and binds the profile in use again. While swapped, `ns.FlushProfile` does nothing and `ns.Tick` returns at once, so the glows never read the other profile's lists. The profile in use and the automatic switching are not touched.
+
 `ns.PROFILE_ORDER = { "pve", "pvp" }`. Old `base` / `custom` profiles are dropped at login.
 
 `autoProfile` (default true): `ns.ApplyAutoProfile` picks PvP in battlegrounds and arenas, or when targeting an attackable player in the open world (not by the PvP flag, which a PvP realm keeps on in contested zones), PvE otherwise (never back to PvE in combat). The Behavior page profile dropdown calls `ns.SetProfileChoice` (`auto`, `pve`, `pvp`; a fixed profile sets `autoProfile = false`).

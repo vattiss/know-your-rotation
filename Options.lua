@@ -5,6 +5,7 @@ local ISSUES_URL = GITHUB_URL .. "/issues"
 
 local editSpec
 local editMode
+local editProfile -- the profile whose lists are shown (not always the one in use)
 local listKind = "apl"
 
 local function bindSimpleTip(frame, title, desc)
@@ -216,8 +217,23 @@ local function ensureOptions()
 	end)
 	frame.specDrop = specDrop
 
+	local profileDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
+	profileDrop:SetPoint("LEFT", specDrop, "RIGHT", 8, 0)
+	profileDrop:SetWidth(90)
+	profileDrop:SetupMenu(function(_, root)
+		for _, key in ipairs(ns.PROFILE_ORDER) do
+			root:CreateRadio(ns.T("PROFILE_" .. key:upper()), function(value)
+				return editProfile == value
+			end, function(value)
+				editProfile = value
+				ns.RefreshOptions()
+			end, key)
+		end
+	end)
+	frame.profileDrop = profileDrop
+
 	local modeDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
-	modeDrop:SetPoint("LEFT", specDrop, "RIGHT", 8, 0)
+	modeDrop:SetPoint("LEFT", profileDrop, "RIGHT", 8, 0)
 	modeDrop:SetWidth(120)
 	modeDrop:SetupMenu(function(_, root)
 		for _, mode in ipairs({ "auto", "single", "aoe" }) do
@@ -235,9 +251,9 @@ local function ensureOptions()
 	resetApl:SetPoint("TOPRIGHT", -8, -8)
 	resetApl:SetScript("OnClick", function()
 		if listKind == "def" then
-			ns.ResetDef(nil, editSpec)
+			ns.WithProfile(editProfile, ns.ResetDef, nil, editSpec)
 		else
-			ns.ResetAPL(nil, editSpec, editMode)
+			ns.WithProfile(editProfile, ns.ResetAPL, nil, editSpec, editMode)
 		end
 		ns.RefreshOptions()
 	end)
@@ -509,9 +525,9 @@ local function aplRow(parent, index)
 		end
 		local sec = tonumber(self:GetText()) or 0
 		if listKind == "def" then
-			ns.SetDefHold(self.stepKey, sec, nil, editSpec)
+			ns.WithProfile(editProfile, ns.SetDefHold, self.stepKey, sec, nil, editSpec)
 		else
-			ns.SetAPLHold(self.stepKey, sec, nil, editSpec, self.mode)
+			ns.WithProfile(editProfile, ns.SetAPLHold, self.stepKey, sec, nil, editSpec, self.mode)
 		end
 		ns.RefreshOptions()
 	end
@@ -530,9 +546,9 @@ local function aplRow(parent, index)
 		if self.stepKey then
 			local on = ns.CoerceChecked(self:GetChecked())
 			if listKind == "def" then
-				ns.SetDefEnabled(self.stepKey, on, nil, editSpec)
+				ns.WithProfile(editProfile, ns.SetDefEnabled, self.stepKey, on, nil, editSpec)
 			else
-				ns.SetAPLEnabled(self.stepKey, on, nil, editSpec, self.mode)
+				ns.WithProfile(editProfile, ns.SetAPLEnabled, self.stepKey, on, nil, editSpec, self.mode)
 			end
 			ns.RefreshOptions()
 		end
@@ -540,9 +556,9 @@ local function aplRow(parent, index)
 	up:SetScript("OnClick", function(self)
 		if self.index then
 			if listKind == "def" then
-				ns.MoveDef(self.index, -1, nil, editSpec)
+				ns.WithProfile(editProfile, ns.MoveDef, self.index, -1, nil, editSpec)
 			else
-				ns.MoveAPL(self.index, -1, nil, editSpec, self.mode)
+				ns.WithProfile(editProfile, ns.MoveAPL, self.index, -1, nil, editSpec, self.mode)
 			end
 			ns.RefreshOptions()
 		end
@@ -550,9 +566,9 @@ local function aplRow(parent, index)
 	down:SetScript("OnClick", function(self)
 		if self.index then
 			if listKind == "def" then
-				ns.MoveDef(self.index, 1, nil, editSpec)
+				ns.WithProfile(editProfile, ns.MoveDef, self.index, 1, nil, editSpec)
 			else
-				ns.MoveAPL(self.index, 1, nil, editSpec, self.mode)
+				ns.WithProfile(editProfile, ns.MoveAPL, self.index, 1, nil, editSpec, self.mode)
 			end
 			ns.RefreshOptions()
 		end
@@ -562,9 +578,9 @@ local function aplRow(parent, index)
 			return
 		end
 		if listKind == "def" then
-			ns.RemoveDef(self.stepKey, nil, editSpec)
+			ns.WithProfile(editProfile, ns.RemoveDef, self.stepKey, nil, editSpec)
 		else
-			ns.RemoveAPL(self.stepKey, nil, editSpec, self.mode)
+			ns.WithProfile(editProfile, ns.RemoveAPL, self.stepKey, nil, editSpec, self.mode)
 		end
 		ns.RefreshOptions()
 	end)
@@ -579,9 +595,9 @@ function ns.DropSpellOnList(atIndex, mode)
 		return
 	end
 	if listKind == "def" or (ns.IsMaintenanceBuff and ns.IsMaintenanceBuff(spellID)) then
-		ns.AddDef(spellID, nil, editSpec, atIndex)
+		ns.WithProfile(editProfile, ns.AddDef, spellID, nil, editSpec, atIndex)
 	else
-		ns.AddAPL(spellID, nil, editSpec, mode or editMode, atIndex)
+		ns.WithProfile(editProfile, ns.AddAPL, spellID, nil, editSpec, mode or editMode, atIndex)
 	end
 	if ClearCursor then
 		pcall(ClearCursor)
@@ -602,6 +618,7 @@ function ns.RefreshOptions()
 		frame.ShowTab(frame.activeTab)
 	end
 	editSpec = editSpec or ns.ActiveSpec()
+	editProfile = editProfile or ns.ProfileKey()
 	editMode = editMode or (ns.CombatMode and ns.CombatMode()) or "auto"
 	if editMode ~= "auto" and editMode ~= "aoe" then
 		editMode = "single"
@@ -616,22 +633,27 @@ function ns.RefreshOptions()
 	if not valid then
 		editSpec = specs[1]
 	end
-	local profileKey = ns.ProfileKey and ns.ProfileKey() or "pve"
-	local profile = ns.T("PROFILE_" .. profileKey:upper())
+	local profile = ns.T("PROFILE_" .. editProfile:upper())
 	local label = ns.T(listKind == "def" and "EDIT_DEF_FOR" or "EDIT_ROT_FOR"):format(profile)
 	local activeSpec = ns.ActiveSpec and ns.ActiveSpec()
 	local activeMode = ns.ResolveCombatMode and ns.ResolveCombatMode() or "auto"
-	if editSpec == activeSpec and (listKind == "def" or editMode == activeMode) then
+	if editProfile == ns.ProfileKey() and editSpec == activeSpec and (listKind == "def" or editMode == activeMode) then
 		label = label .. "  |cff33ff33" .. ns.T("EDIT_IN_USE") .. "|r"
 	end
 	frame.editLabel:SetText(label)
 	frame.specDrop:GenerateMenu()
+	frame.profileDrop:GenerateMenu()
 	frame.modeDrop:SetShown(listKind ~= "def")
 	if listKind ~= "def" then
 		frame.modeDrop:GenerateMenu()
 	end
 	frame.holdToggle:SetChecked(ns.db.showHoldColumn == true)
-	if listKind ~= "def" and editMode == "auto" then
+	if editProfile ~= ns.ProfileKey() then
+		frame.listHint:SetText(
+			ns.T("EDIT_PROFILE")
+				:format(ns.T("PROFILE_" .. editProfile:upper()), ns.T("PROFILE_" .. ns.ProfileKey():upper()))
+		)
+	elseif listKind ~= "def" and editMode == "auto" then
 		frame.listHint:SetText(ns.T("OPT_AUTO_HINT"))
 	else
 		frame.listHint:SetText(ns.T("OPT_LIST_HINT"))
@@ -643,7 +665,12 @@ function ns.RefreshOptions()
 	local child = frame.aplChild
 	local showHold = ns.db.showHoldColumn == true
 	local mode = listKind ~= "def" and editMode or nil
-	local steps = listKind == "def" and ns.GetDef(nil, editSpec) or ns.GetAPL(nil, editSpec, editMode)
+	local steps
+	if listKind == "def" then
+		steps = ns.WithProfile(editProfile, ns.GetDef, nil, editSpec)
+	else
+		steps = ns.WithProfile(editProfile, ns.GetAPL, nil, editSpec, editMode)
+	end
 	local y = 2
 	for i, step in ipairs(steps) do
 		local row = aplRow(child, i)
@@ -1077,6 +1104,7 @@ function ns.RegisterOptions()
 		panel:Hide()
 		local function showPage(self)
 			editSpec = ns.ActiveSpec()
+			editProfile = ns.ProfileKey()
 			local frame = ensureOptions()
 			frame:SetParent(self)
 			frame:ClearAllPoints()

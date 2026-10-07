@@ -505,3 +505,59 @@ describe("Core events", function()
 		w:advance(1)
 	end)
 end)
+
+describe("Core.WithProfile", function()
+	it("runs a function on another profile's lists and puts everything back", function()
+		local _, ns = boot("ROGUE")
+		ns.SaveAPL({ { key = "Eviscerate", on = 1 } }, nil, "damage", "single")
+		ns.FlushProfile()
+		local pveLists = ns.db.apl
+		local builds = 0
+		ns.BuildQueue = function()
+			builds = builds + 1
+			return {}
+		end
+		local first, second = ns.WithProfile("pvp", function(a, b)
+			H.eq(ns.ProfileKey(), "pve", "the profile in use does not change")
+			H.eq(ns.db.apl, nil, "the PvP lists start empty")
+			ns.SaveAPL({ { key = "Garrote", on = 1 } }, nil, "damage", "single")
+			H.eq(ns.GetAPL(nil, "damage", "single")[1].key, "Garrote")
+			return a + 1, b
+		end, 1, "x")
+		H.same({ first, second }, { 2, "x" })
+		H.eq(builds, 0, "the glows do not tick while the other lists are bound")
+		H.eq(ns.db.apl, pveLists, "the PvE lists are bound again")
+		H.eq(ns.GetAPL(nil, "damage", "single")[1].key, "Eviscerate")
+		H.eq(ns.db.profiles.pvp.apl.ROGUE.damage.single[1].key, "Garrote", "saved into the PvP profile")
+	end)
+
+	it("runs on the profile in use or an unknown key directly", function()
+		local _, ns = boot("ROGUE")
+		H.eq(
+			ns.WithProfile("pve", function(x)
+				return x
+			end, 5),
+			5
+		)
+		H.eq(
+			ns.WithProfile("nope", function(x)
+				return x
+			end, 6),
+			6
+		)
+	end)
+
+	it("restores the lists when the function fails", function()
+		local _, ns = boot("ROGUE")
+		ns.SaveAPL({ { key = "Eviscerate", on = 1 } }, nil, "damage", "single")
+		ns.FlushProfile()
+		local pveLists = ns.db.apl
+		local ok, err = pcall(ns.WithProfile, "pvp", function()
+			error("broken editor")
+		end)
+		H.eq(ok, false)
+		H.truthy(err:find("broken editor", 1, true))
+		H.eq(ns.db.apl, pveLists)
+		ns.Tick()
+	end)
+end)

@@ -90,6 +90,7 @@ L.enUS = {
 	WHY_SWITCHED_OFF = "Switched off in this list.",
 	WHY_HINT = "Target an enemy (or get into the situation) and hover again to check.",
 	EDIT_IN_USE = "(in use now)",
+	EDIT_PROFILE = "Editing the %s lists. The %s lists are the ones in use now.",
 	OPT_RESET_APL_TIP = "Restore this list to the default spells and order.",
 	OPT_ADD_SPELL = "Add a spell — drag it here",
 	OPT_DROP_SPELL = "Open your spellbook, then drag a spell onto this box or onto a row.",

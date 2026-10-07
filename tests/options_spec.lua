@@ -470,7 +470,6 @@ describe("Options page host", function()
 			return "single"
 		end
 		openPage(w, "rotation")
-		ns.ProfileKey = nil
 		ns.ResolveCombatMode = nil
 		ns.CombatMode = nil
 		frame.ShowTab("rotation")
@@ -487,5 +486,38 @@ describe("Options page host", function()
 		frame.importBtn = nil
 		frame.RelocalizeChrome()
 		frame.ShowTab("other")
+	end)
+end)
+
+describe("Options profile choice", function()
+	it("edits the PvP lists while PvE is in use", function()
+		local w, ns = boot("ROGUE", function(w)
+			w.spell(1784, { name = "Stealth", helpful = true })
+		end)
+		ns.API.InvalidateSpells(true)
+		local frame = openPage(w, "rotation")
+		H.truthy(frame.editLabel:GetText():find("PvE", 1, true))
+		frame.profileDrop:GenerateMenu()
+		local items = radios(w)
+		H.eq(items[1].text, ns.T("PROFILE_PVE"))
+		H.eq(items[2].a("pvp"), false)
+		items[2].b("pvp")
+		H.eq(items[2].a("pvp"), true)
+		H.truthy(frame.editLabel:GetText():find("PvP", 1, true))
+		H.falsy(frame.editLabel:GetText():find(ns.T("EDIT_IN_USE"), 1, true), "not the list in use")
+		H.truthy(frame.listHint:GetText():find("PvE lists are the ones in use", 1, true))
+		local first = frame.aplRows[1]
+		first.up.index = 1
+		frame.aplRows[2].up:Click()
+		H.eq(ns.ProfileKey(), "pve", "the profile in use is untouched")
+		H.eq(ns.db.profiles.pvp.apl.ROGUE.damage.auto[1].key, "Garrote", "the PvP lists changed")
+		H.eq(ns.GetAPL(nil, "damage", "auto")[1].key, "Stealth", "the PvE lists did not")
+		frame.resetApl:Click()
+		items[1].b("pve")
+		H.truthy(frame.editLabel:GetText():find(ns.T("EDIT_IN_USE"), 1, true))
+		H.falsy(frame.listHint:GetText():find("in use now", 1, true))
+		-- The defense page edits the same chosen profile.
+		openPage(w, "def")
+		H.truthy(frame.editLabel:GetText():find("PvE", 1, true), "opening a page starts on the profile in use")
 	end)
 end)

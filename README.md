@@ -81,7 +81,7 @@ Execute and Hammer of Wrath light up as soon as the game lets you use them. Rogu
 
 ### Profiles
 
-Two profiles, PvE and PvP, each with its own rotation and defense lists. With **Profile: Automatic** (Behavior page) dungeons and raids use PvE; battlegrounds, arenas, or targeting an enemy player use PvP; everything else uses PvE. Picking PvE or PvP by hand keeps that profile. On the Profiles page you can reset the active profile and export / import it as text.
+Two profiles, PvE and PvP, each with its own rotation and defense lists. With **Profile: Automatic** (Behavior page) dungeons and raids use PvE; battlegrounds, arenas, or targeting an enemy player use PvP; everything else uses PvE. Picking PvE or PvP by hand keeps that profile. On the Rotation and Defense pages a Profile dropdown lets you edit the PvE or PvP lists whichever one is in use. On the Profiles page you can reset the active profile and export / import it as text.
 
 ### Disabling on one character
 
