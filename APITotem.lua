@@ -151,9 +151,6 @@ function ns.API.ClearTotems()
 	wipe(totemOut)
 end
 
----Seconds left on this totem; 0 when it is not down or you walked away.
----@param spellID integer
----@return number
 -- The totem is gone or far away, but its effect may still be on you
 -- (Stoneskin, Strength of Earth, ...): then it is not worth another totem.
 local function effectRemain(wantName)
@@ -166,6 +163,9 @@ local function effectRemain(wantName)
 	return 0
 end
 
+---Seconds left on this totem; 0 when it is not down or you walked away.
+---@param spellID integer
+---@return number
 function ns.API.TotemRemain(spellID)
 	if not spellID or not GetTotemInfo then
 		return 0

@@ -531,12 +531,6 @@ local function auraBySpellName(unit, name, filter)
 	end
 end
 
----Aura present, including the remembered state when the client hides auras.
----@param spellID integer
----@param unit? string
----@param filter? string "HELPFUL" or "HARMFUL"
----@return boolean found
----@return number remain 9999 = unknown or permanent
 -- An aura by its exact name (the totem effects: "Stoneskin" for Stoneskin
 -- Totem). Returns found, seconds left (9999 when it has no end).
 function ns.API.FindAuraByName(name, unit, filter)
@@ -550,6 +544,12 @@ function ns.API.FindAuraByName(name, unit, filter)
 	return false, 0
 end
 
+---Aura present, including the remembered state when the client hides auras.
+---@param spellID integer
+---@param unit? string
+---@param filter? string "HELPFUL" or "HARMFUL"
+---@return boolean found
+---@return number remain 9999 = unknown or permanent
 function ns.API.HasAura(spellID, unit, filter)
 	unit = unit or "player"
 	filter = filter or "HELPFUL"
