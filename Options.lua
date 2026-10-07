@@ -202,23 +202,8 @@ local function ensureOptions()
 	editLabel:SetPoint("TOPLEFT", 8, -12)
 	frame.editLabel = editLabel
 
-	local specDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
-	specDrop:SetPoint("LEFT", editLabel, "RIGHT", 10, 0)
-	specDrop:SetWidth(150)
-	specDrop:SetupMenu(function(_, root)
-		for _, spec in ipairs(ns.SpecList()) do
-			root:CreateRadio(specLabel(spec), function(value)
-				return editSpec == value
-			end, function(value)
-				editSpec = value
-				ns.RefreshOptions()
-			end, spec)
-		end
-	end)
-	frame.specDrop = specDrop
-
 	local profileDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
-	profileDrop:SetPoint("LEFT", specDrop, "RIGHT", 8, 0)
+	profileDrop:SetPoint("TOPLEFT", 8, -36)
 	profileDrop:SetWidth(90)
 	profileDrop:SetupMenu(function(_, root)
 		for _, key in ipairs(ns.PROFILE_ORDER) do
@@ -232,8 +217,23 @@ local function ensureOptions()
 	end)
 	frame.profileDrop = profileDrop
 
+	local specDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
+	specDrop:SetPoint("LEFT", profileDrop, "RIGHT", 8, 0)
+	specDrop:SetWidth(150)
+	specDrop:SetupMenu(function(_, root)
+		for _, spec in ipairs(ns.SpecList()) do
+			root:CreateRadio(specLabel(spec), function(value)
+				return editSpec == value
+			end, function(value)
+				editSpec = value
+				ns.RefreshOptions()
+			end, spec)
+		end
+	end)
+	frame.specDrop = specDrop
+
 	local modeDrop = CreateFrame("DropdownButton", nil, rotation, "WowStyle1DropdownTemplate")
-	modeDrop:SetPoint("LEFT", profileDrop, "RIGHT", 8, 0)
+	modeDrop:SetPoint("LEFT", specDrop, "RIGHT", 8, 0)
 	modeDrop:SetWidth(120)
 	modeDrop:SetupMenu(function(_, root)
 		for _, mode in ipairs({ "auto", "single", "aoe" }) do
@@ -249,6 +249,9 @@ local function ensureOptions()
 
 	local resetApl = makeGoldBtn(rotation, 110, 22, ns.T("OPT_RESET_APL"))
 	resetApl:SetPoint("TOPRIGHT", -8, -8)
+	-- The title runs up to the button and no further.
+	editLabel:SetPoint("TOPRIGHT", resetApl, "TOPLEFT", -8, 0)
+	editLabel:SetJustifyH("LEFT")
 	resetApl:SetScript("OnClick", function()
 		if listKind == "def" then
 			ns.WithProfile(editProfile, ns.ResetDef, nil, editSpec)
@@ -262,7 +265,7 @@ local function ensureOptions()
 
 	local holdToggle = CreateFrame("CheckButton", nil, rotation, "UICheckButtonTemplate")
 	holdToggle:SetSize(24, 24)
-	holdToggle:SetPoint("TOPLEFT", 4, -36)
+	holdToggle:SetPoint("TOPLEFT", 4, -66)
 	holdToggle:SetScript("OnClick", function(self)
 		ns.db.showHoldColumn = self:GetChecked() and true or nil
 		ns.RefreshOptions()
@@ -281,7 +284,7 @@ local function ensureOptions()
 	frame.listHint = listHint
 
 	local listInset = CreateFrame("Frame", nil, rotation, "InsetFrameTemplate")
-	listInset:SetPoint("TOPLEFT", 4, -64)
+	listInset:SetPoint("TOPLEFT", 4, -94)
 	listInset:SetPoint("BOTTOMRIGHT", -4, 4)
 
 	local scroll = CreateFrame("ScrollFrame", "KnowYourRotationAPLScroll", listInset, "UIPanelScrollFrameTemplate")
@@ -949,6 +952,17 @@ local function registerBehavior(root)
 	local category, layout = Settings.RegisterVerticalLayoutSubcategory(root, ns.T("TAB_BEHAVIOR"))
 
 	header(layout, "HDR_DETECTION")
+	dropdown(category, "profile", "OPT_PROFILE", "TIP_PROFILE", "auto", function()
+		return ns.ProfileChoice()
+	end, function(value)
+		ns.SetProfileChoice(value)
+	end, function()
+		return {
+			{ "auto", ns.T("OPT_AUTOMATIC") },
+			{ "pve", ns.T("PROFILE_PVE") },
+			{ "pvp", ns.T("PROFILE_PVP") },
+		}
+	end)
 	dropdown(category, "role", "OPT_ROLE", "TIP_ROLE", "auto", function()
 		return ns.RoleChoice()
 	end, function(value)
@@ -985,17 +999,6 @@ local function registerBehavior(root)
 		end)
 	end
 	Settings.CreateSlider(category, aoe, sliderOptions, ns.T("TIP_AOE_FROM"))
-	dropdown(category, "profile", "OPT_PROFILE", "TIP_PROFILE", "auto", function()
-		return ns.ProfileChoice()
-	end, function(value)
-		ns.SetProfileChoice(value)
-	end, function()
-		return {
-			{ "auto", ns.T("OPT_AUTOMATIC") },
-			{ "pve", ns.T("PROFILE_PVE") },
-			{ "pvp", ns.T("PROFILE_PVP") },
-		}
-	end)
 
 	header(layout, "HDR_SUGGESTIONS")
 	featureCheckbox(category, "autoHeal", "OPT_AUTO_HEAL", "TIP_AUTO_HEAL")
@@ -1076,7 +1079,7 @@ function ns.RegisterOptions()
 		if ns.db.autoProfile ~= false then
 			profile = profile .. auto
 		end
-		local line = ns.T("HOME_STATUS"):format(className or "?", role, modeText, profile)
+		local line = ns.T("HOME_STATUS"):format(className or "?", profile, role, modeText)
 		if ns.db.muted == true then
 			line = line .. "\n" .. ns.T("HOME_DISABLED")
 		end
