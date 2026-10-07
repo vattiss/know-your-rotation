@@ -183,6 +183,8 @@ describe("StepOk basics", function()
 		end
 		check(A, 1, { notMelee = true }, false, "not in melee range")
 		check(A, 1, { inMelee = true }, true)
+		check(A, 1, { notMelee = 5 }, true, "the spell it waits for is not learned")
+		check(A, 1, { notMelee = 2 }, false, "not in melee range")
 		melee = false
 		check(A, 1, { notMelee = true }, true)
 		check(A, 1, { inMelee = true }, false, "only when the target is in melee range")

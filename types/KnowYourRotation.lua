@@ -44,7 +44,7 @@
 ---@field targetMana? boolean Only on a target with mana.
 ---@field ifTargeting? boolean Only while the target attacks you.
 ---@field behind? boolean Must be behind the target.
----@field notMelee? boolean Not with the target in melee range.
+---@field notMelee? boolean|integer Not with the target in melee range (an ID: only once that spell is learned).
 ---@field inMelee? boolean Only with the target in melee range.
 ---@field notKnown? integer Refused once this spell is learned.
 ---@field needKnownAny? integer[] Needs one of these spells learned.

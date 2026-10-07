@@ -253,11 +253,14 @@ local STEP_CHECKS = {
 			end
 		end,
 	},
-	-- Cast-time spells a melee build only uses to pull.
+	-- Cast-time spells a melee build only uses to pull. A spell ID as the value
+	-- limits this to characters who already know that spell (melee shaman:
+	-- Earth Shock); before that there is nothing else to press in melee.
 	{
 		"notMelee",
-		function()
-			if ns.API.TargetInMelee() then
+		function(c)
+			local only = c.opt.notMelee
+			if (only == true or ns.API.Known(only)) and ns.API.TargetInMelee() then
 				return "not in melee range"
 			end
 		end,
