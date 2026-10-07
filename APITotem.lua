@@ -176,6 +176,8 @@ function ns.API.TotemRemain(spellID)
 	end
 	local wantKey = normName(wantName)
 	local wantFamily = totemFamily(wantKey)
+	local row = totemInfo(ns.API.Resolve(spellID) or spellID, wantKey)
+	local wantedSlot = totemSlotOf[wantKey] or (row and row.slot)
 	local now = GetTime()
 	for slot = 1, 4 do
 		local key, startTime, duration = readTotemSlot(slot)
@@ -185,12 +187,16 @@ function ns.API.TotemRemain(spellID)
 			syncTotemSlot(slot, key, startTime, duration)
 		end
 		local entry = totemOut[slot]
-		if entry and totemMatches(entry.key, wantKey, wantFamily) then
+		if entry then
 			local remain = entry.at + entry.seconds - now
-			if remain <= 0 or walkedAway(entry) then
-				return effectRemain(wantName)
+			local alive = remain > 0 and not walkedAway(entry)
+			if totemMatches(entry.key, wantKey, wantFamily) then
+				return alive and remain or effectRemain(wantName)
+			elseif slot == wantedSlot and alive then
+				-- The slot holds another totem you dropped (Earthbind in the
+				-- earth slot): do not replace it with this one while it lasts.
+				return remain
 			end
-			return remain
 		end
 	end
 	return effectRemain(wantName)
