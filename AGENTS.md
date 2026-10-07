@@ -23,6 +23,7 @@ If the docs do not answer a question, say so instead of guessing; it can only be
 - **Lint:** `luacheck *.lua tests tools types`. `.luacheckrc` lists every WoW global the addon reads; a new Blizzard function must be added there (after checking it in `ref/`).
 - **Format:** `stylua .` (config in `stylua.toml`: tabs, 120 columns). CI runs `stylua --check .`.
 - **Types:** LuaLS (`.luarc.json`; `types/KnowYourRotation.lua` defines `KYR.StepOpt` / `KYR.Step`). Keep it at zero warnings.
+- A new addon `.lua` file goes into the TOC, `tests/wow.lua` (`ADDON_FILES`, and `API_FILES` for an API file) and `tests/run.lua` (`ADDON_FILES`), or CI and the coverage report miss it.
 - `tests/`, `tools/` and `types/` are never copied to the AddOns folder and never shipped (the release zip takes only the root `*.lua`).
 
 ## Scope
@@ -40,7 +41,7 @@ If they diverge, the repo wins: copy the repo into AddOns. Never overwrite the r
 
 ## Load order
 
-`Locale.lua` → `API.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`
+`Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`
 
 All shared state lives in the `ns` table (second value of `...`). `Core.lua` runs a `C_Timer.NewTicker(0.2)`. No `OnUpdate` on the whole HUD; only the physics gauge (50 ms) when `showPhysics` is on.
 
@@ -52,7 +53,12 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 | Default single / AoE / defense order | `Lists.lua` |
 | Save, merge, add, remove a spell | `APL.lua` |
 | Profile import / export | `Share.lua` |
-| "Is this spell offered" conditions | `API.lua` (`StepOk`, `Ready`, `Resolve`) |
+| "Is this spell offered" conditions | `APIStep.lua` (`StepOk`, `Ready`); spell resolution in `API.lua` |
+| Cooldowns, holds | `APICooldown.lua` |
+| Auras, combo points, look-ahead | `APIAura.lua` |
+| Health, range, enemies, roles, casts, creature types | `APIUnit.lua` |
+| Shaman totems | `APITotem.lua` |
+| Weapon enchants | `APIWeapon.lua` |
 | Classic timing (swing, auto shot, energy) | `Physics.lua` |
 | Rotation queue, defense, interrupt, weapon cues | `Rotations.lua` |
 | Shared `ns.UI` table and refresh hooks | `UI.lua` |

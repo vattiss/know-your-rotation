@@ -13,7 +13,7 @@ Forever reuses the Midnight / camelot API, not the Classic 1.14 API alone.
 The reference for this API is the `ref/wow-ui-source` submodule (`forever` branch): `Interface/AddOns/Blizzard_APIDocumentationGenerated` for functions, events and their secret-value rules, the rest of `Interface/AddOns` for how the Blizzard UI uses them. Read the relevant entry there, and the section of this file for the part you change, before editing code (see AGENTS.md, *Before you start any change*).
 
 - Spell IDs can differ from public Classic (example: devotion aura). The code stores `1.60.1` lab IDs in `ns.Spell`, then `ns.API.Resolve` finds the spell **known to the player** through `C_Spell.GetOverrideSpell`, `IsPlayerSpell` / `C_SpellBook`, then the name in the spellbook.
-- Some values are *secret values*. `API.lua` and `APL.lua` go through `issecretvalue` / `canaccessvalue` before reading a number or a string. An unreadable value is treated as absent.
+- Some values are *secret values*. The `API*.lua` files and `APL.lua` go through `issecretvalue` / `canaccessvalue` before reading a number or a string. An unreadable value is treated as absent.
 - Every Blizzard call is wrapped in a `pcall`. Never replace `C_Spell`, `C_SpellBook`, `GetSpellInfo` or the unit functions.
 - A single TOC: `KnowYourRotation.toc`, with `## Interface: 16001` and `## AllowLoadGameType: camelot`.
 - Global SavedVariables: `KnowYourRotationDB`.
@@ -42,12 +42,18 @@ Each builder honors its `ns.db.show*` switch. A missing `show*` means shown (`~=
 
 ## Files
 
-Load order (single TOC): `Locale.lua` → `API.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`.
+Load order (single TOC): `Locale.lua` → `API.lua` → `APICooldown.lua` → `APIAura.lua` → `APIUnit.lua` → `APITotem.lua` → `APIWeapon.lua` → `APIStep.lua` → `Data.lua` → `Physics.lua` → `Lists.lua` → `APL.lua` → `Share.lua` → `UI.lua` → `Options.lua` → `Glow.lua` → `Rotations.lua` → `Core.lua`.
 
 | File | Role |
 | --- | --- |
 | `Locale.lua` | English strings only. `ns.T(key)` returns the string, or the raw key if missing. |
-| `API.lua` | `ns.API`: resolution, spellbook, ready, auras, heals, enemies, weapon. |
+| `API.lua` | `ns.API`: spell info, spellbook index, `Resolve` / `Known`. Creates `ns.API.I`, the table the API files share (helpers `readable`, `safe`, `unitExists`, `normName`, and state used by more than one file). |
+| `APICooldown.lua` | Cooldown tracking after a cast, holds (`HoldRemain`), `IsRotationAction`. |
+| `APIAura.lua` | Aura reading and memory (`HasAura`, `FindAura`), combo points, the look-ahead (`PredictBegin` / `PredictConsume`). |
+| `APIUnit.lua` | Health, range, enemy count, heal unit, roles (`SyncAutoRole`), creature types, casts, purge. |
+| `APITotem.lua` | Shaman totems kept through combat. |
+| `APIWeapon.lua` | Weapon enchants and weapon tooltips. |
+| `APIStep.lua` | `Ready`, `StepOk` and `STEP_CHECKS`, `WhyNot`. |
 | `Data.lua` | IDs, roles, colors, racials, interrupts, purges, cleanses, enchants, long buffs, heals. |
 | `Physics.lua` | Auto Shot clip, energy tick. Option `ns.db.showPhysics`. No combat log. |
 | `Lists.lua` | `ns.APLDefaults`, `ns.APLModes`, `ns.DefDefaults`. |
@@ -117,7 +123,7 @@ The lists come from a ConROC Classic style Era core, levels 1–60. No SoD and n
 
 ## Step options (`opt`)
 
-Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The conditions are the list `STEP_CHECKS` in `API.lua`: each entry is the option it belongs to (or nil = always) and a small function that returns the reason the step is refused (shown as the WhyNot tooltip), or nil. The cooldown, readiness and range logic that follows is plain code at the end of `StepOk`. A new option is one new entry in that list.
+Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The conditions are the list `STEP_CHECKS` in `APIStep.lua`: each entry is the option it belongs to (or nil = always) and a small function that returns the reason the step is refused (shown as the WhyNot tooltip), or nil. The cooldown, readiness and range logic that follows is plain code at the end of `StepOk`. A new option is one new entry in that list.
 
 | Field | Effect |
 | --- | --- |

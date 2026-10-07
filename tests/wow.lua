@@ -79,9 +79,28 @@ function wow.setRoot(root)
 	ROOT = root
 end
 
+-- The API files alone (what the API specs load with Locale and Data).
+wow.API_FILES = {
+	"Locale.lua",
+	"API.lua",
+	"APICooldown.lua",
+	"APIAura.lua",
+	"APIUnit.lua",
+	"APITotem.lua",
+	"APIWeapon.lua",
+	"APIStep.lua",
+	"Data.lua",
+}
+
 wow.ADDON_FILES = {
 	"Locale.lua",
 	"API.lua",
+	"APICooldown.lua",
+	"APIAura.lua",
+	"APIUnit.lua",
+	"APITotem.lua",
+	"APIWeapon.lua",
+	"APIStep.lua",
 	"Data.lua",
 	"Physics.lua",
 	"Lists.lua",

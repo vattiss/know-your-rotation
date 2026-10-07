@@ -1,7 +1,7 @@
 local wow = require("wow")
 local H = require("helpers")
 
-local CORE = { "Locale.lua", "API.lua", "Data.lua" }
+local CORE = wow.API_FILES
 
 -- A level-10 warrior with a hostile target and a few spells.
 local function setup(extra)

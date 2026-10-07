@@ -1,7 +1,7 @@
 local wow = require("wow")
 local H = require("helpers")
 
-local CORE = { "Locale.lua", "API.lua", "Data.lua" }
+local CORE = wow.API_FILES
 
 local function api(setup)
 	local w = wow.new()

@@ -24,11 +24,11 @@ Every change since the 1.0.0-beta.1 push was checked only by syntax checks and t
 
 ## 3. Structure (mostly done)
 
-Done: `Core.lua` events are a table of handlers with unit-filtered registrations; `StepOk` is a list of small checks (`STEP_CHECKS`); the five `BuildHidden*` functions share `hiddenPick`.
+Done: `API.lua` is split by topic into seven files that share `ns.API.I`; `Core.lua` events are a table of handlers with unit-filtered registrations; `StepOk` is a list of small checks (`STEP_CHECKS`); the five `BuildHidden*` functions share `hiddenPick`.
 
 Still to do:
 
-- Split `API.lua` (about 2500 lines) by topic: spellbook, cooldowns / holds, auras, units, totems. The file shares many `local` helpers (`readable`, `safe`, `unitExists`, the hold and aura tables), so the split needs a small internal table (`ns.API.internal`) first.
+- `APIUnit.lua` is still about 1100 lines (units, range, roles, casts); it could be split further.
 - The release workflow runs only the syntax check; the unit tests, luacheck and StyLua could run there too.
 
 ## 4. Release

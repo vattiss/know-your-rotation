@@ -23,6 +23,12 @@ package.path = ROOT .. "/tests/?.lua;" .. package.path
 local ADDON_FILES = {
 	"Locale.lua",
 	"API.lua",
+	"APICooldown.lua",
+	"APIAura.lua",
+	"APIUnit.lua",
+	"APITotem.lua",
+	"APIWeapon.lua",
+	"APIStep.lua",
 	"Data.lua",
 	"Physics.lua",
 	"Lists.lua",

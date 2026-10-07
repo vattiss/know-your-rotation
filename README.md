@@ -111,7 +111,10 @@ There are no chat commands and no minimap button. Open the game menu → Options
 ```
 KnowYourRotation.toc           # load order
 Locale.lua                     # English strings
-API.lua                        # spell resolve, auras, ready, heals
+API.lua                        # spell info, spellbook, resolve
+APICooldown.lua, APIAura.lua,  # cooldowns and holds, auras and combo points,
+APIUnit.lua, APITotem.lua,     # health / range / roles / casts, totems,
+APIWeapon.lua, APIStep.lua     # weapon enchants, StepOk
 Data.lua                       # IDs, racials, interrupts, cleanse
 Physics.lua                    # Auto Shot clip / energy tick timing
 Lists.lua                      # default APLs and defense lists
