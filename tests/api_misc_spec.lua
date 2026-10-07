@@ -215,6 +215,25 @@ describe("API totems", function()
 		H.eq(A.TotemRemain(8075), 0)
 	end)
 
+	it("does not ask for a totem whose effect is still on you", function()
+		local w, ns, A = shaman()
+		w.spell(8071, { name = "Stoneskin Totem" })
+		ns.TOTEM_INFO[8071] = { slot = 2, seconds = 120 }
+		A.NoteTotemCast(8071)
+		w.state.position = { 60, 0, 1 }
+		H.eq(A.TotemRemain(8071), 0, "walked away, no effect on you")
+		w.aura("player", { name = "Stoneskin", spellId = 8072, expirationTime = w.state.time + 40 })
+		H.eq(A.TotemRemain(8071), 40, "the effect is still on you")
+		w.state.auras.player = {}
+		w.aura("player", { name = "Windfury Totem", spellId = 8512 })
+		w.spell(8512, { name = "Windfury Totem" })
+		A.NoteTotemCast(8512)
+		w.state.position = { 120, 0, 1 }
+		H.eq(A.TotemRemain(8512), 9999, "an effect named like the totem")
+		w.state.secret.auras = true
+		H.eq(A.TotemRemain(8512), 0, "effect unreadable in combat: nothing to go by")
+	end)
+
 	it("learns slots from events and ignores unknown casts", function()
 		local w, _, A = shaman()
 		A.NoteTotemCast(nil)

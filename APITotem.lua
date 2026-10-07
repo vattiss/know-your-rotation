@@ -154,6 +154,18 @@ end
 ---Seconds left on this totem; 0 when it is not down or you walked away.
 ---@param spellID integer
 ---@return number
+-- The totem is gone or far away, but its effect may still be on you
+-- (Stoneskin, Strength of Earth, ...): then it is not worth another totem.
+local function effectRemain(wantName)
+	for _, name in ipairs({ wantName:gsub("%s+[Tt]otem$", ""), wantName }) do
+		local found, remain = ns.API.FindAuraByName(name, "player", "HELPFUL")
+		if found then
+			return remain
+		end
+	end
+	return 0
+end
+
 function ns.API.TotemRemain(spellID)
 	if not spellID or not GetTotemInfo then
 		return 0
@@ -176,10 +188,10 @@ function ns.API.TotemRemain(spellID)
 		if entry and totemMatches(entry.key, wantKey, wantFamily) then
 			local remain = entry.at + entry.seconds - now
 			if remain <= 0 or walkedAway(entry) then
-				return 0
+				return effectRemain(wantName)
 			end
 			return remain
 		end
 	end
-	return 0
+	return effectRemain(wantName)
 end

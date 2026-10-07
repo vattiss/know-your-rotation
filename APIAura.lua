@@ -537,6 +537,19 @@ end
 ---@param filter? string "HELPFUL" or "HARMFUL"
 ---@return boolean found
 ---@return number remain 9999 = unknown or permanent
+-- An aura by its exact name (the totem effects: "Stoneskin" for Stoneskin
+-- Totem). Returns found, seconds left (9999 when it has no end).
+function ns.API.FindAuraByName(name, unit, filter)
+	local aura = auraBySpellName(unit, name, filter)
+	if aura then
+		local _, _, hidden = auraIdentity(aura)
+		if not hidden then
+			return true, auraRemain(aura)
+		end
+	end
+	return false, 0
+end
+
 function ns.API.HasAura(spellID, unit, filter)
 	unit = unit or "player"
 	filter = filter or "HELPFUL"
