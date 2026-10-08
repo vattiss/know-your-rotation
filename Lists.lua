@@ -316,10 +316,6 @@ ns.APLDefaults = {
 	},
 	SHAMAN = {
 		caster = {
-			step("Stoneskin", Sh.Stoneskin, { totem = true, engaged = true, maxLevel = 29 }),
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
-			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true, minLevel = 40 }),
-			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
 			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, hostile = true }),
 			step("EarthShock", Sh.EarthShock, { hostile = true }),
@@ -330,11 +326,6 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80, heal = true }),
 		},
 		melee = {
-			step("Stoneskin", Sh.Stoneskin, { totem = true, engaged = true, maxLevel = 29 }),
-			step("StrengthofEarth", Sh.StrengthofEarth, { totem = true, engaged = true, minLevel = 30 }),
-			step("GraceofAir", Sh.GraceofAir, { totem = true, engaged = true }, false),
-			step("WindfuryTotem", Sh.WindfuryTotem, { totem = true, engaged = true }, false),
-			step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 			step("Stormstrike", Sh.Stormstrike, { hostile = true }),
 			step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
 			step("LavaBurst", Sh.LavaBurst, { needdebuff = Sh.FlameShock, notMelee = Sh.Stormstrike, hostile = true }),
@@ -345,8 +336,6 @@ ns.APLDefaults = {
 			step("HealingWave", Sh.HealingWave, { hp = 80, heal = true }),
 		},
 		heal = {
-			step("ManaSpring", Sh.ManaSpring, { totem = true, engaged = true }),
-			step("HealingStream", Sh.HealingStream, { totem = true, engaged = true }, false),
 			step("Riptide", Sh.Riptide, { hp = 90, heal = true }),
 			step("LesserHealingWave", Sh.LesserHealingWave, { hp = 70, heal = true }),
 			step("ChainHeal", Sh.ChainHeal, { hp = 75, heal = true }),
@@ -603,8 +592,6 @@ ns.APLModes = {
 			aoe = {
 				step("ChainLightning", Sh.ChainLightning, { hostile = true }),
 				step("FireNova", Sh.FireNova, { hostile = true }),
-				step("MagmaTotem", Sh.MagmaTotem, { totem = true, hostile = true }, false),
-				step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 				step("FlameShock", Sh.FlameShock, { nodebuff = true, skipLow = true, hostile = true }),
 				step("FrostShock", Sh.FrostShock, { nodebuff = true, hostile = true }, false),
 				step("LightningBolt", Sh.LightningBolt, { filler = true, hostile = true }),
@@ -614,8 +601,6 @@ ns.APLModes = {
 		melee = {
 			aoe = {
 				step("FireNova", Sh.FireNova, { hostile = true }),
-				step("MagmaTotem", Sh.MagmaTotem, { totem = true, hostile = true }, false),
-				step("SearingTotem", Sh.SearingTotem, { totem = true, hostile = true }),
 				step("ChainLightning", Sh.ChainLightning, { hostile = true }),
 				step("Stormstrike", Sh.Stormstrike, { hostile = true }),
 				step("FlameShock", Sh.FlameShock, { nodebuff = true, hostile = true }),

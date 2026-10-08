@@ -905,6 +905,11 @@ local function registerHighlights(root)
 		featureCheckbox(category, "cleanseGroup", "OPT_CLEANSE_GROUP", nil)
 		soundDropdown(category, "soundCleanse", "OPT_SOUND")
 	end
+	if token == "SHAMAN" then
+		header(layout, "HDR_TOTEM")
+		featureCheckbox(category, "showTotem", "OPT_TOTEM", "TIP_TOTEM")
+		colorSwatch(category, "totem", "OPT_COLOR_TOTEM")
+	end
 	local choices = ns.WeaponChoices and ns.WeaponChoices() or {}
 	if #choices > 0 then
 		header(layout, "HDR_WEAPON")

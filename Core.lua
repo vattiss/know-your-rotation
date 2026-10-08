@@ -40,8 +40,8 @@ local function defaults()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
-	if ns.db.listVersion ~= 4 then
-		ns.db.listVersion = 4
+	if ns.db.listVersion ~= 5 then
+		ns.db.listVersion = 5
 		ns.db.apl = nil
 		ns.db.aplDrop = nil
 		ns.db.def = nil
@@ -72,6 +72,9 @@ local function defaults()
 	end
 	if ns.db.showWeapon == nil then
 		ns.db.showWeapon = true
+	end
+	if ns.db.showTotem == nil then
+		ns.db.showTotem = true
 	end
 	if ns.db.autoHeal == nil then
 		ns.db.autoHeal = true
@@ -476,6 +479,9 @@ function ns.ApplyFeatureFlags()
 	if ns.db.showWeapon == false and ns.GlowClearWeapon then
 		ns.GlowClearWeapon()
 	end
+	if ns.db.showTotem == false and ns.GlowClearTotem then
+		ns.GlowClearTotem()
+	end
 	lastTickSig = nil
 	if ns.Tick then
 		ns.Tick()
@@ -599,6 +605,7 @@ function ns.Tick()
 	if ns.db.showWeapon ~= false and not idle then
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
+	local totem = ns.db.showTotem ~= false and not idle and ns.BuildTotem() or nil
 	-- Pet reminders (hunter / warlock) show once as a screen message.
 	local noticeKey = not idle and ns.API.CombatNotice and ns.API.CombatNotice() or nil
 	if noticeKey and noticeKey ~= lastNotice and UIErrorsFrame then
@@ -640,12 +647,15 @@ function ns.Tick()
 		.. ":"
 		.. (weaponNeed and 1 or 0)
 		.. ":"
+		.. (totem or 0)
+		.. ":"
 		.. flagBit(ns.db.showRotation)
 		.. flagBit(ns.db.showDefense)
 		.. flagBit(ns.db.showInterrupt)
 		.. flagBit(ns.db.showPurge)
 		.. flagBit(ns.db.showCleanse)
 		.. flagBit(ns.db.showWeapon)
+		.. flagBit(ns.db.showTotem)
 		.. flagBit(not idle)
 	-- Heal cue when health is hidden: refreshed every tick, the client drives alpha.
 	local hiddenHeal, hiddenThreshold
@@ -702,6 +712,9 @@ function ns.Tick()
 		end
 		if ns.GlowWeapon then
 			ns.GlowWeapon(weaponNeed and weapon or nil)
+		end
+		if ns.GlowTotem then
+			ns.GlowTotem(totem)
 		end
 	end
 	-- After the glows are set: fade the rotation glow where the finisher takes over.

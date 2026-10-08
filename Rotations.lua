@@ -100,6 +100,11 @@ function ns.IsMaintenanceBuff(spellID)
 	return name and maintNameSet()[name] or false
 end
 
+-- Totems are a cue of their own (BuildTotem), never a step of the rotation.
+function ns.IsTotemCue(spellID)
+	return spellID ~= nil and not (issecretvalue and issecretvalue(spellID)) and API.TotemWhen(spellID) ~= nil
+end
+
 function ns.IsWeaponBuff(spellID)
 	if not spellID or (issecretvalue and issecretvalue(spellID)) then
 		return false
@@ -143,7 +148,11 @@ function ns.BuildQueue()
 		return true
 	end
 	local function consider(step)
-		return ns.IsStepEnabled(step) and step.id and not ns.IsWeaponBuff(step.id) and not ns.IsMaintenanceBuff(step.id)
+		return ns.IsStepEnabled(step)
+			and step.id
+			and not ns.IsWeaponBuff(step.id)
+			and not ns.IsMaintenanceBuff(step.id)
+			and not ns.IsTotemCue(step.id)
 	end
 	API.PredictBegin()
 	-- mode: "in" = confirmed reach (slot 1), "notOut" = unknown reach is
@@ -410,6 +419,23 @@ function ns.BuildInterrupt()
 		return
 	end
 	return id
+end
+
+-- What a totem needs before it is worth dropping, by its `when`.
+local TOTEM_OPT = {
+	pull = { totem = true, engaged = true },
+	hostile = { totem = true, hostile = true },
+	melee = { totem = true, inMelee = true },
+}
+
+-- The first totem of the player's totem bar that is missing and worth dropping
+-- now. A cue next to the rotation: it never takes a slot of the queue.
+function ns.BuildTotem()
+	for _, totem in ipairs(API.TotemBar()) do
+		if API.StepOk(totem.id, TOTEM_OPT[totem.when]) then
+			return totem.id
+		end
+	end
 end
 
 function ns.BuildPurge()

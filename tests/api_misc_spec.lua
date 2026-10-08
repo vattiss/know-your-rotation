@@ -205,7 +205,7 @@ describe("API totems", function()
 		A.NoteTotemCast(8190)
 		H.eq(A.TotemRemain(3599), 20, "the fire slot holds Magma: Searing does not replace it")
 		H.eq(A.TotemRemain(5675), 0)
-		w.state.position = { 30, 0, 1 }
+		w.state.position = { 40, 0, 1 }
 		H.eq(A.TotemRemain(8075), 0, "walked away")
 		w.state.position = { 0, 0, 2 }
 		H.eq(A.TotemRemain(8075), 0, "other map")
@@ -213,6 +213,14 @@ describe("API totems", function()
 		H.eq(A.TotemRemain(8075), 120, "no position: still counted")
 		A.ClearTotems()
 		H.eq(A.TotemRemain(8075), 0)
+		-- A totem first seen by a readable read stands where you are.
+		w.state.position = { 0, 0, 1 }
+		w.state.secret.totems = false
+		w.state.totems[2] = { name = "Strength of Earth Totem", start = w.state.time, duration = 300 }
+		H.eq(A.TotemRemain(8075), 300)
+		w.state.position = { 40, 0, 1 }
+		w.state.secret.totems = true
+		H.eq(A.TotemRemain(8075), 0, "fresh read remembered the spot: walked away")
 	end)
 
 	it("does not replace another totem you dropped in the same slot", function()
@@ -221,7 +229,7 @@ describe("API totems", function()
 		w.spell(2484, { name = "Earthbind Totem" })
 		w.state.secret.totems = true
 		A.NoteTotemCast(8071)
-		H.eq(A.TotemRemain(8071), 120)
+		H.eq(A.TotemRemain(8071), 300)
 		A.NoteTotemCast(2484)
 		H.eq(A.TotemRemain(2484), 45)
 		H.eq(A.TotemRemain(8071), 45, "the earth slot is busy with Earthbind")
@@ -240,7 +248,14 @@ describe("API totems", function()
 		H.eq(A.TotemRemain(8071), 0, "walked away, no effect on you")
 		w.aura("player", { name = "Stoneskin", spellId = 8072, expirationTime = w.state.time + 40 })
 		H.eq(A.TotemRemain(8071), 40, "the effect is still on you")
+		-- Combat hides the aura: the end seen before is remembered.
 		w.state.auras.player = {}
+		w.state.units.player.combat = true
+		w:advance(10)
+		H.eq(A.TotemRemain(8071), 30, "the effect seen before the fight still runs")
+		w:advance(40)
+		H.eq(A.TotemRemain(8071), 0, "and ends")
+		w.state.units.player.combat = false
 		w.aura("player", { name = "Windfury Totem", spellId = 8512 })
 		w.spell(8512, { name = "Windfury Totem" })
 		A.NoteTotemCast(8512)

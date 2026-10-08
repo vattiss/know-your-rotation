@@ -8,7 +8,7 @@ Turn on **Behavior > Debug > Collect debug data** first. It samples the API once
 
 Every change since the 1.0.0-beta.1 push was checked only by syntax checks and the unit tests with the WoW API stand-in (`tests/wow.lua`). The stand-in follows the API docs, but the real client can differ. Things to watch:
 
-- **Shaman in combat:** does the rotation still glow while totems are down (secret `GetTotemInfo`)? Walk 25+ yards from a Searing Totem: a new one must be suggested.
+- **Shaman totem cue:** does the totem glow (orange) appear at the start of a fight and stay until the totem is down, while the other buttons keep going? Does Earthbind wait for melee range? Walk 25+ yards from a Searing Totem: a new one must be glowing.
 - **Interrupt:** does the Kick / Pummel / Counterspell / Earth Shock glow light on a normal cast (`notInterruptible` is return 8 of `UnitCastingInfo`, 7 of `UnitChannelInfo`)?
 - **Backstab / Shred:** not offered while the mob attacks you, offered when a tank holds it; after "You must be behind your target" it waits 3 s.
 - **Hidden health / mana glows:** Drain Life, Life Tap, Mend Pet, heals, executes fade in by themselves.

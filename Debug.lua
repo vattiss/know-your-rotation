@@ -12,7 +12,7 @@ ns.Debug = ns.Debug or {}
 local D = ns.Debug
 
 local MAX_KEYS = 700
-local MAX_TEXTS = 60
+local MAX_TEXTS = 150
 local SAMPLE_SECONDS = 1
 
 local ticker
@@ -131,6 +131,9 @@ local function sampleSpells(ctx)
 			)
 			local why = ns.API.WhyNot(id, step.opt)
 			count("addon says | " .. name, ctx, why or "offered")
+			if step.opt and step.opt.totem then
+				count("totem state | " .. name, ctx, ns.API.TotemState(id))
+			end
 			local buttons = ns.GlowButtonNames(id)
 			count("glows on buttons | " .. name, ctx, #buttons > 0 and table.concat(buttons, ", ") or "none")
 		end
@@ -228,6 +231,30 @@ local function sampleTotemBar(ctx)
 	end
 end
 
+-- The real names the client uses (buffs on you, totems in the slots), out of
+-- combat only: in combat they are hidden. Names decide what the addon can match.
+local function sampleNames()
+	if ns.API.InCombat() then
+		return
+	end
+	for i = 1, 20 do
+		local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+		if not ok or not aura then
+			break
+		end
+		text("buff on you", aura.name)
+	end
+	for slot = 1, 4 do
+		local ok, have, name, start, duration = pcall(GetTotemInfo, slot)
+		if ok and readable(have) and have == true then
+			text("totem in slot " .. slot, name)
+			if readable(start) and readable(duration) then
+				text("totem timing", ("%s: lasts %s s, down %d s"):format(name, tostring(duration), GetTime() - start))
+			end
+		end
+	end
+end
+
 -- One sample of everything worth knowing; runs once a second in debug mode.
 function D.Sample()
 	local d = store()
@@ -261,6 +288,10 @@ function D.Sample()
 		return aura and aura.name, aura and aura.spellId, aura and aura.expirationTime
 	end)
 	if ns.ClassToken() == "SHAMAN" then
+		probe("UnitPosition(player) x,y,z,map", ctx, function()
+			local x, y, z, map = UnitPosition("player")
+			return x, y, z, map
+		end)
 		for slot = 1, 4 do
 			probe("GetTotemInfo(" .. slot .. ") have,name,start,duration", ctx, function()
 				local have, name, start, duration = GetTotemInfo(slot)
@@ -271,6 +302,7 @@ function D.Sample()
 	if ns.ClassToken() == "SHAMAN" then
 		sampleTotemBar(ctx)
 	end
+	sampleNames()
 	probe("UnitAffectingCombat(player)", ctx, function()
 		return UnitAffectingCombat("player")
 	end)
@@ -326,6 +358,10 @@ end
 -- Starts or stops the collecting, following ns.db.debugMode.
 function D.Apply()
 	if ns.db.debugMode == true then
+		-- A full store drops every new key: start over, the old data is stale.
+		if ns.db.debug and ns.db.debug.keys >= MAX_KEYS then
+			D.Clear()
+		end
 		info()
 		if not frame then
 			frame = CreateFrame("Frame")

@@ -47,7 +47,7 @@ describe("Core saved variables", function()
 		local ns = w:load()
 		w:fire("PLAYER_LOGIN")
 		H.eq(ns.db.showPurge, true, "own setting, default filled")
-		H.eq(ns.db.listVersion, 4)
+		H.eq(ns.db.listVersion, 5)
 		H.eq(ns.db.apl, nil, "old lists replaced")
 		H.eq(ns.db.profiles.pve.apl, nil)
 		H.eq(ns.db.profiles.base, nil)
@@ -228,6 +228,7 @@ describe("Core feature switches and sounds", function()
 			"GlowClearPurge",
 			"GlowClearCleanse",
 			"GlowClearWeapon",
+			"GlowClearTotem",
 		}) do
 			ns[name] = function()
 				cleared[name] = true
@@ -240,11 +241,19 @@ describe("Core feature switches and sounds", function()
 			"showPurge",
 			"showCleanse",
 			"showWeapon",
+			"showTotem",
 		}) do
 			ns.db[key] = false
 		end
 		ns.ApplyFeatureFlags()
-		H.eq(cleared.GlowClear and cleared.GlowClearDef and cleared.GlowClearKick and cleared.GlowClearWeapon, true)
+		H.eq(
+			cleared.GlowClear
+				and cleared.GlowClearDef
+				and cleared.GlowClearKick
+				and cleared.GlowClearWeapon
+				and cleared.GlowClearTotem,
+			true
+		)
 		ns.GlowClear, ns.GlowClearDef, ns.Tick = nil, nil, nil
 		ns.ApplyFeatureFlags()
 	end)
@@ -379,6 +388,7 @@ describe("Core tick", function()
 			"GlowPurge",
 			"GlowCleanse",
 			"GlowWeapon",
+			"GlowTotem",
 			"GlowFadeForFinisher",
 			"SyncAutoRole",
 		}) do

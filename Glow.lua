@@ -766,6 +766,29 @@ local function showWeapon(button)
 	weaponGlowing[button] = true
 end
 
+local totemGlowing, lastTotem = {}, nil
+
+local function showTotem(button)
+	local r, g, b = ns.Color("totem")
+	overlay(button, "totem", GLOW_ART, r, g, b, 1.45, 0.95):Show()
+	totemGlowing[button] = true
+end
+
+local function hideTotem(button)
+	if button.KYROverlays and button.KYROverlays.totem then
+		button.KYROverlays.totem:Hide()
+	end
+	totemGlowing[button] = nil
+end
+
+function ns.GlowClearTotem()
+	for button in pairs(totemGlowing) do
+		hideTotem(button)
+	end
+	wipe(totemGlowing)
+	lastTotem = nil
+end
+
 local function hideWeapon(button)
 	if button.KYROverlays and button.KYROverlays.weapon then
 		button.KYROverlays.weapon:Hide()
@@ -976,6 +999,13 @@ ns.GlowHiddenPet = hiddenGlow("hppet", "pet", "heal")
 ns.GlowHiddenMana = hiddenGlow("mphide", "player", "next", function(unit, curve)
 	return UnitPowerPercent(unit, 0, false, curve)
 end, "UnitPowerPercent")
+
+function ns.GlowTotem(spellID)
+	applyExtra(spellID, { lastTotem }, totemGlowing, showTotem, ns.GlowClearTotem)
+	if spellID then
+		lastTotem = spellID
+	end
+end
 
 function ns.GlowWeapon(spellID)
 	applyExtra(spellID, { lastWeapon }, weaponGlowing, showWeapon, ns.GlowClearWeapon)

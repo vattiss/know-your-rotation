@@ -114,6 +114,55 @@ describe("Debug sampling", function()
 	end)
 end)
 
+describe("Debug names and totem state", function()
+	it("records the buffs on you, the totems in their slots and what it thinks of a totem", function()
+		local w, ns = boot("SHAMAN", function(w)
+			w.spell(8071, { name = "Stoneskin Totem" })
+		end)
+		ns.GetAPL = function()
+			return { { key = "Stoneskin", id = 8071, opt = { totem = true }, on = true } }
+		end
+		w.aura("player", { name = "Stoneskin", spellId = 8072 })
+		w.state.totems[2] = { name = "Stoneskin Totem", start = w.state.time, duration = 120, spellID = 8071 }
+		ns.API.NoteTotemCast(8071)
+		ns.Debug.Sample()
+		H.eq(ns.db.debug.texts["buff on you: Stoneskin"], 1)
+		H.eq(ns.db.debug.texts["totem in slot 2: Stoneskin Totem"], 1)
+		H.eq(ns.db.debug.texts["totem timing: Stoneskin Totem: lasts 120 s, down 0 s"], 1)
+		local c = counts(ns)
+		H.truthy(
+			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds stoneskin totem, time left, near, 0 yd, effect on you: yes"]
+		)
+		-- In combat the names are hidden: nothing is recorded.
+		w.state.units.player.combat = true
+		w.state.secret.auras = true
+		local before = ns.db.debug.texts["buff on you: Stoneskin"]
+		ns.Debug.Sample()
+		H.eq(ns.db.debug.texts["buff on you: Stoneskin"], before)
+		-- No totem, no effect, walked away.
+		w.state.units.player.combat = false
+		w.state.secret.auras = false
+		w.state.auras.player = {}
+		w.state.totems = {}
+		ns.Debug.Sample()
+		c = counts(ns)
+		H.truthy(
+			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds nothing, none left, near, ? yd, effect on you: no"]
+		)
+		w.state.secret.totems = true
+		ns.API.NoteTotemCast(8071)
+		w.state.position = { 200, 0, 1 }
+		ns.Debug.Sample()
+		local walked
+		for key in pairs(counts(ns)) do
+			if key:find("walked away", 1, true) then
+				walked = true
+			end
+		end
+		H.truthy(walked)
+	end)
+end)
+
 describe("Debug totem bar and glow buttons", function()
 	it("records what the totem bar buttons hold and where a spell would glow", function()
 		local w, ns = boot("SHAMAN", function(w)
@@ -171,6 +220,10 @@ describe("Debug mode switch and events", function()
 		end
 		ns.Debug.Apply()
 		H.eq(ns.db.debug.info.client, "unknown")
+		ns.db.debug.keys = 700
+		ns.db.debug.samples = 99
+		ns.Debug.Apply()
+		H.eq(ns.db.debug.samples, 0, "a full store starts over")
 	end)
 
 	it("counts events and remembers the client's error texts", function()
@@ -194,10 +247,10 @@ describe("Debug mode switch and events", function()
 		H.eq(ns.db.debug.texts["UI_ERROR_MESSAGE: You must be behind your target."], 2)
 		H.eq(ns.db.debug.texts["UNIT_COMBAT action: PARRY"], 1)
 		-- The text list is bounded.
-		for i = 1, 70 do
+		for i = 1, 160 do
 			w:fire("UI_ERROR_MESSAGE", 51, "message " .. i)
 		end
-		H.eq(ns.db.debug.textKeys, 60)
+		H.eq(ns.db.debug.textKeys, 150)
 	end)
 end)
 
