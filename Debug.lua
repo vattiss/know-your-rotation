@@ -131,9 +131,6 @@ local function sampleSpells(ctx)
 			)
 			local why = ns.API.WhyNot(id, step.opt)
 			count("addon says | " .. name, ctx, why or "offered")
-			if step.opt and step.opt.totem then
-				count("totem state | " .. name, ctx, ns.API.TotemState(id))
-			end
 			local buttons = ns.GlowButtonNames(id)
 			count("glows on buttons | " .. name, ctx, #buttons > 0 and table.concat(buttons, ", ") or "none")
 		end
@@ -231,6 +228,18 @@ local function sampleTotemBar(ctx)
 	end
 end
 
+-- The totems of the totem bar: what the addon thinks of each, and which one the
+-- totem cue offers.
+local function sampleTotemCue(ctx)
+	-- The cue first: asking it reads the slots and brings the memory up to date.
+	local offered = ns.BuildTotem()
+	count("totem cue offers", ctx, offered and (ns.API.SpellName(offered) or tostring(offered)) or "nothing")
+	for _, totem in ipairs(ns.API.TotemBar()) do
+		local name = ns.API.SpellName(totem.id) or tostring(totem.id)
+		count("totem state | " .. name, ctx, ns.API.TotemState(totem.id) .. ", when " .. totem.when)
+	end
+end
+
 -- The real names the client uses (buffs on you, totems in the slots), out of
 -- combat only: in combat they are hidden. Names decide what the addon can match.
 local function sampleNames()
@@ -301,6 +310,7 @@ function D.Sample()
 	end
 	if ns.ClassToken() == "SHAMAN" then
 		sampleTotemBar(ctx)
+		sampleTotemCue(ctx)
 	end
 	sampleNames()
 	probe("UnitAffectingCombat(player)", ctx, function()

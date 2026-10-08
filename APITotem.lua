@@ -210,8 +210,10 @@ function ns.API.TotemBar()
 	local out = {}
 	for i = 1, 4 do
 		local button = _G["MultiCastActionButton" .. i]
-		local slot = button and (button.action or button:GetAttribute("action"))
-		if slot then
+		local okSlot, slot = pcall(function()
+			return button and (button.action or button:GetAttribute("action"))
+		end)
+		if okSlot and slot then
 			local ok, kind, id = pcall(GetActionInfo, slot)
 			if ok and readable(kind) and readable(id) and kind == "spell" then
 				local when = ns.API.TotemWhen(id)
@@ -231,6 +233,7 @@ function ns.API.TotemState(spellID)
 	local wantKey = normName(wantName)
 	local row = totemInfo(ns.API.Resolve(spellID) or spellID, wantKey)
 	local slot = totemSlotOf[wantKey] or (row and row.slot) or 0
+	ns.API.NoteTotemSlot(slot)
 	local entry = totemOut[slot]
 	local left = entry and (entry.at + entry.seconds - GetTime()) or 0
 	local effect = ns.API.FindAuraByName((wantName:gsub("%s+[Tt]otem$", "")), "player", "HELPFUL")
@@ -273,6 +276,18 @@ function ns.API.TotemRemain(spellID)
 			local remain = entry.at + entry.seconds - now
 			local alive = remain > 0 and not walkedAway(entry)
 			if totemMatches(entry.key, wantKey, wantFamily) then
+				-- Seen in its slot, drop point unknown (after a /reload): a buff
+				-- totem whose effect is not on you out of combat is not helping.
+				if
+					alive
+					and not entry.x
+					and (row and row.when) == "pull"
+					and now - entry.at > 5
+					and not ns.API.InCombat()
+					and effectRemain(wantName) <= 0
+				then
+					return 0
+				end
 				return alive and remain or effectRemain(wantName)
 			elseif slot == wantedSlot and alive then
 				-- The slot holds another totem you dropped (Earthbind in the

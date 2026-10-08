@@ -119,9 +119,9 @@ describe("Debug names and totem state", function()
 		local w, ns = boot("SHAMAN", function(w)
 			w.spell(8071, { name = "Stoneskin Totem" })
 		end)
-		ns.GetAPL = function()
-			return { { key = "Stoneskin", id = 8071, opt = { totem = true }, on = true } }
-		end
+		local button = w.env.CreateFrame("CheckButton", "MultiCastActionButton1")
+		button.action = 133
+		w.state.actions[133] = { type = "spell", id = 8071 }
 		w.aura("player", { name = "Stoneskin", spellId = 8072 })
 		w.state.totems[2] = { name = "Stoneskin Totem", start = w.state.time, duration = 120, spellID = 8071 }
 		ns.API.NoteTotemCast(8071)
@@ -131,7 +131,7 @@ describe("Debug names and totem state", function()
 		H.eq(ns.db.debug.texts["totem timing: Stoneskin Totem: lasts 120 s, down 0 s"], 1)
 		local c = counts(ns)
 		H.truthy(
-			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds stoneskin totem, time left, near, 0 yd, effect on you: yes"]
+			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds stoneskin totem, time left, near, 0 yd, effect on you: yes, when pull"]
 		)
 		-- In combat the names are hidden: nothing is recorded.
 		w.state.units.player.combat = true
@@ -147,7 +147,7 @@ describe("Debug names and totem state", function()
 		ns.Debug.Sample()
 		c = counts(ns)
 		H.truthy(
-			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds nothing, none left, near, ? yd, effect on you: no"]
+			c["totem state | Stoneskin Totem | idle, no target | slot 2 holds nothing, none left, near, ? yd, effect on you: no, when pull"]
 		)
 		w.state.secret.totems = true
 		ns.API.NoteTotemCast(8071)
