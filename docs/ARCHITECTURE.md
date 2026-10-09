@@ -53,7 +53,7 @@ Load order (single TOC): `Locale.lua` → `API.lua` → `APICooldown.lua` → `A
 | `APIUnit.lua` | Health, range, enemy count, heal unit, roles (`SyncAutoRole`), creature types, casts, purge. |
 | `APITotem.lua` | Shaman totems kept through combat. |
 | `APIWeapon.lua` | Weapon enchants and weapon tooltips. |
-| `Debug.lua` | Debug mode (Behavior page, off by default): once a second it classifies what the API answers (value, SECRET, nil, error) in the current context (combat / idle, enemy / friend / no target) and counts selected events (`UNIT_ATTACK`, `UNIT_COMBAT`, `UNIT_SPELLCAST_SUCCEEDED`, `PLAYER_TOTEM_UPDATE`, `UI_ERROR_MESSAGE`) plus the client's error texts. Counts live in `ns.db.debug`, capped at 700 keys and 150 texts. It also records, for up to 16 steps of the list, why each is or is not offered (`addon says`) and which buttons it would glow on (`glows on buttons`), what the shaman's totem bar buttons hold (`MultiCastActionButtonN`: action slot, type, id), the names of the buffs on you and the totems in the shaman's slots (out of combat), `ns.API.TotemState` for each totem step (slot content, time left, near, effect on you), and `UnitAffectingCombat` / `UnitExists(target)` as the client answers them. `ns.Debug.Report()` turns them into text (Profiles page, "Debug report" button; "Clear debug data" empties them). No chat command. |
+| `Debug.lua` | Debug mode (Behavior page, off by default): once a second it classifies what the API answers (value, SECRET, nil, error) in the current context (combat / idle, enemy / friend / no target) and counts selected events (`UNIT_ATTACK`, `UNIT_COMBAT`, `UNIT_SPELLCAST_SUCCEEDED`, `PLAYER_TOTEM_UPDATE`, `UI_ERROR_MESSAGE`) plus the client's error texts. Counts live in `ns.db.debug`, capped at 700 keys and 150 texts. It also records, for up to 16 steps of the list, why each is or is not offered (`addon says`) and which buttons it would glow on (`glows on buttons`), why each defense step (aspects, auras, shields) is or is not offered (`defense says`), what the shaman's totem bar buttons hold (`MultiCastActionButtonN`: action slot, type, id), the names of the buffs on you and the totems in the shaman's slots (out of combat), `ns.API.TotemState` for each totem step (slot content, time left, near, effect on you), and `UnitAffectingCombat` / `UnitExists(target)` as the client answers them. `ns.Debug.Report()` turns them into text (Profiles page, "Debug report" button; "Clear debug data" empties them). No chat command. |
 | `APIStep.lua` | `Ready`, `StepOk` and `STEP_CHECKS`, `WhyNot`. |
 | `Data.lua` | IDs, roles, colors, racials, interrupts, purges, cleanses, enchants, long buffs, heals. |
 | `Physics.lua` | Auto Shot clip, energy tick. Option `ns.db.showPhysics`. No combat log. |
@@ -208,7 +208,7 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 
 `ns.queueHeal[id]` (list ID and resolved ID) is used for the green highlight.
 
-`ns.BuildDefense`: first checked defense step that passes `StepOk`, in two passes: steps with `hp` (defensive cooldowns) first, then the rest (buffs), each in list order. A lapsed Battle Shout does not hide Shield Wall at 20%.
+`ns.BuildDefense`: first checked defense step that passes `StepOk`, in two passes: steps with `hp` (defensive cooldowns) first, then the rest (buffs), each in list order. A step whose spell is on no action button cannot glow, so the first one that is on a bar goes first (only one of the three hunter aspects is usually on the bars); when none is, the first stays. A lapsed Battle Shout does not hide Shield Wall at 20%.
 
 `ns.BuildInterrupt`: known and ready class ID, hostile target that is casting an interruptible spell (`notInterruptible` is return 8 of `UnitCastingInfo`, 7 of `UnitChannelInfo`), and not clearly out of range. `ns.BuildPurge` has the same range check.
 
@@ -331,7 +331,7 @@ Overlays `button.WFROverlays` (Blizzard spell-alert glow, tinted):
 
 ## Spell resolution
 
-`ns.API.Resolve(spellID)` caches in `resolveCache` (cleared at login). `LEARNED_SPELL_IN_TAB`, `SPELL_PUSHED_TO_ACTIONBAR`, `PLAYER_TALENT_UPDATE` and `PLAYER_LEVEL_UP` clear the whole cache after 1.2 s. `SPELLS_CHANGED` only clears misses, once per burst (the camelot client spams it).
+`ns.API.Resolve(spellID)` caches in `resolveCache` (cleared at login). `LEARNED_SPELL_IN_TAB`, `SPELL_PUSHED_TO_ACTIONBAR`, `PLAYER_TALENT_UPDATE` and `PLAYER_LEVEL_UP` clear the whole cache after 1.2 s. `SPELLS_CHANGED` only clears misses, once per burst (the camelot client spams it). A spell is known when `IsPlayerSpell`, `IsSpellKnownOrOverridesKnown`, `IsSpellKnown` or `C_SpellBook.IsSpellInSpellBook` says so. `FindSpellBookSlotForSpell` is not used: the Forever client returns a slot for spells not learned yet too (debug data, hunter level 5: Aspect of the Hawk), and the spellbook index skips `FutureSpell` items.
 
 1. Override `C_Spell.GetOverrideSpell` if it is a readable number.
 2. If the player knows that ID, keep it.

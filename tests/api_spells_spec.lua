@@ -243,6 +243,20 @@ describe("API.Resolve", function()
 		H.eq(A.Resolve(600), 601)
 	end)
 
+	it("does not take a spell the book lists as not learned yet for a known one", function()
+		local w, _, A = api(function(w)
+			w.spell(800, { name = "Aspect of the Hawk", known = false, inBook = false, future = true })
+			w.state.book[#w.state.book + 1] = 800
+		end)
+		A.RebuildSpellBookIndex(true)
+		H.eq(A.Resolve(800), nil, "a future spell is not known")
+		H.eq(A.Known(800), false)
+		w.state.spells[800].known = true
+		w.state.spells[800].future = false
+		A.InvalidateSpells(true)
+		H.eq(A.Resolve(800), 800, "learned: known")
+	end)
+
 	it("asks each known-spell API in turn", function()
 		local w, _, A = api(function(w)
 			w.spell(700, { name = "A" })
@@ -260,12 +274,6 @@ describe("API.Resolve", function()
 		env.C_SpellBook.IsSpellInSpellBook = function()
 			return false
 		end
-		env.C_SpellBook.FindSpellBookSlotForSpell = function(id)
-			return id == 700 and 5 or nil
-		end
-		H.eq(A.Resolve(700), 700)
-		A.InvalidateSpells(true)
-		env.C_SpellBook.FindSpellBookSlotForSpell = nil
 		env.C_SpellBook.IsSpellInSpellBook = function(id)
 			return id == 700
 		end

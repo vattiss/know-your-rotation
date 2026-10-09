@@ -209,6 +209,38 @@ end
 
 -- What each totem bar button says about itself: the action slot, what the slot
 -- holds and its icon. The addon reads these buttons like action buttons.
+-- Why each enabled step of the defense list (aspects, auras, shields) is or is
+-- not offered.
+local function sampleDefense(ctx)
+	local listed = 0
+	for _, step in ipairs(ns.GetDef() or {}) do
+		local id = ns.IsStepEnabled(step) and step.id and ns.API.Resolve(step.id)
+		if id and listed < 12 then
+			listed = listed + 1
+			local name = ns.API.SpellName(id) or tostring(id)
+			count("defense says | " .. name, ctx, ns.API.WhyNot(id, step.opt) or "offered")
+			-- Which of the "do I know this spell" answers say yes (an unlearned
+			-- spell must say no everywhere).
+			local function yes(fn, ...)
+				local ok, answer = pcall(fn, ...)
+				return ok and answer and "yes" or "no"
+			end
+			count(
+				"known via | " .. name,
+				ctx,
+				("same id=%s IsPlayerSpell=%s IsSpellKnown=%s IsSpellKnownOrOverridesKnown=%s inBook=%s bookSlot=%s"):format(
+					tostring(id == step.id),
+					yes(IsPlayerSpell, step.id),
+					yes(IsSpellKnown, step.id),
+					yes(IsSpellKnownOrOverridesKnown, step.id),
+					yes(C_SpellBook.IsSpellInSpellBook, step.id),
+					yes(C_SpellBook.FindSpellBookSlotForSpell, step.id)
+				)
+			)
+		end
+	end
+end
+
 local function sampleTotemBar(ctx)
 	for i = 1, 12 do
 		local button = _G["MultiCastActionButton" .. i]
@@ -329,6 +361,7 @@ function D.Sample()
 		sampleTarget(ctx)
 	end
 	sampleSpells(ctx)
+	sampleDefense(ctx)
 end
 
 local EVENTS = {

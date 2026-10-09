@@ -852,6 +852,7 @@ function wow.new()
 	env.IsSpellKnownOrOverridesKnown = env.IsPlayerSpell
 	env.Enum = {
 		SpellBookSpellBank = { Player = 0, Pet = 1 },
+		SpellBookItemType = { None = 0, Spell = 1, FutureSpell = 2 },
 		LuaCurveType = { Linear = 0, Step = 1 },
 	}
 	env.C_SpellBook = {
@@ -870,7 +871,7 @@ function wow.new()
 			if not s then
 				return nil
 			end
-			return { name = s.name, spellID = id }
+			return { name = s.name, spellID = id, itemType = s.future and 2 or 1 }
 		end,
 		GetSpellBookItemName = function(index, bank)
 			if bank ~= 0 then
@@ -882,8 +883,9 @@ function wow.new()
 		IsSpellInSpellBook = function(id)
 			return known(id)
 		end,
-		FindSpellBookSlotForSpell = function()
-			return nil
+		-- The Forever client finds a slot for spells not learned yet too.
+		FindSpellBookSlotForSpell = function(id)
+			return state.spells[id] and 1 or nil
 		end,
 	}
 	env.GetCursorInfo = function()

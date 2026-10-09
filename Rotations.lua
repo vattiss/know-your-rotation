@@ -396,14 +396,23 @@ function ns.BuildDefense()
 	end
 	-- Health-based defensives first (Shield Wall at 20% beats a lapsed Battle
 	-- Shout), then buffs and the rest, each in list order.
+	-- A step whose spell is on no action button cannot glow: the next one that
+	-- can goes first (only one of the three aspects is on the bars), and when
+	-- none can, the first one stays (the bars may not be scanned yet).
+	local fallback
 	for pass = 1, 2 do
 		for _, step in ipairs(ns.GetDef()) do
 			local urgent = step.opt and step.opt.hp and true or false
 			if urgent == (pass == 1) and ns.IsStepEnabled(step) and stepReady(step.id, step.opt) then
-				return (API.Resolve and API.Resolve(step.id)) or step.id
+				local id = (API.Resolve and API.Resolve(step.id)) or step.id
+				if #ns.GlowButtonNames(id) > 0 then
+					return id
+				end
+				fallback = fallback or id
 			end
 		end
 	end
+	return fallback
 end
 
 function ns.BuildInterrupt()

@@ -160,10 +160,19 @@ describe("Debug names and totem state", function()
 			end
 		end
 		H.truthy(walked)
+		ns.GetDef = function()
+			return { { key = "Stoneskin", id = 8071, opt = {}, on = true } }
+		end
 		ns.API.StepOk = function()
 			return true
 		end
 		ns.Debug.Sample()
+		H.truthy(
+			counts(ns)["defense says | Stoneskin Totem | combat, no target | offered"]
+				or counts(ns)["defense says | Stoneskin Totem | idle, no target | offered"]
+				or counts(ns)["defense says | Stoneskin Totem | idle, no target | the totem is already up"],
+			"the defense list is sampled"
+		)
 		H.truthy(
 			counts(ns)["totem cue offers | combat, no target | Stoneskin Totem"]
 				or counts(ns)["totem cue offers | idle, no target | Stoneskin Totem"]

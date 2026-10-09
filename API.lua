@@ -95,6 +95,11 @@ local function readBookItem(index, bank)
 	if C_SpellBook and C_SpellBook.GetSpellBookItemInfo then
 		local ok, info = pcall(C_SpellBook.GetSpellBookItemInfo, index, bank)
 		if ok and type(info) == "table" then
+			-- The book also lists spells not learned yet (FutureSpell): not known.
+			local future = Enum and Enum.SpellBookItemType and Enum.SpellBookItemType.FutureSpell or 2
+			if safe(info.itemType, nil) == future then
+				return nil, nil
+			end
 			return safe(info.name, nil), safe(info.spellID, nil)
 		end
 	end
@@ -468,12 +473,6 @@ local function playerKnows(id)
 		if C_SpellBook.IsSpellInSpellBook then
 			local ok, known = pcall(C_SpellBook.IsSpellInSpellBook, id)
 			if ok and known then
-				return true
-			end
-		end
-		if C_SpellBook.FindSpellBookSlotForSpell then
-			local ok, slot = pcall(C_SpellBook.FindSpellBookSlotForSpell, id)
-			if ok and slot then
 				return true
 			end
 		end

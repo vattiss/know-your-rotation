@@ -367,6 +367,19 @@ describe("Defense, interrupt, purge and cleanse cues", function()
 		H.eq(ns.BuildDefense(), nil)
 	end)
 
+	it("skips a defense step whose spell is on no action button", function()
+		local w, ns = setup()
+		ns.GetDef = function()
+			return { step("Shout", 6, { nobuff = true }), step("Mend", 5, { nobuff = true }) }
+		end
+		H.eq(ns.BuildDefense(), 6, "no bars scanned: the first step stays")
+		local b = w.env.CreateFrame("CheckButton", "ActionButton1")
+		b.action = 1
+		w.state.actions[1] = { type = "spell", id = 5 }
+		ns.GlowFetch(true)
+		H.eq(ns.BuildDefense(), 5, "the one on the bar glows")
+	end)
+
 	it("interrupts an interruptible cast in reach", function()
 		local w, ns = setup(function(w)
 			w.spell(6552, { name = "Pummel", harmful = true, inRange = true })
