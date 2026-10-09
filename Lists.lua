@@ -227,7 +227,6 @@ ns.APLDefaults = {
 			step("MultiShot", H.MultiShot, { hostile = true }),
 			step("ArcaneShot", H.ArcaneShot, { hostile = true }),
 			step("Intimidation", H.Intimidation, { hostile = true }, false),
-			step("ConcussiveShot", H.ConcussiveShot, { nodebuff = true, hostile = true }, false),
 		},
 		melee = {
 			step("CallPet", H.CallPet, { nopet = true, notPetDead = true }),

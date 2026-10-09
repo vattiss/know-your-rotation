@@ -252,9 +252,12 @@ local function sampleDefense(ctx)
 	end
 end
 
-local function sampleAutoShot(ctx)
-	local id = ns.BuildAutoShot()
-	count("auto shot cue", ctx, id and "on" or "off")
+local function sampleShots(ctx)
+	local names = {}
+	for _, id in ipairs(ns.BuildShot()) do
+		names[#names + 1] = ns.API.SpellName(id) or tostring(id)
+	end
+	count("shot cue offers", ctx, #names > 0 and table.concat(names, ", ") or "nothing")
 end
 
 local function sampleTotemBar(ctx)
@@ -364,7 +367,7 @@ function D.Sample()
 		sampleTotemCue(ctx)
 	end
 	if ns.ClassToken() == "HUNTER" then
-		sampleAutoShot(ctx)
+		sampleShots(ctx)
 	end
 	sampleNames()
 	probe("UnitAffectingCombat(player)", ctx, function()

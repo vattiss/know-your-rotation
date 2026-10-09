@@ -40,8 +40,8 @@ local function defaults()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
-	if ns.db.listVersion ~= 7 then
-		ns.db.listVersion = 7
+	if ns.db.listVersion ~= 8 then
+		ns.db.listVersion = 8
 		ns.db.apl = nil
 		ns.db.aplDrop = nil
 		ns.db.def = nil
@@ -665,7 +665,7 @@ function ns.Tick()
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
 	local totems = ns.db.showTotem ~= false and not idle and ns.BuildTotem() or {}
-	local shot = ns.db.showRotation ~= false and not idle and ns.BuildAutoShot() or nil
+	local shots = ns.db.showRotation ~= false and not idle and ns.BuildShot() or {}
 	-- Pet reminders (hunter / warlock) show once as a screen message.
 	local noticeKey = not idle and ns.API.CombatNotice and ns.API.CombatNotice() or nil
 	if noticeKey and noticeKey ~= lastNotice then
@@ -710,7 +710,7 @@ function ns.Tick()
 		.. ":"
 		.. table.concat(totems, ",")
 		.. ":"
-		.. (shot or 0)
+		.. table.concat(shots, ",")
 		.. ":"
 		.. flagBit(ns.db.showRotation)
 		.. flagBit(ns.db.showDefense)
@@ -780,7 +780,7 @@ function ns.Tick()
 			ns.GlowTotem(totems)
 		end
 		if ns.GlowShot then
-			ns.GlowShot(shot)
+			ns.GlowShot(shots)
 		end
 	end
 	-- After the glows are set: fade the rotation glow where the finisher takes over.

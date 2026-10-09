@@ -28,6 +28,7 @@ describe("Auto Shot cue", function()
 		local w = wow.new()
 		w:player(class or "HUNTER")
 		w.spell(75, { name = "Auto Shot", harmful = true, inRange = true })
+		w.spell(5116, { name = "Concussive Shot", harmful = true, inRange = true })
 		w:target({ distance = 20 })
 		w:load()
 		w:fire("PLAYER_LOGIN")
@@ -36,7 +37,7 @@ describe("Auto Shot cue", function()
 
 	it("is offered while Auto Shot is off, and is not a step of the rotation", function()
 		local _, ns = hunter()
-		H.eq(ns.BuildAutoShot(), 75)
+		H.same(ns.BuildShot(), { 75, 5116 })
 		H.eq(ns.IsCueSpell(75), true)
 		H.eq(ns.AddAPL(75, "HUNTER"), false)
 		local function walk(node)
@@ -54,24 +55,56 @@ describe("Auto Shot cue", function()
 		walk(ns.APLModes.HUNTER or {})
 	end)
 
-	it("is quiet in melee range, where a hunter cannot shoot", function()
+	it("has no Auto Shot in melee range, where a hunter cannot shoot", function()
 		local _, ns = hunter()
 		ns.API.TargetInMelee = function()
 			return true
 		end
-		H.eq(ns.BuildAutoShot(), nil)
+		H.same(ns.BuildShot(), {}, "no Auto Shot in melee")
 		ns.API.TargetInMelee = function()
 			return false
 		end
-		H.eq(ns.BuildAutoShot(), 75)
+		H.same(ns.BuildShot(), { 75, 5116 })
+	end)
+
+	it("waits while the client shows the shot out of range (red)", function()
+		local _, ns = hunter()
+		H.same(ns.BuildShot(), { 75, 5116 })
+		local real = ns.SpellInRange
+		ns.SpellInRange = function()
+			return false
+		end
+		H.same(ns.BuildShot(), {}, "out of range: no cue")
+		ns.SpellInRange = function()
+			return nil
+		end
+		H.same(ns.BuildShot(), { 75, 5116 }, "unknown range: not held back")
+		ns.SpellInRange = real
+	end)
+
+	it("offers Concussive Shot at range while the target is not slowed", function()
+		local w, ns = hunter()
+		local melee = false
+		ns.API.TargetInMelee = function()
+			return melee
+		end
+		H.same(ns.BuildShot(), { 75, 5116 }, "at range: the slow, next to Auto Shot")
+		H.eq(ns.IsCueSpell(5116), true)
+		H.eq(ns.AddAPL(5116, "HUNTER"), false)
+		melee = true
+		H.same(ns.BuildShot(), {}, "in melee it is too late")
+		melee = false
+		w.aura("target", { name = "Concussive Shot", spellId = 5116, harmful = true })
+		ns.API.WipeAuraScans()
+		H.same(ns.BuildShot(), { 75 }, "already slowed")
 	end)
 
 	it("is quiet while it runs, and for other classes", function()
 		local w, ns = hunter()
 		w.state.spells[75].repeating = true
-		H.eq(ns.BuildAutoShot(), nil)
+		H.same(ns.BuildShot(), { 5116 }) -- the slow is still due
 		local _, mage = hunter("MAGE")
-		H.eq(mage.BuildAutoShot(), nil)
+		H.same(mage.BuildShot(), {})
 	end)
 end)
 

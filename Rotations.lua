@@ -100,14 +100,17 @@ function ns.IsMaintenanceBuff(spellID)
 	return name and maintNameSet()[name] or false
 end
 
--- Totems (BuildTotem) and Auto Shot (BuildAutoShot) are cues of their own,
+-- Totems (BuildTotem) and the hunter shots (BuildShot) are cues of their own,
 -- never steps of the rotation.
 function ns.IsCueSpell(spellID)
 	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
 		return false
 	end
 	local hunter = ns.Spell and ns.Spell.Hunter
-	return (hunter ~= nil and spellID == hunter.AutoShot) or API.TotemWhen(spellID) ~= nil
+	if hunter and (spellID == hunter.AutoShot or spellID == hunter.ConcussiveShot) then
+		return true
+	end
+	return API.TotemWhen(spellID) ~= nil
 end
 
 function ns.IsWeaponBuff(spellID)
@@ -455,16 +458,36 @@ function ns.BuildTotem()
 	return due
 end
 
--- Auto Shot, when it is off and a target is there to shoot at (not in melee
--- range, where a hunter cannot shoot). A cue next to
--- the rotation, so it never takes the place of Serpent Sting or Arcane Shot.
-local AUTO_SHOT_OPT = { autoRepeat = true, hostile = true, notMelee = true }
+-- The hunter's cues next to the rotation, so they never take the place of
+-- Serpent Sting or Arcane Shot: Auto Shot while it is off and a target is
+-- there to shoot at (not in melee range, where a hunter cannot shoot), and
+-- Concussive Shot while the target is at range (not in melee range) and is
+-- not slowed.
+local SHOT_CUES = {
+	{ name = "AutoShot", opt = { autoRepeat = true, hostile = true, notMelee = true } },
+	{ name = "ConcussiveShot", opt = { hostile = true, notMelee = true, nodebuff = true } },
+}
 
-function ns.BuildAutoShot()
+-- True when the client itself says the target is out of the spell's range (the
+-- red button). RangeState would call a target inside the maximum "in" even
+-- when the client says no, which is the minimum-range zone of a hunter's shots.
+local function clientSaysOutOfRange(id)
+	local slot = ns.SpellBarSlot and ns.SpellBarSlot(id)
+	return ns.SpellInRange ~= nil and ns.SpellInRange(id, slot) == false
+end
+
+function ns.BuildShot()
+	local due = {}
 	local hunter = ns.Spell and ns.Spell.Hunter
-	if hunter and hunter.AutoShot and ns.ClassToken() == "HUNTER" and API.StepOk(hunter.AutoShot, AUTO_SHOT_OPT) then
-		return API.Resolve(hunter.AutoShot) or hunter.AutoShot
+	if hunter and ns.ClassToken() == "HUNTER" then
+		for _, cue in ipairs(SHOT_CUES) do
+			local id = hunter[cue.name]
+			if id and API.StepOk(id, cue.opt) and not clientSaysOutOfRange(API.Resolve(id) or id) then
+				due[#due + 1] = API.Resolve(id) or id
+			end
+		end
 	end
+	return due
 end
 
 function ns.BuildPurge()

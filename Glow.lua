@@ -1042,10 +1042,22 @@ function ns.GlowTotem(spellIDs)
 	end
 end
 
-function ns.GlowShot(spellID)
-	applyExtra(spellID, { lastShot }, shotGlowing, showShot, ns.GlowClearShot)
-	if spellID then
-		lastShot = spellID
+-- A list of spell IDs: every due shot cue glows at once.
+function ns.GlowShot(spellIDs)
+	local key = table.concat(spellIDs or {}, ",")
+	if key == "" then
+		ns.GlowClearShot()
+		return
+	end
+	if key == lastShot and next(shotGlowing) then
+		return
+	end
+	ns.GlowClearShot()
+	lastShot = key
+	for _, spellID in ipairs(spellIDs) do
+		for _, button in ipairs(buttonsFor(spellID)) do
+			showShot(button)
+		end
 	end
 end
 

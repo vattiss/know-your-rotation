@@ -52,7 +52,7 @@ Aimed Shot, Multi-Shot and Volley avoid clipping Auto Shot, and energy spells ac
 | Yellow glow | Interrupt |
 | Purple glow | Purge |
 | Red glow | Weapon buff |
-| Cyan glow | Auto Shot (hunter) |
+| Cyan glow | Auto Shot, Concussive Shot (hunter) |
 | Orange glow | Totem |
 
 The rotation, heal, defense and weapon colors can be changed on the Highlights page.
