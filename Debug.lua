@@ -232,8 +232,11 @@ end
 -- totem cue offers.
 local function sampleTotemCue(ctx)
 	-- The cue first: asking it reads the slots and brings the memory up to date.
-	local offered = ns.BuildTotem()
-	count("totem cue offers", ctx, offered and (ns.API.SpellName(offered) or tostring(offered)) or "nothing")
+	local names = {}
+	for _, id in ipairs(ns.BuildTotem()) do
+		names[#names + 1] = ns.API.SpellName(id) or tostring(id)
+	end
+	count("totem cue offers", ctx, #names > 0 and table.concat(names, ", ") or "nothing")
 	for _, totem in ipairs(ns.API.TotemBar()) do
 		local name = ns.API.SpellName(totem.id) or tostring(totem.id)
 		count("totem state | " .. name, ctx, ns.API.TotemState(totem.id) .. ", when " .. totem.when)

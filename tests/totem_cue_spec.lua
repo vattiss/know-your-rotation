@@ -59,7 +59,7 @@ describe("Totem cue", function()
 		H.eq(#ns.API.TotemBar(), 2, "a button without an action is skipped")
 	end)
 
-	it("offers the first missing totem of the bar, by what each one needs", function()
+	it("offers the missing totems of the bar, by what each one needs", function()
 		local w, ns = boot()
 		totemButton(w, 1, { type = "spell", id = 8071 })
 		totemButton(w, 2, { type = "spell", id = 2484 })
@@ -70,16 +70,20 @@ describe("Totem cue", function()
 			return id == ready
 		end
 		ready = 2484
-		H.eq(ns.BuildTotem(), 2484, "the buff totem is not due, the slow is")
+		H.same(ns.BuildTotem(), { 2484 }, "the buff totem is not due, the slow is")
 		H.eq(seen[8071].engaged, true, "a buff totem is due at the start of the fight")
 		H.eq(seen[2484].inMelee, true, "a slow only helps in melee")
 		ready = nil
-		H.eq(ns.BuildTotem(), nil)
+		H.same(ns.BuildTotem(), {})
 		seen = {}
 		w.state.actions[131] = { type = "spell", id = 3599 }
 		ready = 3599
-		H.eq(ns.BuildTotem(), 3599)
+		H.same(ns.BuildTotem(), { 3599 })
 		H.eq(seen[3599].hostile, true, "an attack totem needs an enemy")
+		ns.API.StepOk = function()
+			return true
+		end
+		H.same(ns.BuildTotem(), { 3599, 2484 }, "totems of different slots are due together")
 	end)
 
 	it("keeps totems out of the rotation lists", function()

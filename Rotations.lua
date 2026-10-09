@@ -428,14 +428,17 @@ local TOTEM_OPT = {
 	melee = { totem = true, inMelee = true },
 }
 
--- The first totem of the player's totem bar that is missing and worth dropping
--- now. A cue next to the rotation: it never takes a slot of the queue.
+-- Every totem of the player's totem bar that is missing and worth dropping
+-- now (they sit in different slots, so they can all be dropped one after the
+-- other). A cue next to the rotation: it never takes a slot of the queue.
 function ns.BuildTotem()
+	local due = {}
 	for _, totem in ipairs(API.TotemBar()) do
 		if API.StepOk(totem.id, TOTEM_OPT[totem.when]) then
-			return totem.id
+			due[#due + 1] = totem.id
 		end
 	end
+	return due
 end
 
 function ns.BuildPurge()

@@ -1000,10 +1000,22 @@ ns.GlowHiddenMana = hiddenGlow("mphide", "player", "next", function(unit, curve)
 	return UnitPowerPercent(unit, 0, false, curve)
 end, "UnitPowerPercent")
 
-function ns.GlowTotem(spellID)
-	applyExtra(spellID, { lastTotem }, totemGlowing, showTotem, ns.GlowClearTotem)
-	if spellID then
-		lastTotem = spellID
+-- A list of spell IDs: every due totem glows at once.
+function ns.GlowTotem(spellIDs)
+	local key = table.concat(spellIDs or {}, ",")
+	if key == "" then
+		ns.GlowClearTotem()
+		return
+	end
+	if key == lastTotem and next(totemGlowing) then
+		return
+	end
+	ns.GlowClearTotem()
+	lastTotem = key
+	for _, spellID in ipairs(spellIDs) do
+		for _, button in ipairs(buttonsFor(spellID)) do
+			showTotem(button)
+		end
 	end
 end
 

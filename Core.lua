@@ -605,7 +605,7 @@ function ns.Tick()
 	if ns.db.showWeapon ~= false and not idle then
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
-	local totem = ns.db.showTotem ~= false and not idle and ns.BuildTotem() or nil
+	local totems = ns.db.showTotem ~= false and not idle and ns.BuildTotem() or {}
 	-- Pet reminders (hunter / warlock) show once as a screen message.
 	local noticeKey = not idle and ns.API.CombatNotice and ns.API.CombatNotice() or nil
 	if noticeKey and noticeKey ~= lastNotice and UIErrorsFrame then
@@ -647,7 +647,7 @@ function ns.Tick()
 		.. ":"
 		.. (weaponNeed and 1 or 0)
 		.. ":"
-		.. (totem or 0)
+		.. table.concat(totems, ",")
 		.. ":"
 		.. flagBit(ns.db.showRotation)
 		.. flagBit(ns.db.showDefense)
@@ -714,7 +714,7 @@ function ns.Tick()
 			ns.GlowWeapon(weaponNeed and weapon or nil)
 		end
 		if ns.GlowTotem then
-			ns.GlowTotem(totem)
+			ns.GlowTotem(totems)
 		end
 	end
 	-- After the glows are set: fade the rotation glow where the finisher takes over.

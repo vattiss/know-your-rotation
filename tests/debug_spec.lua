@@ -160,6 +160,14 @@ describe("Debug names and totem state", function()
 			end
 		end
 		H.truthy(walked)
+		ns.API.StepOk = function()
+			return true
+		end
+		ns.Debug.Sample()
+		H.truthy(
+			counts(ns)["totem cue offers | combat, no target | Stoneskin Totem"]
+				or counts(ns)["totem cue offers | idle, no target | Stoneskin Totem"]
+		)
 	end)
 end)
 
