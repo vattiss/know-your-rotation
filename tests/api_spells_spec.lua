@@ -295,7 +295,7 @@ describe("API.Resolve", function()
 		env.IsPlayerSpell = nil
 		env.C_SpellBook = nil
 		env.C_Spell.GetOverrideSpell = nil
-		H.eq(A.Resolve(700), 700, "found by name")
+		H.eq(A.Resolve(700), nil, "a name alone does not make a spell known")
 	end)
 
 	it("keeps resolved IDs on a light invalidation and drops misses", function()

@@ -173,6 +173,17 @@ describe("Debug names and totem state", function()
 				or counts(ns)["defense says | Stoneskin Totem | idle, no target | the totem is already up"],
 			"the defense list is sampled"
 		)
+		w.env.C_SpellBook.FindSpellBookSlotForSpell = function()
+			return nil
+		end
+		ns.Debug.Sample()
+		local sawNone
+		for key in pairs(counts(ns)) do
+			if key:find("itemType=none", 1, true) then
+				sawNone = true
+			end
+		end
+		H.truthy(sawNone, "a spell without a book slot")
 		H.truthy(
 			counts(ns)["totem cue offers | combat, no target | Stoneskin Totem"]
 				or counts(ns)["totem cue offers | idle, no target | Stoneskin Totem"]

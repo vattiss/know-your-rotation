@@ -209,6 +209,16 @@ end
 
 -- What each totem bar button says about itself: the action slot, what the slot
 -- holds and its icon. The addon reads these buttons like action buttons.
+-- The spellbook item type (1 = spell, 2 = not learned yet) of a spell, or "?".
+local function bookItemType(spellID)
+	local ok, slot, bank = pcall(C_SpellBook.FindSpellBookSlotForSpell, spellID)
+	if not ok or not slot then
+		return "none"
+	end
+	local okInfo, info = pcall(C_SpellBook.GetSpellBookItemInfo, slot, bank)
+	return okInfo and type(info) == "table" and tostring(info.itemType) or "?"
+end
+
 -- Why each enabled step of the defense list (aspects, auras, shields) is or is
 -- not offered.
 local function sampleDefense(ctx)
@@ -228,13 +238,14 @@ local function sampleDefense(ctx)
 			count(
 				"known via | " .. name,
 				ctx,
-				("same id=%s IsPlayerSpell=%s IsSpellKnown=%s IsSpellKnownOrOverridesKnown=%s inBook=%s bookSlot=%s"):format(
+				("same id=%s IsPlayerSpell=%s IsSpellKnown=%s IsSpellKnownOrOverridesKnown=%s inBook=%s bookSlot=%s itemType=%s"):format(
 					tostring(id == step.id),
 					yes(IsPlayerSpell, step.id),
 					yes(IsSpellKnown, step.id),
 					yes(IsSpellKnownOrOverridesKnown, step.id),
 					yes(C_SpellBook.IsSpellInSpellBook, step.id),
-					yes(C_SpellBook.FindSpellBookSlotForSpell, step.id)
+					yes(C_SpellBook.FindSpellBookSlotForSpell, step.id),
+					bookItemType(step.id)
 				)
 			)
 		end

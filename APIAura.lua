@@ -388,7 +388,9 @@ local function rememberAura(spellID, auraName, remain, fromCast)
 	local exp
 	if remain and remain > 0 and remain < 9000 then
 		exp = GetTime() + remain
-	elseif fromCast or not heldNames[key] or heldNames[key] <= GetTime() then
+	elseif fromCast or remain ~= nil or not heldNames[key] or heldNames[key] <= GetTime() then
+		-- A sighting (remain is known, permanent auras give 9999) renews the
+		-- memory: an aspect seen every few seconds never runs out in a long play.
 		exp = GetTime() + seconds
 	end
 	if exp then

@@ -14,6 +14,29 @@ local function api(class, setup)
 	return w, ns, ns.API
 end
 
+describe("API aura memory", function()
+	it("keeps a permanent aspect in mind in combat for as long as it is seen", function()
+		local w, _, A = api("HUNTER", function(w)
+			w.spell(13163, { name = "Aspect of the Monkey" })
+		end)
+		w.aura("player", { name = "Aspect of the Monkey", spellId = 13163 })
+		H.eq((A.HasAura(13163)), true)
+		for _ = 1, 3 do
+			w:advance(600)
+			A.WipeAuraScans()
+			H.eq((A.HasAura(13163)), true, "seen again: the memory is renewed")
+		end
+		-- 1800 s after the first sighting, but only 0 s after the last one.
+		w.state.units.player.combat = true
+		w.state.secret.auras = true
+		A.WipeAuraScans()
+		H.eq((A.HasAura(13163)), true, "hidden in combat: remembered")
+		w:advance(1900)
+		A.WipeAuraScans()
+		H.eq((A.HasAura(13163)), false, "not seen for longer than the memory")
+	end)
+end)
+
 describe("API.FindAura", function()
 	it("finds by spell ID, name, scan, resolved ID and family", function()
 		local w, _, A = api("PALADIN", function(w)

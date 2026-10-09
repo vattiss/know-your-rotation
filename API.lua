@@ -268,6 +268,8 @@ function ns.API.RebuildSpellBookIndex(sync)
 	end
 end
 
+local playerKnows
+
 local function findPlayerSpellByName(name)
 	name = safe(name, nil)
 	if type(name) ~= "string" or name == "" then
@@ -280,8 +282,9 @@ local function findPlayerSpellByName(name)
 	-- ConROC never walks the whole book: it uses IsSpellKnown on rank IDs.
 	-- Forever remaps: try cheap name->ID APIs first; warm the index lazily
 	-- only when still missing (login / rare remap), never on SPELLS_CHANGED.
+	-- The name lookup also answers for spells not learned yet: ask if it is known.
 	local fromApi = spellIdFromName(name)
-	if type(fromApi) == "number" then
+	if type(fromApi) == "number" and playerKnows(fromApi) then
 		return fromApi
 	end
 	if not spellBookBuilding then
@@ -450,7 +453,7 @@ function ns.API.InvalidateSpells(full)
 	end
 end
 
-local function playerKnows(id)
+function playerKnows(id)
 	if IsPlayerSpell then
 		local ok, known = pcall(IsPlayerSpell, id)
 		if ok and known then
