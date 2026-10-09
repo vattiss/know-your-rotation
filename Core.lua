@@ -40,8 +40,8 @@ local function defaults()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
-	if ns.db.listVersion ~= 5 then
-		ns.db.listVersion = 5
+	if ns.db.listVersion ~= 6 then
+		ns.db.listVersion = 6
 		ns.db.apl = nil
 		ns.db.aplDrop = nil
 		ns.db.def = nil

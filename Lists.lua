@@ -264,6 +264,10 @@ ns.APLDefaults = {
 				hostile = true,
 			}),
 			step("Eviscerate", R.Eviscerate, { comboMin = 2, hpPerCombo = 8, unit = "target", hostile = true }),
+			-- Leveling: a mob below your level dies in a few hits, so finish from 2
+			-- points on; a mob of your level or higher is worth 3.
+			step("EviscerateWeak", R.Eviscerate, { comboMin = 2, weakTarget = true, maxLevel = 19, hostile = true }),
+			step("EviscerateLevel", R.Eviscerate, { comboMin = 3, maxLevel = 19, hostile = true }),
 			step("Eviscerate5", R.Eviscerate, { comboMin = 5, hostile = true }),
 			step("Riposte", R.Riposte, { proc = "parry", hostile = true }),
 			step("ExposeArmor", R.ExposeArmor, { comboMin = 5, nodebuff = true, hostile = true }, false),

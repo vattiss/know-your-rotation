@@ -32,6 +32,39 @@ local function useList(ns, list)
 	end
 end
 
+describe("Rogue leveling", function()
+	local function rogue(level, mobLevel)
+		local w = wow.new()
+		w:player("ROGUE", { power = { [3] = 100 }, powerMax = { [3] = 100 } })
+		w.state.level = level
+		local R = { SinisterStrike = 1752, Eviscerate = 2098 }
+		w.spell(R.SinisterStrike, { name = "Sinister Strike", harmful = true, inRange = true })
+		w.spell(R.Eviscerate, { name = "Eviscerate", harmful = true, inRange = true })
+		w:target({ distance = 3, level = mobLevel })
+		w:load()
+		w:fire("PLAYER_LOGIN")
+		w.state.combo = 2
+		return w.ns, R, w
+	end
+
+	it("finishes a weak mob with Eviscerate from 2 combo points while leveling", function()
+		local ns, R = rogue(5, 3)
+		H.eq(ns.BuildQueue()[1], R.Eviscerate)
+	end)
+
+	it("waits for 3 points on a mob of your level, and 3 is enough", function()
+		local ns, R, w = rogue(5, 5)
+		H.eq(ns.BuildQueue()[1], R.SinisterStrike)
+		w.state.combo = 3
+		H.eq(ns.BuildQueue()[1], R.Eviscerate)
+	end)
+
+	it("keeps building points at 2 once past the leveling range", function()
+		local ns, R = rogue(25, 20)
+		H.eq(ns.BuildQueue()[1], R.SinisterStrike)
+	end)
+end)
+
 describe("Rotation queue", function()
 	it("returns an empty queue without a list function", function()
 		local _, ns = setup()

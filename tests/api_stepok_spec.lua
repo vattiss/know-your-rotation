@@ -177,6 +177,17 @@ describe("StepOk basics", function()
 		local _ = w
 	end)
 
+	it("checks weak targets", function()
+		local w, _, A = setup()
+		w.state.level = 10
+		w:target({ level = 8 })
+		check(A, 1, { weakTarget = true }, true)
+		w:target({ level = 10 })
+		check(A, 1, { weakTarget = true }, false, "the target is not below your level")
+		w:target({ level = -1 })
+		check(A, 1, { weakTarget = true }, false, "not below your level")
+	end)
+
 	it("checks melee range both ways", function()
 		local _, ns, A = setup()
 		local melee = true

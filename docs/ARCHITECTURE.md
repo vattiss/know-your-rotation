@@ -159,6 +159,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The condition
 | `engaged` | Only in combat or with an enemy targeted (seals, totems, Tiger's Fury), so they are not suggested while walking around. |
 | `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
+| `weakTarget` | Only for a target below your level (an unknown level counts as not weak). Rogue leveling: Eviscerate from 2 combo points on a weak mob, from 3 on a mob of your level (up to level 19). |
 | `maxLevel` | Offered only up to this character level (Stoneskin Totem up to 29, then Strength of Earth Totem takes its place). |
 | `minLevel` | Offered only from this character level on (Strength of Earth 30, Mana Spring 40 in the damage lists, Rupture 40): early fights are too short for them. |
 | `behind` | Must be behind the target (Backstab, Shred). Refused while the target attacks you or that is unknown (it faces you), or for 3 s after a "must be behind" error on that target (`UI_ERROR_MESSAGE`, `ns.API.NoteUIError`). `ns.API.TargetAttacksYou` reads `UnitThreatSituation("player", "target")` first (not secret for player vs target; 2 / 3 = you have aggro), and `UnitIsUnit("targettarget", "player")` only as a fallback: compound tokens are always secret on addon-restricted maps (`SecretWhenUnitComparisonRestricted`). No target's target (stunned, gouged) is allowed. |

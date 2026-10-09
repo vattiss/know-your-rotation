@@ -132,6 +132,19 @@ local STEP_CHECKS = {
 			end
 		end,
 	},
+	-- weakTarget = the target is below your level (an unknown level counts as
+	-- not weak).
+	{
+		"weakTarget",
+		function()
+			local okT, targetLevel = pcall(UnitLevel, "target")
+			local okP, level = pcall(UnitLevel, "player")
+			targetLevel, level = okT and tonumber(safe(targetLevel, nil)), okP and tonumber(safe(level, nil))
+			if not (targetLevel and level and targetLevel >= 0 and targetLevel < level) then
+				return "the target is not below your level"
+			end
+		end,
+	},
 	-- Auto-repeat attacks (Auto Shot): suggest turning it on, never while it
 	-- is already running (pressing it again would stop it).
 	{
