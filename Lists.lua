@@ -197,7 +197,6 @@ ns.APLDefaults = {
 			step("SummonHawk", H.SummonHawk, { nopet = true }, false),
 			step("MendPet", H.MendPet, { pet = true, hp = 40, unit = "pet" }),
 			step("HuntersMark", H.HuntersMark, { nodebuff = true, skipLow = true, hostile = true }),
-			step("AutoShot", H.AutoShot, { autoRepeat = true, hostile = true }),
 			step(
 				"SerpentSting",
 				H.SerpentSting,
@@ -541,7 +540,6 @@ ns.APLModes = {
 				step("Volley", H.Volley, { hostile = true }),
 				step("ArcaneShot", H.ArcaneShot, { hostile = true }),
 				step("SerpentSting", H.SerpentSting, { nodebuff = true, nocreature = true, hostile = true }),
-				step("AutoShot", H.AutoShot, { autoRepeat = true, hostile = true }),
 			},
 		},
 		melee = {

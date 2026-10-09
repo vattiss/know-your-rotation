@@ -252,6 +252,11 @@ local function sampleDefense(ctx)
 	end
 end
 
+local function sampleAutoShot(ctx)
+	local id = ns.BuildAutoShot()
+	count("auto shot cue", ctx, id and "on" or "off")
+end
+
 local function sampleTotemBar(ctx)
 	for i = 1, 12 do
 		local button = _G["MultiCastActionButton" .. i]
@@ -357,6 +362,9 @@ function D.Sample()
 	if ns.ClassToken() == "SHAMAN" then
 		sampleTotemBar(ctx)
 		sampleTotemCue(ctx)
+	end
+	if ns.ClassToken() == "HUNTER" then
+		sampleAutoShot(ctx)
 	end
 	sampleNames()
 	probe("UnitAffectingCombat(player)", ctx, function()

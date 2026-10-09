@@ -281,11 +281,12 @@ Other defaults: `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `sh
 
 There is no HUD window. Every cue is a glow on an action-bar button (`Glow.lua`):
 
-- rotation: the first queue spell, only if `ns.queueGlowOk` (ready, resources, not out of range);
+- Auto Shot (hunter) is a cue of its own (`ns.BuildAutoShot`, `ns.GlowShot`, color `shot`, switched by `showRotation`): it lights up while Auto Shot is off and an enemy is targeted but not in melee range (a hunter cannot shoot there), and is no step of the rotation, so Serpent Sting and Arcane Shot keep the first place. `ns.IsCueSpell` keeps it out of the lists (`listVersion` 7). The priest, mage and warlock `Shoot` is still a step;
+- rotation: the first queue spell that is on an action button, only if `ns.queueGlowOk` (ready, resources, not out of range). When the next spells are in the spellbook but on no bar, one message lists them all in rotation order (once per set, again after 30 s; `ns.ShowNotice`, 10 s on screen, longer than `UIErrorsFrame`, which fades in a second or two) and the next spell of the queue that is on a bar glows instead (`pickGlowSpell` in `Core.lua`);
 - defense, interrupt, purge, cleanse and weapon buff each have their own glow, switched by `show*`;
 - a Blizzard `ActionButtonSpellAlertTemplate` frame per button and cue, tinted by `ns.Color`; plain texture fallback;
 - no glow while the player is dead, on a taxi, mounted, eating, or resting in town (`ns.API.ShouldHideIdle`);
-- hunter / warlock pet reminders (`CombatNotice`) appear once as a screen message;
+- hunter / warlock pet reminders (`CombatNotice`) appear once as a message that stays for 10 seconds (`ns.ShowNotice`);
 - optional alert sounds (`ns.SOUNDS`, picked per alert on the Highlights page; the first choice is no sound) for interrupt, cleanse and weapon.
 
 `UI.lua` only holds the shared `ns.UI` table and the `RefreshRoles` / `RefreshModes` hooks.

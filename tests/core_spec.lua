@@ -47,7 +47,7 @@ describe("Core saved variables", function()
 		local ns = w:load()
 		w:fire("PLAYER_LOGIN")
 		H.eq(ns.db.showPurge, true, "own setting, default filled")
-		H.eq(ns.db.listVersion, 6)
+		H.eq(ns.db.listVersion, 7)
 		H.eq(ns.db.apl, nil, "old lists replaced")
 		H.eq(ns.db.profiles.pve.apl, nil)
 		H.eq(ns.db.profiles.base, nil)
@@ -229,6 +229,7 @@ describe("Core feature switches and sounds", function()
 			"GlowClearCleanse",
 			"GlowClearWeapon",
 			"GlowClearTotem",
+			"GlowClearShot",
 		}) do
 			ns[name] = function()
 				cleared[name] = true
@@ -251,7 +252,8 @@ describe("Core feature switches and sounds", function()
 				and cleared.GlowClearDef
 				and cleared.GlowClearKick
 				and cleared.GlowClearWeapon
-				and cleared.GlowClearTotem,
+				and cleared.GlowClearTotem
+				and cleared.GlowClearShot,
 			true
 		)
 		ns.GlowClear, ns.GlowClearDef, ns.Tick = nil, nil, nil
@@ -320,9 +322,62 @@ describe("Core tick", function()
 		H.eq(glowed, nil)
 	end)
 
+	it("says when the next spell is on no bar and goes on with the next one", function()
+		local w, ns = boot("WARRIOR", function(w)
+			w.spell(11, { name = "Alpha" })
+			w.spell(14, { name = "Beta" })
+		end)
+		ns.BuildQueue = function()
+			ns.queueGlowOk = true
+			return { 11, 14, 12, 13 }
+		end
+		local onBar = { [12] = true }
+		ns.GlowButtonNames = function(id)
+			return onBar[id] and { "b" } or {}
+		end
+		local glowed
+		ns.GlowSpell = function(id)
+			glowed = id
+		end
+		local said = {}
+		local show = ns.ShowNotice
+		ns.ShowNotice = function(text)
+			said[#said + 1] = text
+			show(text)
+		end
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(glowed, 12, "the next one on a bar")
+		H.eq(said[1], ns.T("NOTICE_NOT_ON_BAR"):format("Alpha, Beta"), "all of them, in order")
+		H.eq(ns.noticeFrame.text:GetText(), said[1])
+		H.eq(ns.noticeFrame:IsShown(), true)
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 1, "said once")
+		w:advance(11)
+		H.eq(ns.noticeFrame:IsShown(), false, "long enough to read, then gone")
+		w:advance(20)
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 2, "again after 30 s")
+		ns.ShowNotice("one")
+		ns.ShowNotice("two")
+		w:advance(5)
+		ns.ShowNotice("three")
+		w:advance(6)
+		H.eq(ns.noticeFrame:IsShown(), true, "a newer message keeps the frame")
+		onBar = {}
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(glowed, nil, "nothing on a bar: nothing to glow")
+	end)
+
 	it("glows the queue and fades it under a hidden finisher", function()
 		local w, ns = boot()
 		local calls = {}
+		ns.GlowButtonNames = function()
+			return { "b" }
+		end
 		ns.BuildQueue = function()
 			ns.queueGlowOk = true
 			return { 11, 12, 13 }
@@ -364,7 +419,7 @@ describe("Core tick", function()
 		ns.Tick()
 		ns.Tick()
 		H.eq(#w.sounds, 3, "kick, cleanse and weapon sound once each")
-		H.contains(w.messages, ns.T("NOTICE_CALL_PET"))
+		H.eq(ns.noticeFrame.text:GetText(), ns.T("NOTICE_CALL_PET"))
 		ns.BuildWeapon = function()
 			return 8017, 0, false
 		end
@@ -389,6 +444,7 @@ describe("Core tick", function()
 			"GlowCleanse",
 			"GlowWeapon",
 			"GlowTotem",
+			"GlowShot",
 			"GlowFadeForFinisher",
 			"SyncAutoRole",
 		}) do

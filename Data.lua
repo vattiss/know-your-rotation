@@ -58,6 +58,7 @@ ns.COLOR_DEFAULTS = {
 	def = { 0.2, 0.55, 1 },
 	weapon = { 1, 0.12, 0.08 },
 	totem = { 1, 0.6, 0.1 },
+	shot = { 0.3, 0.9, 0.9 },
 }
 
 function ns.Color(key)

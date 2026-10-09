@@ -23,6 +23,58 @@ local function totemButton(w, index, action)
 	return b
 end
 
+describe("Auto Shot cue", function()
+	local function hunter(class)
+		local w = wow.new()
+		w:player(class or "HUNTER")
+		w.spell(75, { name = "Auto Shot", harmful = true, inRange = true })
+		w:target({ distance = 20 })
+		w:load()
+		w:fire("PLAYER_LOGIN")
+		return w, w.ns
+	end
+
+	it("is offered while Auto Shot is off, and is not a step of the rotation", function()
+		local _, ns = hunter()
+		H.eq(ns.BuildAutoShot(), 75)
+		H.eq(ns.IsCueSpell(75), true)
+		H.eq(ns.AddAPL(75, "HUNTER"), false)
+		local function walk(node)
+			for _, child in pairs(node) do
+				if type(child) == "table" then
+					if child.key and child.opt then
+						H.truthy(child.id ~= ns.Spell.Hunter.AutoShot, "no Auto Shot step in " .. child.key)
+					else
+						walk(child)
+					end
+				end
+			end
+		end
+		walk(ns.APLDefaults.HUNTER)
+		walk(ns.APLModes.HUNTER or {})
+	end)
+
+	it("is quiet in melee range, where a hunter cannot shoot", function()
+		local _, ns = hunter()
+		ns.API.TargetInMelee = function()
+			return true
+		end
+		H.eq(ns.BuildAutoShot(), nil)
+		ns.API.TargetInMelee = function()
+			return false
+		end
+		H.eq(ns.BuildAutoShot(), 75)
+	end)
+
+	it("is quiet while it runs, and for other classes", function()
+		local w, ns = hunter()
+		w.state.spells[75].repeating = true
+		H.eq(ns.BuildAutoShot(), nil)
+		local _, mage = hunter("MAGE")
+		H.eq(mage.BuildAutoShot(), nil)
+	end)
+end)
+
 describe("Totem cue", function()
 	it("knows when each totem is worth dropping", function()
 		local w, ns = boot()
@@ -32,10 +84,10 @@ describe("Totem cue", function()
 		H.eq(A.TotemWhen(3599), "hostile")
 		H.eq(A.TotemWhen(Sh.TremorTotem), nil, "situational: no cue")
 		H.eq(A.TotemWhen(424242), nil, "not a totem")
-		H.eq(ns.IsTotemCue(8071), true)
-		H.eq(ns.IsTotemCue(424242), false)
-		H.eq(ns.IsTotemCue(nil), false)
-		H.eq(ns.IsTotemCue(wow.SECRET), false)
+		H.eq(ns.IsCueSpell(8071), true)
+		H.eq(ns.IsCueSpell(424242), false)
+		H.eq(ns.IsCueSpell(nil), false)
+		H.eq(ns.IsCueSpell(wow.SECRET), false)
 		H.eq(w ~= nil, true)
 	end)
 

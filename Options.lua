@@ -884,6 +884,9 @@ local function registerHighlights(root)
 	featureCheckbox(category, "showRotation", "OPT_ROTATION", "TIP_ROTATION")
 	colorSwatch(category, "next", "OPT_COLOR_NEXT")
 	colorSwatch(category, "heal", "OPT_COLOR_HEAL")
+	if token == "HUNTER" then
+		colorSwatch(category, "shot", "OPT_COLOR_SHOT")
+	end
 
 	header(layout, "HDR_DEFENSE")
 	featureCheckbox(category, "showDefense", "OPT_DEFENSE", "TIP_DEFENSE")

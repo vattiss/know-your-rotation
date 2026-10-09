@@ -424,7 +424,7 @@ local function customKey(spellID)
 end
 
 local function skipCombatOnly(id, skipMaint)
-	if (ns.IsWeaponBuff and ns.IsWeaponBuff(id)) or (ns.IsTotemCue and ns.IsTotemCue(id)) then
+	if (ns.IsWeaponBuff and ns.IsWeaponBuff(id)) or (ns.IsCueSpell and ns.IsCueSpell(id)) then
 		return true
 	end
 	return skipMaint and ns.IsMaintenanceBuff and ns.IsMaintenanceBuff(id)
@@ -709,7 +709,7 @@ function ns.AddAPL(spellID, classFile, spec, mode, atIndex)
 	if not spellID then
 		return false
 	end
-	if (ns.IsMaintenanceBuff and ns.IsMaintenanceBuff(spellID)) or (ns.IsTotemCue and ns.IsTotemCue(spellID)) then
+	if (ns.IsMaintenanceBuff and ns.IsMaintenanceBuff(spellID)) or (ns.IsCueSpell and ns.IsCueSpell(spellID)) then
 		return false
 	end
 	classFile = classFile or (ns.ClassToken and ns.ClassToken()) or ""

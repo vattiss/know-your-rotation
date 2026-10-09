@@ -789,6 +789,29 @@ function ns.GlowClearTotem()
 	lastTotem = nil
 end
 
+local shotGlowing, lastShot = {}, nil
+
+local function showShot(button)
+	local r, g, b = ns.Color("shot")
+	overlay(button, "shot", GLOW_ART, r, g, b, 1.45, 0.95):Show()
+	shotGlowing[button] = true
+end
+
+local function hideShot(button)
+	if button.KYROverlays and button.KYROverlays.shot then
+		button.KYROverlays.shot:Hide()
+	end
+	shotGlowing[button] = nil
+end
+
+function ns.GlowClearShot()
+	for button in pairs(shotGlowing) do
+		hideShot(button)
+	end
+	wipe(shotGlowing)
+	lastShot = nil
+end
+
 local function hideWeapon(button)
 	if button.KYROverlays and button.KYROverlays.weapon then
 		button.KYROverlays.weapon:Hide()
@@ -1016,6 +1039,13 @@ function ns.GlowTotem(spellIDs)
 		for _, button in ipairs(buttonsFor(spellID)) do
 			showTotem(button)
 		end
+	end
+end
+
+function ns.GlowShot(spellID)
+	applyExtra(spellID, { lastShot }, shotGlowing, showShot, ns.GlowClearShot)
+	if spellID then
+		lastShot = spellID
 	end
 end
 

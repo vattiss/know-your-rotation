@@ -80,7 +80,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Rotation pass: a listed spell already cast is marked used for this pass; when nothing is usable the queue restarts. Reset on target change and leaving combat.
 - `IsRotationAction`: a filler yields slot 1 to a ready shock / DoT / CD / proc listed lower. Do not use `require` / `requireAny` to hide a filler: list order wins.
 - Do not call `CombatLogGetCurrentEventInfo`: the client blocks the addon. Proc spells use `opt.proc` (`IsSpellUsable`).
-- `listVersion` is 6: saved lists are replaced once by the default order on next login.
+- `listVersion` is 7: saved lists are replaced once by the default order on next login.
 - `auto` mode uses the single list out of combat (the pull) and until `ns.API.EnemyCount()` reaches `autoEnemies` (default 3, minimum 2) in combat, then the `aoe` list.
 - The druid HUD `hybrid` button is not a list key. `ns.ActiveSpec()` picks `cat`, `bear`, `heal`, `tank` or `damage`.
 - `ns.ResetCurrentProfile` only resets the active profile (`pve` or `pvp`).

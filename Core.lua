@@ -40,8 +40,8 @@ local function defaults()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
-	if ns.db.listVersion ~= 6 then
-		ns.db.listVersion = 6
+	if ns.db.listVersion ~= 7 then
+		ns.db.listVersion = 7
 		ns.db.apl = nil
 		ns.db.aplDrop = nil
 		ns.db.def = nil
@@ -482,6 +482,9 @@ function ns.ApplyFeatureFlags()
 	if ns.db.showTotem == false and ns.GlowClearTotem then
 		ns.GlowClearTotem()
 	end
+	if ns.db.showRotation == false and ns.GlowClearShot then
+		ns.GlowClearShot()
+	end
 	lastTickSig = nil
 	if ns.Tick then
 		ns.Tick()
@@ -489,6 +492,62 @@ function ns.ApplyFeatureFlags()
 end
 
 local lastAlertKick, lastAlertCleanse, lastAlertWeapon, lastNotice
+local lastBarNotice, lastBarNoticeAt = nil, 0
+
+local NOTICE_SECONDS = 10
+local noticeToken = 0
+
+-- A message in the upper middle of the screen that stays for NOTICE_SECONDS
+-- (UIErrorsFrame fades a message after a second or two: too short to read).
+function ns.ShowNotice(text)
+	if not ns.noticeFrame then
+		local frame = CreateFrame("Frame", nil, UIParent)
+		frame:SetSize(700, 40)
+		frame:SetPoint("TOP", UIParent, "TOP", 0, -180)
+		frame:SetFrameStrata("HIGH")
+		frame.text = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+		frame.text:SetPoint("CENTER")
+		frame.text:SetTextColor(1, 0.82, 0)
+		ns.noticeFrame = frame
+	end
+	ns.noticeFrame.text:SetText(text)
+	ns.noticeFrame:Show()
+	noticeToken = noticeToken + 1
+	local token = noticeToken
+	C_Timer.After(NOTICE_SECONDS, function()
+		if token == noticeToken then
+			ns.noticeFrame:Hide()
+		end
+	end)
+end
+
+-- The spell to glow: the first of the queue that is on an action button. When
+-- the next spell is in the spellbook but on no bar, say so once (the message
+-- is not repeated for the same spell within 30 s) and go on with the next.
+local function pickGlowSpell(queue)
+	local missing, glow = {}, nil
+	for _, id in ipairs(queue) do
+		if #ns.GlowButtonNames(id) > 0 then
+			glow = id
+			break
+		end
+		missing[#missing + 1] = id
+	end
+	if #missing > 0 then
+		-- All the spells before the one that glows, in rotation order, in one message.
+		local key = table.concat(missing, ",")
+		local now = GetTime()
+		if key ~= lastBarNotice or now - lastBarNoticeAt > 30 then
+			lastBarNotice, lastBarNoticeAt = key, now
+			local names = {}
+			for i, id in ipairs(missing) do
+				names[i] = ns.API.SpellName(id) or "?"
+			end
+			ns.ShowNotice(ns.T("NOTICE_NOT_ON_BAR"):format(table.concat(names, ", ")))
+		end
+	end
+	return glow
+end
 
 -- Alert sounds the player can pick per alert (Advanced page). The first entry
 -- is "no sound". Numbers are the fallback sound IDs.
@@ -606,10 +665,11 @@ function ns.Tick()
 		weapon, _, weaponNeed = ns.BuildWeapon()
 	end
 	local totems = ns.db.showTotem ~= false and not idle and ns.BuildTotem() or {}
+	local shot = ns.db.showRotation ~= false and not idle and ns.BuildAutoShot() or nil
 	-- Pet reminders (hunter / warlock) show once as a screen message.
 	local noticeKey = not idle and ns.API.CombatNotice and ns.API.CombatNotice() or nil
-	if noticeKey and noticeKey ~= lastNotice and UIErrorsFrame then
-		UIErrorsFrame:AddMessage(ns.T(noticeKey), 1, 0.82, 0)
+	if noticeKey and noticeKey ~= lastNotice then
+		ns.ShowNotice(ns.T(noticeKey))
 	end
 	lastNotice = noticeKey
 	if interrupt and interrupt ~= lastAlertKick then
@@ -628,7 +688,8 @@ function ns.Tick()
 	else
 		lastAlertWeapon = weapon
 	end
-	local sig = (queue[1] or 0)
+	local glowSpell = ns.db.showRotation ~= false and pickGlowSpell(queue) or nil
+	local sig = (glowSpell or 0)
 		.. (ns.queueGlowOk and "g" or "n")
 		.. ":"
 		.. (queue[2] or 0)
@@ -648,6 +709,8 @@ function ns.Tick()
 		.. (weaponNeed and 1 or 0)
 		.. ":"
 		.. table.concat(totems, ",")
+		.. ":"
+		.. (shot or 0)
 		.. ":"
 		.. flagBit(ns.db.showRotation)
 		.. flagBit(ns.db.showDefense)
@@ -696,7 +759,7 @@ function ns.Tick()
 	if sig ~= lastTickSig then
 		lastTickSig = sig
 		if ns.GlowSpell then
-			ns.GlowSpell(ns.db.showRotation ~= false and ns.queueGlowOk and queue[1] or nil)
+			ns.GlowSpell(ns.queueGlowOk and glowSpell or nil)
 		end
 		if ns.GlowDef then
 			ns.GlowDef(defense)
@@ -716,10 +779,13 @@ function ns.Tick()
 		if ns.GlowTotem then
 			ns.GlowTotem(totems)
 		end
+		if ns.GlowShot then
+			ns.GlowShot(shot)
+		end
 	end
 	-- After the glows are set: fade the rotation glow where the finisher takes over.
 	if ns.GlowFadeForFinisher then
-		local fade = hiddenExec and ns.queueGlowOk and queue[1] ~= hiddenExec and queue[1] or nil
+		local fade = hiddenExec and ns.queueGlowOk and glowSpell ~= hiddenExec and glowSpell or nil
 		ns.GlowFadeForFinisher(fade, hiddenExecThreshold)
 	end
 end

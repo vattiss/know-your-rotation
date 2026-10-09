@@ -100,9 +100,14 @@ function ns.IsMaintenanceBuff(spellID)
 	return name and maintNameSet()[name] or false
 end
 
--- Totems are a cue of their own (BuildTotem), never a step of the rotation.
-function ns.IsTotemCue(spellID)
-	return spellID ~= nil and not (issecretvalue and issecretvalue(spellID)) and API.TotemWhen(spellID) ~= nil
+-- Totems (BuildTotem) and Auto Shot (BuildAutoShot) are cues of their own,
+-- never steps of the rotation.
+function ns.IsCueSpell(spellID)
+	if spellID == nil or (issecretvalue and issecretvalue(spellID)) then
+		return false
+	end
+	local hunter = ns.Spell and ns.Spell.Hunter
+	return (hunter ~= nil and spellID == hunter.AutoShot) or API.TotemWhen(spellID) ~= nil
 end
 
 function ns.IsWeaponBuff(spellID)
@@ -152,7 +157,7 @@ function ns.BuildQueue()
 			and step.id
 			and not ns.IsWeaponBuff(step.id)
 			and not ns.IsMaintenanceBuff(step.id)
-			and not ns.IsTotemCue(step.id)
+			and not ns.IsCueSpell(step.id)
 	end
 	API.PredictBegin()
 	-- mode: "in" = confirmed reach (slot 1), "notOut" = unknown reach is
@@ -448,6 +453,18 @@ function ns.BuildTotem()
 		end
 	end
 	return due
+end
+
+-- Auto Shot, when it is off and a target is there to shoot at (not in melee
+-- range, where a hunter cannot shoot). A cue next to
+-- the rotation, so it never takes the place of Serpent Sting or Arcane Shot.
+local AUTO_SHOT_OPT = { autoRepeat = true, hostile = true, notMelee = true }
+
+function ns.BuildAutoShot()
+	local hunter = ns.Spell and ns.Spell.Hunter
+	if hunter and hunter.AutoShot and ns.ClassToken() == "HUNTER" and API.StepOk(hunter.AutoShot, AUTO_SHOT_OPT) then
+		return API.Resolve(hunter.AutoShot) or hunter.AutoShot
+	end
 end
 
 function ns.BuildPurge()
