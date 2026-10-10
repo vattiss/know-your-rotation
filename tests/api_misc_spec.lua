@@ -488,6 +488,9 @@ describe("API combat, eating and idle", function()
 		w.state.mounted = false
 		w.state.resting = true
 		H.eq(A.ShouldHideIdle(), true)
+		ns.db.hideResting = false
+		H.eq(A.ShouldHideIdle(), false, "switched off: the cues stay in town")
+		ns.db.hideResting = nil
 		w.state.units.player.combat = true
 		H.eq(A.ShouldHideIdle(), false, "resting in combat")
 		w.aura("player", { name = "Drink", spellId = 1 })

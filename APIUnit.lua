@@ -1002,7 +1002,9 @@ function ns.API.ShouldHideIdle()
 	if ns.API.IsEating() == true then
 		return true
 	end
-	if not ns.API.InCombat() and yes(IsResting) then
+	-- A town or an inn: nobody fights there. The player can switch this off
+	-- (Highlights > "Stay quiet in towns and inns") to get the buff cues there.
+	if ns.db.hideResting ~= false and not ns.API.InCombat() and yes(IsResting) then
 		return true
 	end
 	return false

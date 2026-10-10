@@ -880,6 +880,8 @@ local function registerHighlights(root)
 		afterChange()
 	end)
 
+	featureCheckbox(category, "hideResting", "OPT_HIDE_RESTING", "TIP_HIDE_RESTING")
+
 	header(layout, "HDR_ROTATION")
 	featureCheckbox(category, "showRotation", "OPT_ROTATION", "TIP_ROTATION")
 	colorSwatch(category, "next", "OPT_COLOR_NEXT")
