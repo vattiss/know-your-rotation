@@ -398,6 +398,34 @@ describe("API who the target attacks and melee range", function()
 	end)
 end)
 
+describe("API tamed pet", function()
+	it("knows whether a hunter has a pet to call", function()
+		local w, _, A = api("HUNTER")
+		H.eq(A.HasTamedPet(), true)
+		w.state.noTamedPet = true
+		H.eq(A.HasTamedPet(), false, "Call Pet is learned before a pet is tamed")
+		w.env.C_StableInfo.GetStablePetInfo = function()
+			error("no stable")
+		end
+		H.eq(A.HasTamedPet(), true, "an error is not an answer")
+		w.env.C_StableInfo = nil
+		H.eq(A.HasTamedPet(), true, "no API: not held back")
+	end)
+
+	it("keeps Call Pet away until a pet is tamed", function()
+		local w, ns, A = api("HUNTER", function(w)
+			w.spell(883, { name = "Call Pet" })
+		end)
+		w.state.units.player.combat = true
+		H.eq(A.StepOk(883, { nopet = true, tamedPet = true }), true)
+		w.state.noTamedPet = true
+		H.eq(A.StepOk(883, { nopet = true, tamedPet = true }), false)
+		H.eq(A.WhyNot(883, { nopet = true, tamedPet = true }), "no tamed pet yet")
+		H.eq(A.CombatNotice(), nil, "no reminder either")
+		local _ = ns
+	end)
+end)
+
 describe("API pet reminders", function()
 	it("asks hunters and warlocks to summon or send the pet", function()
 		local w, ns, A = api("HUNTER")

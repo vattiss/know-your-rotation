@@ -1067,6 +1067,14 @@ function wow.new()
 			return id, "", "", "", 0, item.classID, item.subclassID
 		end,
 	}
+	-- Stable slot 1 is the current pet; nothing there until a pet is tamed.
+	env.C_StableInfo = {
+		GetStablePetInfo = function(index)
+			if index == 1 and not state.noTamedPet then
+				return { name = "Pet" }
+			end
+		end,
+	}
 	env.C_TooltipInfo = {
 		GetInventoryItem = function(_, slot)
 			local lines = state.tooltips and state.tooltips[slot]

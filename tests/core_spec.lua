@@ -475,6 +475,24 @@ describe("Core tick", function()
 	end)
 end)
 
+describe("Core blocked actions", function()
+	it("prints and keeps a blocked action of this addon, and ignores the others", function()
+		local w, ns = boot("WARRIOR")
+		w:fire("ADDON_ACTION_BLOCKED", "OtherAddon", "ClearTarget()")
+		H.eq(ns.db.blockedAction, nil)
+		w:fire("ADDON_ACTION_FORBIDDEN", "KnowYourRotation", "SetBinding()")
+		H.eq(ns.db.blockedAction, "KnowYourRotation | SetBinding()")
+		local printed
+		for _, line in ipairs(w.printed) do
+			if line:find("KnowYourRotation | SetBinding()", 1, true) then
+				printed = true
+			end
+		end
+		H.truthy(printed, "printed once to the chat")
+		H.truthy(ns.Debug.Report():find("blocked action: KnowYourRotation | SetBinding()", 1, true))
+	end)
+end)
+
 describe("Core events", function()
 	it("greets on login only, and listens to the right units", function()
 		local w = wow.new()

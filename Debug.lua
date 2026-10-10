@@ -474,6 +474,9 @@ function D.Report()
 		i.level or "?"
 	)
 	lines[#lines + 1] = ("samples: %d, keys: %d, dropped: %d"):format(d.samples, d.keys, d.dropped)
+	if ns.db.blockedAction then
+		lines[#lines + 1] = "blocked action: " .. ns.db.blockedAction
+	end
 	local probes, byProbe = {}, {}
 	for key, n in pairs(d.counts) do
 		local name, ctx, result = key:match("^(.-)\t(.-)\t(.*)$")

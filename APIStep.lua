@@ -500,6 +500,16 @@ local STEP_CHECKS = {
 			end
 		end,
 	},
+	-- tamedPet = only for a hunter who has a tamed pet (Call Pet is learned at
+	-- level 1, before any pet is tamed).
+	{
+		"tamedPet",
+		function()
+			if not ns.API.HasTamedPet() then
+				return "no tamed pet yet"
+			end
+		end,
+	},
 	{
 		"nocombat",
 		function()

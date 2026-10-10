@@ -192,7 +192,7 @@ ns.APLDefaults = {
 	},
 	HUNTER = {
 		range = {
-			step("CallPet", H.CallPet, { nopet = true, notPetDead = true }),
+			step("CallPet", H.CallPet, { nopet = true, notPetDead = true, tamedPet = true, engaged = true }),
 			step("RevivePet", H.RevivePet, { petDead = true, nocombat = true }),
 			step("SummonHawk", H.SummonHawk, { nopet = true }, false),
 			step("MendPet", H.MendPet, { pet = true, hp = 40, unit = "pet" }),
@@ -229,7 +229,7 @@ ns.APLDefaults = {
 			step("Intimidation", H.Intimidation, { hostile = true }, false),
 		},
 		melee = {
-			step("CallPet", H.CallPet, { nopet = true, notPetDead = true }),
+			step("CallPet", H.CallPet, { nopet = true, notPetDead = true, tamedPet = true, engaged = true }),
 			step("RevivePet", H.RevivePet, { petDead = true, nocombat = true }),
 			step("SummonHawk", H.SummonHawk, { nopet = true }, false),
 			step("AspectMonkey", H.AspectMonkey, { nobuff = true, anybuff = hunterAspects, ifTargeting = true }, false),

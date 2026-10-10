@@ -117,6 +117,7 @@ L.enUS = {
 	NOTICE_CALL_PET = "Call your pet",
 	NOTICE_SUMMON_DEMON = "Summon your demon",
 	NOTICE_PET_ASSIST = "Pet is not attacking",
+	BLOCKED_ACTION = "The game blocked an action of this addon (%s). Please report it with the Debug report from the Profiles page.",
 	NOTICE_LISTS_RESET = "Know Your Rotation was updated: your saved rotation lists were reset to the new defaults.",
 	NOTICE_NOT_ON_BAR = "Not on your action bars (in rotation order): %s",
 	OPT_COLOR_NEXT = "Next spell color",

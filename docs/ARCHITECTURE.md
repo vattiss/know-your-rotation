@@ -152,6 +152,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The condition
 | `combat` | Requires the player in combat. |
 | `comboMin` | Minimum player/target combo points. |
 | `pet` / `nopet` | Pet present or absent. |
+| `tamedPet` | Only for a hunter who has a tamed pet: `C_StableInfo.GetStablePetInfo(1)` (stable slot 1 is the current pet, `CURRENT_PET_SLOT` in `Blizzard_StableUI`) must return a table. Call Pet is learned at level 1, long before a pet is tamed. An error or a missing API counts as "has one". The pet reminder (`CombatNotice`) uses the same check, and Call Pet is `engaged` (not while walking around). |
 | `ready = false` | Accepts the step without testing cooldown or usability. |
 | `filler` | Spam spell with no own cooldown (Wrath, Heroic Strike, Sinister Strike…). Skipped only by a real cooldown, not by the GCD. `ns.Physics.Blocks` still applies. |
 | `nocombat` | Refused if the player is in combat (Charge, Stealth, Prowl, Pyroblast as an opener). |

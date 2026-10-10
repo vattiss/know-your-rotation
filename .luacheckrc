@@ -28,6 +28,7 @@ read_globals = {
 	"C_SpecializationInfo",
 	"C_Spell",
 	"C_SpellBook",
+	"C_StableInfo",
 	"C_Timer",
 	"C_TooltipInfo",
 	"C_UnitAuras",

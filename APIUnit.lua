@@ -771,6 +771,20 @@ function ns.API.TargetInMelee()
 	return close == true
 end
 
+-- True when the hunter has a tamed pet to call (stable slot 1 is the current
+-- pet, `CURRENT_PET_SLOT` in Blizzard_StableUI). Call Pet is learned at level 1,
+-- long before a pet is tamed. An unknown answer counts as "has one".
+function ns.API.HasTamedPet()
+	if not (C_StableInfo and C_StableInfo.GetStablePetInfo) then
+		return true
+	end
+	local ok, info = pcall(C_StableInfo.GetStablePetInfo, 1)
+	if not ok then
+		return true
+	end
+	return type(info) == "table"
+end
+
 function ns.API.CombatNotice()
 	local token = ns.ClassToken and ns.ClassToken()
 	if token ~= "HUNTER" and token ~= "WARLOCK" then
@@ -783,6 +797,9 @@ function ns.API.CombatNotice()
 	-- and a warlock may not have a demon spell yet.
 	local summons
 	if token == "HUNTER" then
+		if not ns.API.HasTamedPet() then
+			return nil
+		end
 		summons = { "CallPet" }
 	else
 		summons =

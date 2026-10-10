@@ -819,6 +819,8 @@ frame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 frame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+frame:RegisterEvent("ADDON_ACTION_BLOCKED")
+frame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
 for _, event in ipairs({
 	"PLAYER_REGEN_ENABLED",
 	"WEAPON_ENCHANT_CHANGED",
@@ -1140,6 +1142,19 @@ function handlers.WEAPON_ENCHANT_CHANGED()
 	ns.NoteWeaponEnchantChanged()
 	requestTick()
 end
+
+-- The client's popup does not say which protected function was called; the
+-- event does. Our own entries are printed once and kept for the debug report.
+local function noteBlockedAction(...)
+	local first, second = ...
+	local text = tostring(first) .. " | " .. tostring(second)
+	if text:find(addonName, 1, true) then
+		ns.db.blockedAction = text
+		ns.Print(ns.T("BLOCKED_ACTION"):format(text))
+	end
+end
+handlers.ADDON_ACTION_BLOCKED = noteBlockedAction
+handlers.ADDON_ACTION_FORBIDDEN = noteBlockedAction
 
 frame:SetScript("OnEvent", function(_, event, ...)
 	local handler = handlers[event]

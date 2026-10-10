@@ -51,6 +51,7 @@
 ---@field needKnownAny? integer[] Needs one of these spells learned.
 ---@field notTree? string Refused for a talent tree whose name has this word.
 ---@field weakTarget? boolean Only for a target below your level.
+---@field tamedPet? boolean Only for a hunter who has a tamed pet.
 ---@field swimming? boolean Only while swimming.
 ---@field inGroup? boolean Only in a group.
 ---@field orPet? boolean With inGroup: a pet out is enough.
