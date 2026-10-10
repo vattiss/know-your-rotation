@@ -209,7 +209,7 @@ A spell that is only helpful (`IsHelpful` and not `IsHarmful`) can pass through 
 
 `ns.queueHeal[id]` (list ID and resolved ID) is used for the green highlight.
 
-`ns.BuildDefense`: first checked defense step that passes `StepOk`, in two passes: steps with `hp` (defensive cooldowns) first, then the rest (buffs), each in list order. A step whose spell is on no action button cannot glow, so the first one that is on a bar goes first (only one of the three hunter aspects is usually on the bars); when none is, the first stays. A lapsed Battle Shout does not hide Shield Wall at 20%.
+`ns.RememberSelfBuffs` (called every tick out of combat, before the cues are asked for) looks at the `nobuff` self-buffs of the defense list so that `HasAura` has them in its memory when the client hides auras in combat; without it a buff put on in town (no cue evaluated there) or listed after another step counted as missing in the fight. `ns.BuildDefense`: first checked defense step that passes `StepOk`, in two passes: steps with `hp` (defensive cooldowns) first, then the rest (buffs), each in list order. A step whose spell is on no action button cannot glow, so the first one that is on a bar goes first (only one of the three hunter aspects is usually on the bars); when none is, the first stays. A lapsed Battle Shout does not hide Shield Wall at 20%.
 
 `ns.BuildInterrupt`: known and ready class ID, hostile target that is casting an interruptible spell (`notInterruptible` is return 8 of `UnitCastingInfo`, 7 of `UnitChannelInfo`), and not clearly out of range. `ns.BuildPurge` has the same range check.
 

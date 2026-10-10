@@ -502,6 +502,31 @@ describe("Core tick", function()
 	end)
 end)
 
+describe("Core self-buff memory", function()
+	it("remembers a buff seen in town, so combat does not call it missing", function()
+		local w, ns = boot("PRIEST", function(w)
+			w.spell(1243, { name = "Power Word: Fortitude", helpful = true })
+		end)
+		w.aura("player", { name = "Power Word: Fortitude", spellId = 1243, expirationTime = w.state.time + 1800 })
+		w.state.resting = true
+		ns.InvalidateTick()
+		ns.Tick() -- in town no cue is evaluated: the buff is looked at all the same
+		w.state.resting = false
+		w.state.units.player.combat = true
+		w.state.secret.auras = true
+		ns.API.WipeAuraScans()
+		H.truthy(ns.BuildDefense() ~= 1243, "the buff is remembered, not asked for again")
+		ns.GetDef = function()
+			return { { key = "Fort", id = 1243, opt = { nobuff = 1243 }, on = true } }
+		end
+		w.state.units.player.combat = false
+		w.state.secret.auras = false
+		ns.RememberSelfBuffs()
+		ns.GetDef = nil
+		ns.RememberSelfBuffs()
+	end)
+end)
+
 describe("Core blocked actions", function()
 	it("prints and keeps a blocked action of this addon, and ignores the others", function()
 		local w, ns = boot("WARRIOR")

@@ -680,6 +680,8 @@ function ns.Tick()
 		ns.SyncAutoRole()
 	end
 
+	ns.RememberSelfBuffs()
+
 	-- No glow while dead, mounted, eating, or resting in town.
 	local idle = ns.API.ShouldHideIdle() or ns.db.muted == true
 	local queue = ns.db.showRotation ~= false and not idle and ns.BuildQueue() or {}

@@ -398,6 +398,25 @@ function ns.BuildHiddenDefense()
 	})
 end
 
+-- Looks at the self-buffs of the defense list out of combat, whether or not a
+-- cue is asked for: HasAura remembers what it saw, and in combat the client
+-- hides the auras, so a buff that was never looked at would count as missing
+-- (Power Word: Fortitude put on in town, where no cue is evaluated at all).
+function ns.RememberSelfBuffs()
+	if not ns.GetDef or API.InCombat() then
+		return
+	end
+	for _, step in ipairs(ns.GetDef()) do
+		local want = step.opt and step.opt.nobuff
+		if want and step.id and ns.IsStepEnabled(step) then
+			local id = API.Resolve(want == true and step.id or want)
+			if id then
+				API.HasAura(id, "player", "HELPFUL")
+			end
+		end
+	end
+end
+
 function ns.BuildDefense()
 	if not ns.GetDef then
 		return
