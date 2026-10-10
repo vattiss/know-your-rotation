@@ -508,9 +508,13 @@ local function mergeSteps(defaults, saved, dropped, skipMaint)
 	end
 	for _, def in ipairs(defaults) do
 		if not seen[def.key] and not dropped[def.key] and not skipCombatOnly(def.id, skipMaint) then
+			-- A new default is added even when another default step has the same
+			-- spell (a variant such as Eviscerate / Eviscerate5, so an update
+			-- reaches saved lists without a reset); a spell the player added
+			-- himself is not doubled.
 			local dup = false
 			for _, row in ipairs(out) do
-				if sameSpell(row.id, def.id) then
+				if row.custom and sameSpell(row.id, def.id) then
 					dup = true
 					break
 				end

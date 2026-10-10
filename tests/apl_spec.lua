@@ -355,7 +355,21 @@ describe("APL rotation lists", function()
 		ns.db.aplDrop = nil
 		local merged = ns.GetAPL("ROGUE", "damage", "single")
 		H.eq(merged[1].key, "Eviscerate")
-		H.falsy(indexOf(merged, "Eviscerate5"), "same spell already listed")
+		H.truthy(indexOf(merged, "Eviscerate5"), "a new default variant reaches an old save")
+		-- A spell the player added himself is not doubled by a default.
+		ns.InvalidateAPLCache()
+		ns.db.apl = {
+			ROGUE = {
+				damage = {
+					single = {
+						{ key = "custom_Eviscerate", id = ns.Spell.Rogue.Eviscerate, custom = true, on = 1 },
+					},
+				},
+			},
+		}
+		merged = ns.GetAPL("ROGUE", "damage", "single")
+		H.eq(merged[1].key, "custom_Eviscerate")
+		H.falsy(indexOf(merged, "Eviscerate5"), "the player's own copy counts")
 	end)
 
 	it("reads legacy flat saves as the single list", function()

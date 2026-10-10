@@ -236,7 +236,7 @@ A mode bucket is a table with `auto` / `single` / `aoe` and **no** `[1]` index. 
 - `aoe` reads `APLModes`, otherwise the single default;
 - racials are appended at the end, unchecked;
 - with no save and no removal, the defaults are returned as is;
-- otherwise `mergeSteps(..., skipMaint = true)`: the saved order wins, new default steps are added if they are not in `aplDrop` and not already present (same ID or same name).
+- otherwise `mergeSteps(..., skipMaint = true)`: the saved order wins, new default steps are added if they are not in `aplDrop` and not already in the list under the same key; a default with the same spell as another default (a variant such as `Eviscerate` / `Eviscerate5` / `EviscerateWeak`) is still added, so an update reaches old saves without a reset. Only a spell the player added himself (`custom_*`) is not doubled by a default.
 
 Removing a non-`custom_*` step writes its key to `aplDrop` / `defDrop`, so a default does not come back. `custom_` comes from the spell name (`custom_` + name without spaces).
 
@@ -273,7 +273,7 @@ Migrations in `defaults()`:
 
 - `listVersion ~= 4`: clears the global `apl`, `aplDrop`, `def`, `defDrop` **and** those of each profile.
 
-Bump `listVersion` only when old saves must be discarded. Players then lose their reorderings.
+Bump `listVersion` only when old saves must be discarded. Players then lose their reorderings; when saved lists were really replaced (`hasSavedLists`, not a new character), `onLogin` shows `NOTICE_LISTS_RESET` once through `ns.ShowNotice`.
 
 Other defaults: `showRotation`, `showDefense`, `showInterrupt`, `showPurge`, `showCleanse`, `showWeapon`, `showTotem` true; `role` `damage` then normalized; `autoEnemies` 3; `combatMode` `auto`; initial profile `pve` if the `profiles` table does not exist.
 

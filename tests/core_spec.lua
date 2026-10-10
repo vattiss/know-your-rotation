@@ -56,6 +56,26 @@ describe("Core saved variables", function()
 		H.eq(ns.db.combatMode, "auto")
 		H.eq(ns.db.lastManualMode, "single")
 		H.truthy(ns.db.profiles.pvp, "pvp profile created")
+		H.eq(ns.noticeFrame.text:GetText(), ns.T("NOTICE_LISTS_RESET"), "the player is told why the order changed")
+	end)
+
+	it("tells about a list reset only when saved lists were really replaced", function()
+		local function login(saved)
+			local w = wow.new()
+			w:player("WARRIOR")
+			w.env.KnowYourRotationCharDB = saved
+			local ns = w:load()
+			w:fire("PLAYER_LOGIN")
+			return ns
+		end
+		local ns = login({ charReady = 1, listVersion = 3, profiles = { pve = { def = { y = 1 } } } })
+		H.truthy(ns.noticeFrame, "lists only in a profile")
+		ns = login({ charReady = 1, listVersion = 3 })
+		H.eq(ns.noticeFrame, nil, "nothing saved: nothing lost")
+		ns = login({ charReady = 1, profiles = { pve = {} } })
+		H.eq(ns.noticeFrame, nil, "a new character")
+		ns = login({ charReady = 1, listVersion = 8, apl = { x = 1 } })
+		H.eq(ns.noticeFrame, nil, "current version: lists kept")
 	end)
 end)
 

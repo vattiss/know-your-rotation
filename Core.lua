@@ -35,12 +35,33 @@ end
 
 useCharacterDB()
 
+-- True when saved lists (or removals) exist in the settings table or one of its profiles.
+local function hasSavedLists()
+	local function has(t)
+		return t.apl ~= nil or t.aplDrop ~= nil or t.def ~= nil or t.defDrop ~= nil
+	end
+	if has(ns.db) then
+		return true
+	end
+	for _, profile in pairs(ns.db.profiles or {}) do
+		if has(profile) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Set when the saved lists were replaced by the defaults at this login, so the
+-- player is told once why the order changed.
+local listsWereReset = false
+
 local function defaults()
 	useCharacterDB()
 	if ns.ApplyLocale then
 		ns.ApplyLocale()
 	end
 	if ns.db.listVersion ~= 8 then
+		listsWereReset = ns.db.listVersion ~= nil and hasSavedLists()
 		ns.db.listVersion = 8
 		ns.db.apl = nil
 		ns.db.aplDrop = nil
@@ -986,6 +1007,10 @@ local function onLogin(greet)
 		local token, _, localized = ns.ClassToken()
 		ns.Print(ns.T("INIT"))
 		ns.Print(format(ns.T("MODULE"), localized or token or "?"))
+	end
+	if listsWereReset then
+		listsWereReset = false
+		ns.ShowNotice(ns.T("NOTICE_LISTS_RESET"))
 	end
 	ns.Tick()
 end
