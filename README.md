@@ -94,6 +94,10 @@ The Highlights page has a "Disable on this character" switch: while it is on, th
 
 `Automatic`, `Single` and `AoE`. Add, remove, and reorder are **per mode**. Automatic pulls with the single-target list and switches to the AoE list once enough enemies are fighting you (default 3, set on the Behavior page). The addon is tuned for leveling and learning a class, so there is no burst or raid mode.
 
+### Your own order
+
+The lists are a starting point for learning a class, and they cannot know your talents. On the **Rotation** page you can reorder the spells, switch a spell off, remove it, or drag one in from your spellbook; **Reset list** restores the default for the list you are looking at. What you cannot edit are the conditions of a spell (for example "only from 3 combo points"): those belong to the spell and are part of the addon. When a new addon version has to replace the saved lists, you get one message at login telling you so.
+
 ### Roles
 
 Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee, shaman caster/melee, druid hybrid / cat / bear). With **Role: Automatic** (Behavior page) the role comes from the name of your main talent tree (Protection: tank; Holy, Discipline, Restoration: heal; anything else: damage), and hunters and shamans switch melee / ranged by distance; pick a role to keep it fixed.
@@ -141,6 +145,35 @@ Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per c
 - This is a **helper**, not a bot. You still press the keys.
 - Racials appear in the editor (off by default). Air Walk is never put in the combat list.
 - Do not overwrite Blizzard spell APIs from other add-ons; this one reads `C_Spell` / `C_SpellBook` and never patches them.
+
+## What to expect, and how to help
+
+The addon was built for **leveling and learning a class**: it shows the order of your spells, reminds you of buffs, totems, pets and weapon buffs, and says when a spell is learned but not on your bars. It is not a tuned endgame rotation. Your talents, cooldowns, consumables and boss mechanics are not part of the lists, so a level 60 character gets a sensible order, not an optimal one. Most of the spells of levels 20 to 60 have not been played through in the game yet, so some of them will be wrong, and your reports are what fixes them.
+
+You can change the lists yourself (**Rotation** page: order, on / off, remove, add from your spellbook, **Reset list**). The conditions of a spell are part of the addon and cannot be edited there.
+
+### Collecting data for a bug report
+
+The addon has a debug mode that records what the game really answers (a value, nothing, or a hidden value) and why a spell was or was not suggested. It is off by default and costs a little CPU.
+
+1. Open **Behavior** and switch on **Collect debug data**.
+2. Play the way you normally do, and try to bring the problem up (the wrong spell is glowing, a spell you expect is missing, a cue stays on).
+3. Open **Profiles** and press **Debug report**. The text appears in the box below the buttons, already selected: press `Ctrl+C` to copy it.
+4. **Clear debug data** empties the record, so a new test starts clean (a full record stops collecting new situations, and it starts over by itself at the next login).
+
+The data is also written to your character's saved variables when you `/reload` or log out:
+`World of Warcraft\_classic_beta_\WTF\Account\<account>\<realm>\<character>\SavedVariables\KnowYourRotation.lua`
+(`KnowYourRotationCharDB.debug`). Attach that file if the text is too long to paste.
+
+The report holds your class and level, the client and addon version, counts of what the game answered per situation (in combat or not, enemy, friend or no target), the reasons the addon gave per spell (`addon says | ...`, `defense says | ...`), and the names of buffs, totems and error messages the client sent. It holds no character name, realm or chat.
+
+### Reporting an issue
+
+Open an issue at [github.com/vattiss/know-your-rotation/issues](https://github.com/vattiss/know-your-rotation/issues) and write:
+
+- class, level, talent tree (if you know it) and what you were doing (alone, in a group, in combat or not);
+- what you expected, and what the addon showed instead (a screenshot of the action bar helps);
+- the debug report from the steps above.
 
 ## For agents and contributors
 
