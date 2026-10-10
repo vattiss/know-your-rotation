@@ -554,16 +554,22 @@ local function pickGlowSpell(queue)
 		end
 		missing[#missing + 1] = id
 	end
-	if #missing > 0 then
+	-- The wand is a fallback for when the mana is out, not a spell the player is
+	-- told to put on the bars.
+	local wand = ns.Spell.Priest.Shoot
+	local names, ids = {}, {}
+	for _, id in ipairs(missing) do
+		if id ~= wand then
+			names[#names + 1] = ns.API.SpellName(id) or "?"
+			ids[#ids + 1] = id
+		end
+	end
+	if #names > 0 then
 		-- All the spells before the one that glows, in rotation order, in one message.
-		local key = table.concat(missing, ",")
+		local key = table.concat(ids, ",")
 		local now = GetTime()
 		if key ~= lastBarNotice or now - lastBarNoticeAt > 30 then
 			lastBarNotice, lastBarNoticeAt = key, now
-			local names = {}
-			for i, id in ipairs(missing) do
-				names[i] = ns.API.SpellName(id) or "?"
-			end
 			ns.ShowNotice(ns.T("NOTICE_NOT_ON_BAR"):format(table.concat(names, ", ")))
 		end
 	end

@@ -392,6 +392,33 @@ describe("Core tick", function()
 		H.eq(glowed, nil, "nothing on a bar: nothing to glow")
 	end)
 
+	it("does not announce the wand as missing from the bars", function()
+		local _, ns = boot("PRIEST", function(w)
+			w.spell(5019, { name = "Shoot" })
+		end)
+		ns.BuildQueue = function()
+			ns.queueGlowOk = true
+			return { 5019, 12 }
+		end
+		ns.GlowButtonNames = function(id)
+			return id == 12 and { "b" } or {}
+		end
+		local glowed
+		ns.GlowSpell = function(id)
+			glowed = id
+		end
+		local said = 0
+		local show = ns.ShowNotice
+		ns.ShowNotice = function(text)
+			said = said + 1
+			show(text)
+		end
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(glowed, 12, "the next spell on a bar glows")
+		H.eq(said, 0, "no message for the wand")
+	end)
+
 	it("glows the queue and fades it under a hidden finisher", function()
 		local w, ns = boot()
 		local calls = {}
