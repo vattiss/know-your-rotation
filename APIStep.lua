@@ -460,9 +460,17 @@ local STEP_CHECKS = {
 					-- Health reads as 100 when the game hides it: say so, the
 					-- coloured glow (BuildHidden*) follows the real value.
 					if ns.API.HealthHiddenFor(unit) then
-						return "health is hidden by the game (the coloured glow follows it)"
+						-- hpIfVisible: for a member of your party or raid you selected
+						-- the threshold only counts while the game shows the health;
+						-- hidden, the step is offered as it is (Renew, Shield). Your own
+						-- health is followed by the coloured glow instead, and a friend
+						-- who is not in your group is not offered a buff.
+						if not (opt.hpIfVisible and unit ~= "player" and ns.API.InMyGroup(unit)) then
+							return "health is hidden by the game (the coloured glow follows it)"
+						end
+					else
+						return "health is above the heal threshold"
 					end
-					return "health is above the heal threshold"
 				end
 			end
 		end,

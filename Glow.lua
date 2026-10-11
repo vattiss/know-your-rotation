@@ -996,17 +996,22 @@ local function restoreFaded()
 	end
 end
 
-function ns.GlowFadeForFinisher(spellID, threshold)
+-- Sets the alpha of the rotation glow of spellID from a unit's hidden health
+-- through a curve; `makeCurve` is fadeCurve (out below the threshold) or
+-- healCurve (in below the threshold).
+-- `keys` are the overlay keys it touches: a heal glows as "heal", the rest as
+-- "next" (showDamage).
+local function fadeRotationGlow(spellID, threshold, unit, makeCurve, keys)
 	if not spellID or not threshold or not UnitHealthPercent then
 		restoreFaded()
 		return
 	end
-	local curve = fadeCurve(math.floor(threshold + 0.5))
+	local curve = makeCurve(math.floor(threshold + 0.5))
 	if not curve then
 		restoreFaded()
 		return
 	end
-	local ok, alpha = pcall(UnitHealthPercent, "target", true, curve)
+	local ok, alpha = pcall(UnitHealthPercent, unit, true, curve)
 	if not ok then
 		restoreFaded()
 		return
@@ -1014,11 +1019,13 @@ function ns.GlowFadeForFinisher(spellID, threshold)
 	local keep = {}
 	for _, button in ipairs(buttonsFor(spellID)) do
 		local overlays = button.KYROverlays
-		local frame = overlays and overlays.next
-		if frame and frame.isAlert and frame:IsShown() then
-			frame:SetAlpha(alpha)
-			keep[frame] = true
-			fadedFrames[frame] = true
+		for _, key in ipairs(keys) do
+			local frame = overlays and overlays[key]
+			if frame and frame.isAlert and frame:IsShown() then
+				frame:SetAlpha(alpha)
+				keep[frame] = true
+				fadedFrames[frame] = true
+			end
 		end
 	end
 	for frame in pairs(fadedFrames) do
@@ -1027,6 +1034,17 @@ function ns.GlowFadeForFinisher(spellID, threshold)
 			fadedFrames[frame] = nil
 		end
 	end
+end
+
+function ns.GlowFadeForFinisher(spellID, threshold)
+	fadeRotationGlow(spellID, threshold, "target", fadeCurve, { "next" })
+end
+
+-- A heal or shield on a party member you selected whose health is hidden: the
+-- rotation glow of the spell is lit by that unit's health, so it shows when
+-- the member is hurt and not at full health.
+function ns.GlowFadeForHeal(spellID, threshold, unit)
+	fadeRotationGlow(spellID, threshold, unit, healCurve, { "heal", "next" })
 end
 
 -- Heal: lights up as your own health drops below the heal's threshold.

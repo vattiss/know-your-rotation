@@ -615,6 +615,14 @@ function wow.new()
 		local d = unit(u)
 		return d ~= nil and d.isPlayer == true
 	end
+	env.UnitInParty = function(u)
+		local d = unit(u)
+		return d ~= nil and d.inParty == true
+	end
+	env.UnitInRaid = function(u)
+		local d = unit(u)
+		return d ~= nil and d.inRaid or nil
+	end
 	env.UnitIsUnit = function(a, b)
 		if state.secret.compare then
 			return SECRET_BOOL

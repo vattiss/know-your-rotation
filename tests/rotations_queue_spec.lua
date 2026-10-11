@@ -32,6 +32,22 @@ local function useList(ns, list)
 	end
 end
 
+describe("Priest and a party member", function()
+	it("offers the Shield and then the Renew for a selected friend whose health is hidden", function()
+		local w = wow.new()
+		w:player("PRIEST", { power = { [0] = 100 }, powerMax = { [0] = 100 } })
+		w.spell(17, { name = "Power Word: Shield", helpful = true })
+		w.spell(139, { name = "Renew", helpful = true })
+		w.state.secret.health = true
+		w.state.secret.healthPercent = true
+		w:target({ hostile = false, reaction = 5, distance = 10, inParty = true })
+		w:load()
+		w:fire("PLAYER_LOGIN")
+		local q = w.ns.BuildQueue()
+		H.same({ q[1], q[2] }, { 17, 139 }, "Shield first, then Renew")
+	end)
+end)
+
 describe("Rogue leveling", function()
 	local function rogue(level, mobLevel)
 		local w = wow.new()

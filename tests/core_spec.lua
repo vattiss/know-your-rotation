@@ -502,6 +502,56 @@ describe("Core tick", function()
 	end)
 end)
 
+describe("Core party heal fade", function()
+	it("lights a heal for a selected group member by that member's health", function()
+		local _, ns = boot("PRIEST")
+		local opt = { hp = 90, heal = true, hpIfVisible = true }
+		ns.BuildQueue = function()
+			ns.queueGlowOk = true
+			ns.queueSteps = { [17] = { id = 17, opt = opt } }
+			return { 17 }
+		end
+		ns.GlowButtonNames = function()
+			return { "b" }
+		end
+		local unit, inGroup, hidden = "target", true, true
+		ns.API.HealUnit = function()
+			return unit
+		end
+		ns.API.InMyGroup = function()
+			return inGroup
+		end
+		ns.API.HealthHiddenFor = function()
+			return hidden
+		end
+		local got
+		ns.GlowFadeForHeal = function(id, threshold, who)
+			got = { id, threshold, who }
+		end
+		ns.InvalidateTick()
+		ns.Tick()
+		H.same(got, { 17, 90, "target" })
+		got = nil
+		inGroup = false
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(got, nil, "not in the group")
+		inGroup, hidden = true, false
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(got, nil, "the health is readable")
+		hidden, unit = true, "player"
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(got, nil, "your own health has its own glow")
+		unit = "target"
+		opt.hpIfVisible = nil
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(got, nil, "not a party heal step")
+	end)
+end)
+
 describe("Core old rank", function()
 	it("says once when the bar holds a lower rank than the learned one", function()
 		local w, ns = boot("MAGE", function(w)
@@ -580,15 +630,18 @@ describe("Core blocked actions", function()
 		w:fire("ADDON_ACTION_BLOCKED", "OtherAddon", "ClearTarget()")
 		H.eq(ns.db.blockedAction, nil)
 		w:fire("ADDON_ACTION_FORBIDDEN", "KnowYourRotation", "SetBinding()")
-		H.eq(ns.db.blockedAction, "KnowYourRotation | SetBinding()")
+		H.truthy(
+			ns.db.blockedAction:find("KnowYourRotation | SetBinding() | ", 1, true) == 1,
+			"the call is kept, with what the addon was doing"
+		)
 		local printed
 		for _, line in ipairs(w.printed) do
-			if line:find("KnowYourRotation | SetBinding()", 1, true) then
+			if line:find("KnowYourRotation | SetBinding() | ", 1, true) then
 				printed = true
 			end
 		end
 		H.truthy(printed, "printed once to the chat")
-		H.truthy(ns.Debug.Report():find("blocked action: KnowYourRotation | SetBinding()", 1, true))
+		H.truthy(ns.Debug.Report():find("blocked action: KnowYourRotation | SetBinding() | ", 1, true))
 	end)
 end)
 

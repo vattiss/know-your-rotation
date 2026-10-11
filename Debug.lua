@@ -389,6 +389,9 @@ function D.Sample()
 	end
 	sampleSpells(ctx)
 	sampleDefense(ctx)
+	if ns.healFadeNote then
+		count("party heal fade", ctx, ns.healFadeNote)
+	end
 end
 
 local EVENTS = {

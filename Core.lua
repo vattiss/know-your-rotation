@@ -545,6 +545,27 @@ end
 -- The spell to glow: the first of the queue that is on an action button. When
 -- the next spell is in the spellbook but on no bar, say so once (the message
 -- is not repeated for the same spell within 30 s) and go on with the next.
+-- The glowing spell is a heal or shield for a member of your group that you
+-- selected, and the game hides that member's health: returns the threshold
+-- and the unit, so the glow can be lit by the member's health.
+-- ns.healFadeNote says why it did or did not (the debug report shows it).
+local function healFadeFor(glow)
+	local step = glow and ns.queueSteps and ns.queueSteps[glow]
+	local opt = step and step.opt
+	if not (opt and opt.hpIfVisible and tonumber(opt.hp)) then
+		ns.healFadeNote = "not a party heal step"
+		return nil
+	end
+	local unit = ns.API.HealUnit(opt)
+	local inGroup = ns.API.InMyGroup(unit)
+	local hidden = ns.API.HealthHiddenFor(unit)
+	ns.healFadeNote = ("unit=%s inGroup=%s hidden=%s hp=%s"):format(unit, tostring(inGroup), tostring(hidden), opt.hp)
+	if unit == "player" or not inGroup or not hidden then
+		return nil
+	end
+	return tonumber(opt.hp), unit
+end
+
 local lastRankNotice, lastRankNoticeAt = nil, 0
 
 -- The spell that glows sits on the bar as a lower rank than the one the player
@@ -834,8 +855,12 @@ function ns.Tick()
 			ns.GlowShot(shots)
 		end
 	end
-	-- After the glows are set: fade the rotation glow where the finisher takes over.
-	if ns.GlowFadeForFinisher then
+	-- After the glows are set: fade the rotation glow where the finisher takes
+	-- over, or light a party member's heal by that member's health.
+	local healThreshold, healUnit = healFadeFor(glowSpell)
+	if healThreshold and ns.GlowFadeForHeal then
+		ns.GlowFadeForHeal(glowSpell, healThreshold, healUnit)
+	elseif ns.GlowFadeForFinisher then
 		local fade = hiddenExec and ns.queueGlowOk and glowSpell ~= hiddenExec and glowSpell or nil
 		ns.GlowFadeForFinisher(fade, hiddenExecThreshold)
 	end
@@ -1179,6 +1204,10 @@ local function noteBlockedAction(...)
 	local first, second = ...
 	local text = tostring(first) .. " | " .. tostring(second)
 	if text:find(addonName, 1, true) then
+		-- The client often names no function ("UNKNOWN()"): what the addon was
+		-- doing then narrows it down.
+		local combat = InCombatLockdown and InCombatLockdown() and "combat" or "no combat"
+		text = text .. " | " .. combat .. " | " .. tostring(ns.healFadeNote)
 		ns.db.blockedAction = text
 		ns.Print(ns.T("BLOCKED_ACTION"):format(text))
 	end

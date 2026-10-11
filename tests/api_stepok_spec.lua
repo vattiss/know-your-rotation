@@ -358,6 +358,46 @@ describe("StepOk health", function()
 		check(A, 1, { hp = 70 }, false, "health is above")
 	end)
 
+	it("offers a heal for someone else whose health the game hides (hpIfVisible)", function()
+		local w, _, A = setup()
+		w.state.secret.health = true
+		w.state.secret.healthPercent = true
+		w.state.units.target.hostile = false
+		w.state.units.target.reaction = 5
+		local opt = { hp = 85, heal = true, hpIfVisible = true }
+		check(A, 6, opt, false, "health is hidden by the game")
+		w.state.units.target.inParty = true
+		check(A, 6, opt, true, "a party member you selected: no health to read")
+		w.state.units.target.inParty = false
+		w.state.units.target.inRaid = 3
+		check(A, 6, opt, true, "a raid member too")
+		w.state.units.target.inRaid = nil
+		w.state.units.target.inParty = true
+		check(A, 6, { hp = 85, heal = true }, false, "health is hidden by the game")
+		w.state.units.target.hostile = true
+		w.state.units.target.reaction = 2
+		check(A, 6, opt, false, "health is hidden by the game")
+		w.state.secret.health = false
+		w.state.secret.healthPercent = false
+		w.state.units.target.hostile = false
+		w.state.units.target.reaction = 5
+		w.state.units.target.health = 95
+		check(A, 6, opt, false, "health is above the heal threshold")
+		w.env.UnitInParty = function()
+			error("no group API")
+		end
+		w.env.UnitInRaid = nil
+		w.state.units.target.health = 60
+		check(A, 6, opt, true, "the health is readable: the group does not matter")
+		w.state.secret.health = true
+		w.state.secret.healthPercent = true
+		check(A, 6, opt, false, "health is hidden by the game")
+		w.state.secret.health = false
+		w.state.secret.healthPercent = false
+		w.state.units.target.health = 60
+		check(A, 6, opt, true)
+	end)
+
 	it("keeps a spell without a range of its own for a target that is near (reach)", function()
 		local w, ns, A = setup()
 		local band = { 0, 11 }

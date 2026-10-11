@@ -135,6 +135,7 @@ function ns.BuildQueue()
 	-- so the queue walks the list (1 → 2 → 3) instead of repeating a cast.
 	local used = {}
 	local stepById = {}
+	ns.queueSteps = stepById
 	local function markHeal(id, opt)
 		if not API.IsHealSpell(id, opt) then
 			return

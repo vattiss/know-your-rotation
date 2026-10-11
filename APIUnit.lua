@@ -229,8 +229,20 @@ function ns.API.SpellMaxRange(spellID)
 	return info and numberOrNil(info.maxRange) or nil
 end
 
+-- True when the unit is someone you cannot attack (a party member, a friend).
+local function isFriendlyUnit(unit)
+	local ok, canAttack = pcall(UnitCanAttack, "player", unit)
+	return ok and readable(canAttack) and canAttack == false
+end
+
 local function interactInRange(unit, index)
 	if not CheckInteractDistance then
+		return nil
+	end
+	-- In combat the client blocks this call for a friendly unit (a party member
+	-- you selected): ADDON_ACTION_BLOCKED named CheckInteractDistance() in the
+	-- debug data. An enemy answers in combat.
+	if isFriendlyUnit(unit) and ns.API.InCombat() then
 		return nil
 	end
 	local ok, result = pcall(CheckInteractDistance, unit, index)
@@ -405,6 +417,26 @@ function ns.API.HealUnit(opt)
 		return "target"
 	end
 	return "player"
+end
+
+---True when the unit is in your party or raid. An unreadable answer counts as
+---"not in the group".
+---@param unit string
+---@return boolean
+function ns.API.InMyGroup(unit)
+	if type(UnitInParty) == "function" then
+		local ok, inParty = pcall(UnitInParty, unit)
+		if ok and readable(inParty) and inParty == true then
+			return true
+		end
+	end
+	if type(UnitInRaid) == "function" then
+		local ok, index = pcall(UnitInRaid, unit)
+		if ok and readable(index) and type(index) == "number" then
+			return true
+		end
+	end
+	return false
 end
 
 function ns.API.HealHealth(opt)

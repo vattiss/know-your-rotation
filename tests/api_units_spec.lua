@@ -97,6 +97,29 @@ describe("API.EnemyCount", function()
 		H.eq(A.EnemyCount(10), 0)
 	end)
 
+	it("does not ask the client for the interact distance of a friend in combat", function()
+		local w, _, A = api()
+		local calls = 0
+		w.env.CheckInteractDistance = function()
+			calls = calls + 1
+			return true
+		end
+		w.state.units.target = nil
+		w:target({ hostile = false, reaction = 5 })
+		w.state.units.target.distance = nil -- the client cannot measure: interact distances
+		A.TargetRangeBand("target")
+		H.truthy(calls > 0, "out of combat the friend is measured")
+		calls = 0
+		w.state.units.player.combat = true
+		A.TargetRangeBand("target")
+		H.eq(calls, 0, "in combat the client blocks it for a friend: not called")
+		w.state.units.target = nil
+		w:target({ hostile = true })
+		w.state.units.target.distance = nil
+		A.TargetRangeBand("target")
+		H.truthy(calls > 0, "an enemy answers in combat")
+	end)
+
 	it("survives failing unit calls", function()
 		local w, _, A = api()
 		plate(w, 1, {})

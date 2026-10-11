@@ -9,6 +9,7 @@
 ---@field unit? string Unit for health / auras ("player", "target", "pet").
 ---@field hp? number Offered at or below this health percent.
 ---@field hpMin? number Refused below this health percent.
+---@field hpIfVisible? boolean With heal: for someone else the threshold only counts while the game shows the health.
 ---@field hpPerCombo? number Target health threshold per combo point.
 ---@field manaMax? number Offered at or below this mana percent.
 ---@field minLevel? integer From this character level on.

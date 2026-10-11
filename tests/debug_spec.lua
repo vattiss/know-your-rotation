@@ -114,6 +114,15 @@ describe("Debug sampling", function()
 	end)
 end)
 
+describe("Debug party heal fade", function()
+	it("records why a heal was or was not lit by a party member's health", function()
+		local _, ns = boot("PRIEST")
+		ns.healFadeNote = "unit=target inGroup=true hidden=true hp=85"
+		ns.Debug.Sample()
+		H.truthy(counts(ns)["party heal fade | idle, no target | unit=target inGroup=true hidden=true hp=85"])
+	end)
+end)
+
 describe("Debug shot cue", function()
 	it("records which hunter shots the cue offers", function()
 		local w, ns = boot("HUNTER", function(w)

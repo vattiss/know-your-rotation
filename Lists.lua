@@ -292,14 +292,19 @@ ns.APLDefaults = {
 			step("Shoot", Pr.Shoot, { autoRepeat = true, hostile = true }),
 			step("FlashHeal", Pr.FlashHeal, { hp = 70, heal = true }),
 			step("Heal", Pr.Heal, { hp = 80, heal = true }),
-			step("Renew", Pr.Renew, { hp = 85, nobuff = true, refresh = 4, heal = true }),
+			step(
+				"PowerWordShield",
+				Pr.PowerWordShield,
+				{ hp = 90, nobuff = true, nodebuff = Pr.WeakenedSoul, refresh = 0, heal = true, hpIfVisible = true }
+			),
+			step("Renew", Pr.Renew, { hp = 85, nobuff = true, refresh = 4, heal = true, hpIfVisible = true }),
 			step("LesserHeal", Pr.LesserHeal, { hp = 75, heal = true }),
 		},
 		heal = {
 			step(
 				"PowerWordShield",
 				Pr.PowerWordShield,
-				{ hp = 90, nobuff = true, nodebuff = Pr.WeakenedSoul, refresh = 0, heal = true }
+				{ hp = 90, nobuff = true, nodebuff = Pr.WeakenedSoul, refresh = 0, heal = true, hpIfVisible = true }
 			),
 			step("Penance", Pr.Penance, { hp = 70, heal = true }),
 			step("PrayerofMending", Pr.PrayerofMending, { hp = 90, heal = true }),
@@ -309,7 +314,7 @@ ns.APLDefaults = {
 			step("FlashHeal", Pr.FlashHeal, { hp = 70, heal = true }),
 			step("GreaterHeal", Pr.GreaterHeal, { hp = 55, heal = true }),
 			step("Heal", Pr.Heal, { hp = 80, heal = true }),
-			step("Renew", Pr.Renew, { hp = 90, nobuff = true, refresh = 4, heal = true }),
+			step("Renew", Pr.Renew, { hp = 90, nobuff = true, refresh = 4, heal = true, hpIfVisible = true }),
 			step("PrayerofHealing", Pr.PrayerofHealing, { hp = 75, heal = true }),
 			step("LesserHeal", Pr.LesserHeal, { hp = 85, heal = true }),
 			step("Smite", Pr.Smite, { filler = true, hostile = true }),
@@ -582,7 +587,7 @@ ns.APLModes = {
 				step("PrayerofMending", Pr.PrayerofMending, { hp = 90, heal = true }),
 				step("BindingHeal", Pr.BindingHeal, { hp = 70, heal = true }),
 				step("HolyNova", Pr.HolyNova),
-				step("Renew", Pr.Renew, { hp = 90, nobuff = true, heal = true }),
+				step("Renew", Pr.Renew, { hp = 90, nobuff = true, heal = true, hpIfVisible = true }),
 				step("FlashHeal", Pr.FlashHeal, { hp = 70, heal = true }),
 				step("GreaterHeal", Pr.GreaterHeal, { hp = 55, heal = true }),
 			},
