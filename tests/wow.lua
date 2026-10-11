@@ -1010,6 +1010,14 @@ function wow.new()
 	env.GetNumShapeshiftForms = function()
 		return #state.forms
 	end
+	env.GetShapeshiftForm = function()
+		for i, f in ipairs(state.forms) do
+			if f.active then
+				return i
+			end
+		end
+		return 0
+	end
 	env.GetShapeshiftFormInfo = function(i)
 		local f = state.forms[i]
 		if not f then

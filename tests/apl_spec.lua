@@ -151,6 +151,18 @@ describe("APL racials", function()
 	end)
 end)
 
+describe("APL druid form", function()
+	it("reads the cat form without recursing through the hold lookup", function()
+		local w, ns = boot("DRUID", function(w)
+			w.spell(768, { name = "Cat Form" })
+		end)
+		w.aura("player", { name = "Cat Form", spellId = 768 })
+		-- ActiveSpec -> Form -> HasAura -> rememberAura -> HoldSeconds -> GetAPL -> ActiveSpec
+		H.eq(ns.ActiveSpec(), "cat")
+		H.eq(ns.ActiveSpec(), "cat", "and again, from the memory")
+	end)
+end)
+
 describe("APL front racials", function()
 	it("puts an offensive racial first, also in a save that has it at the end", function()
 		local _, ns = boot("ROGUE")

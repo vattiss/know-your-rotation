@@ -263,6 +263,38 @@ local function sampleDefense(ctx)
 	end
 end
 
+-- Shapeshift forms (druid forms, warrior stances): the addon reads the form
+-- from the aura, which the client hides in combat. Is the form index
+-- (GetShapeshiftForm, not in the generated API docs) readable there?
+local function sampleForms(ctx)
+	local okNum, num = pcall(GetNumShapeshiftForms)
+	if not okNum or type(num) ~= "number" or num < 1 then
+		return
+	end
+	if type(GetShapeshiftForm) == "function" then
+		probe("GetShapeshiftForm() index", ctx, function()
+			return GetShapeshiftForm()
+		end)
+	end
+	for index = 1, math.min(num, 6) do
+		probe("GetShapeshiftFormInfo(" .. index .. ") icon,active,castable,spellID", ctx, function()
+			return GetShapeshiftFormInfo(index)
+		end)
+	end
+	local S = ns.Spell and ns.Spell.Druid
+	if S then
+		count(
+			"form as the addon reads it",
+			ctx,
+			("spec=%s cat=%s bear=%s"):format(
+				tostring(ns.ActiveSpec()),
+				tostring(ns.API.Form(S.CatForm)),
+				tostring(ns.API.Form(S.BearForm))
+			)
+		)
+	end
+end
+
 local function sampleShots(ctx)
 	local names = {}
 	for _, id in ipairs(ns.BuildShot()) do
@@ -398,6 +430,7 @@ function D.Sample()
 	if ns.healFadeNote then
 		count("party heal fade", ctx, ns.healFadeNote)
 	end
+	sampleForms(ctx)
 end
 
 local EVENTS = {

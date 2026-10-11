@@ -146,6 +146,26 @@ describe("Debug interact distance probe", function()
 	end)
 end)
 
+describe("Debug shapeshift forms", function()
+	it("records what the client says about the forms and how the addon reads them", function()
+		local w, ns = boot("DRUID", function(w)
+			w.spell(768, { name = "Cat Form" })
+		end)
+		w.state.forms = { { icon = 1, active = true, spellID = 768 } }
+		w.aura("player", { name = "Cat Form", spellId = 768 })
+		ns.Debug.Sample()
+		local c = counts(ns)
+		H.truthy(c["GetShapeshiftForm() index | idle, no target | number"])
+		H.truthy(
+			c["GetShapeshiftFormInfo(1) icon,active,castable,spellID | idle, no target | number,boolean=true,boolean=true,number"]
+		)
+		H.truthy(c["form as the addon reads it | idle, no target | spec=cat cat=true bear=false"])
+		w.state.forms = {}
+		ns.Debug.Sample()
+		H.eq(#ns.API.TotemBar(), 0, "a class without forms records nothing more")
+	end)
+end)
+
 describe("Debug shot cue", function()
 	it("records which hunter shots the cue offers", function()
 		local w, ns = boot("HUNTER", function(w)

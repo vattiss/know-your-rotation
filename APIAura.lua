@@ -373,6 +373,11 @@ local function auraIdentity(aura)
 	return auraID, auraName, hidden
 end
 
+-- HoldSeconds reads the current list, and for a druid the current list depends
+-- on the form (ActiveSpec -> Form -> HasAura -> rememberAura): asking again
+-- inside that chain would never end. The inner call takes the default.
+local askingHold = false
+
 local function rememberAura(spellID, auraName, remain, fromCast)
 	local name = auraName or ns.API.SpellName(spellID)
 	if type(name) ~= "string" or name == "" then
@@ -382,7 +387,13 @@ local function rememberAura(spellID, auraName, remain, fromCast)
 	local family = familyOf(name)
 	local seconds = family and FAMILY_SECONDS[family]
 	if not seconds then
-		local hold = ns.API.HoldSeconds(spellID)
+		local hold
+		if not askingHold then
+			askingHold = true
+			local ok, value = pcall(ns.API.HoldSeconds, spellID)
+			askingHold = false
+			hold = ok and value or nil
+		end
 		seconds = (hold and hold > 0) and hold or 30
 	end
 	local exp

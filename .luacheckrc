@@ -59,6 +59,7 @@ read_globals = {
 	"GetMacroBody",
 	"GetMacroSpell",
 	"GetNumShapeshiftForms",
+	"GetShapeshiftForm",
 	"GetShapeshiftFormInfo",
 	"GetSpellBaseCooldown",
 	"GetSpellBookItemName",
