@@ -160,6 +160,7 @@ Evaluated by `ns.API.StepOk` in order. A missing field is ignored. The condition
 | `engaged` | Only in combat or with an enemy targeted (seals, totems, Tiger's Fury), so they are not suggested while walking around. |
 | `enemyTarget` | Needs an attackable target, without a range check (Stealth, Prowl before a pull). |
 | `needKnownAny` | At least one of these spells must be learned (Stealth needs Ambush, Garrote or Cheap Shot; Prowl needs Ravage or Pounce). |
+| `reach` | The target is at most this many yards away (`ns.API.TargetRangeBand`: 11 / 28 yards from the interact distances). An unknown distance only counts in combat. For spells without a range of their own (racials). |
 | `weakTarget` | Only for a target below your level (an unknown level counts as not weak). Rogue leveling: Eviscerate from 2 combo points on a weak mob, from 3 on a mob of your level (up to level 19). |
 | `maxLevel` | Offered only up to this character level (Stoneskin Totem up to 29, then Strength of Earth Totem takes its place). |
 | `minLevel` | Offered only from this character level on (Strength of Earth 30, Mana Spring 40 in the damage lists, Rupture 40): early fights are too short for them. |
@@ -235,7 +236,7 @@ A mode bucket is a table with `auto` / `single` / `aoe` and **no** `[1]` index. 
 - explicit mode, otherwise `ns.ResolveCombatMode()`;
 - `auto` and `single` read `APLDefaults`;
 - `aoe` reads `APLModes`, otherwise the single default;
-- racials are appended at the end, unchecked; the offensive ones (`hostile`, `front = true`: Blood Fury, Berserking, Elune's Light, Eureka) are `combat = true` and go to the **front** of the list (also in an old save, where the racial stood at the end): the first spell of a fight, not while a target is only selected before the pull;
+- racials are appended at the end, unchecked; the offensive ones (`hostile`, `front = true`: Blood Fury, Berserking, Elune's Light, Eureka) are `engaged = true, reach = 28` and go to the **front** of the list (also in an old save, where the racial stood at the end): the first spell at the pull once the target is within 28 yards (`TargetRangeBand`), not while a far target is only selected (a racial has no range of its own, so it would be the one pressable spell). War Stomp and Ley Line wait for `combat`;
 - with no save and no removal, the defaults are returned as is;
 - otherwise `mergeSteps(..., skipMaint = true)`: the saved order wins, new default steps are added if they are not in `aplDrop` and not already in the list under the same key; a default with the same spell as another default (a variant such as `Eviscerate` / `Eviscerate5` / `EviscerateWeak`) is still added, so an update reaches old saves without a reset. Only a spell the player added himself (`custom_*`) is not doubled by a default.
 

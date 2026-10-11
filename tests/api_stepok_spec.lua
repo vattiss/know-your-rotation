@@ -358,6 +358,23 @@ describe("StepOk health", function()
 		check(A, 1, { hp = 70 }, false, "health is above")
 	end)
 
+	it("keeps a spell without a range of its own for a target that is near (reach)", function()
+		local w, ns, A = setup()
+		local band = { 0, 11 }
+		ns.API.TargetRangeBand = function()
+			return band[1], band[2]
+		end
+		check(A, 1, { reach = 28 }, true)
+		band = { 11, 28 }
+		check(A, 1, { reach = 28 }, true, "within the inspect range")
+		band = { 28, 100 }
+		check(A, 1, { reach = 28 }, false, "farther than 28 yards")
+		band = { nil, nil }
+		check(A, 1, { reach = 28 }, false, "distance is unknown")
+		w.state.units.player.combat = true
+		check(A, 1, { reach = 28 }, true)
+	end)
+
 	it("scales a finisher threshold by combo points", function()
 		local w, ns, A = setup()
 		ns.API.Combo = function()

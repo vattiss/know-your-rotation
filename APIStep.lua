@@ -132,6 +132,22 @@ local STEP_CHECKS = {
 			end
 		end,
 	},
+	-- reach = the target is at most this many yards away (a spell without a
+	-- range of its own, like a racial, would otherwise be pressable at any
+	-- distance). An unknown distance only counts in combat.
+	{
+		"reach",
+		function(c)
+			local _, farthest = ns.API.TargetRangeBand("target")
+			if farthest == nil then
+				if not ns.API.InCombat() then
+					return "the target's distance is unknown"
+				end
+			elseif farthest > c.opt.reach then
+				return ("the target is farther than %d yards"):format(c.opt.reach)
+			end
+		end,
+	},
 	-- weakTarget = the target is below your level (an unknown level counts as
 	-- not weak).
 	{

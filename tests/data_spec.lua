@@ -27,7 +27,10 @@ describe("Data.RACIALS", function()
 		for _, racial in ipairs(ns.RACIALS) do
 			if racial.opt and racial.opt.hostile then
 				count = count + 1
-				H.eq(racial.opt.combat, true, racial.key .. " is not offered before the pull")
+				H.truthy(
+					racial.opt.combat == true or (racial.opt.engaged == true and racial.opt.reach ~= nil),
+					racial.key .. " is not offered for a far target before the pull"
+				)
 			end
 		end
 		H.truthy(count >= 5, "the offensive racials were checked")
