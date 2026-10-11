@@ -151,6 +151,41 @@ describe("APL racials", function()
 	end)
 end)
 
+describe("APL front racials", function()
+	it("puts an offensive racial first, also in a save that has it at the end", function()
+		local _, ns = boot("ROGUE")
+		ns.RACIALS = {
+			{
+				key = "Offence",
+				id = 20572,
+				races = { 1 },
+				opt = { hostile = true, combat = true },
+				on = true,
+				front = true,
+			},
+			{ key = "Calm", id = 20600, races = { 1 }, opt = { combat = true } },
+		}
+		ns.InvalidateAPLCache()
+		local list = ns.GetAPL("ROGUE", "damage", "single")
+		H.eq(list[1].key, "racial_Offence", "first in the default list")
+		H.eq(list[#list].key, "racial_Calm", "the others close it")
+		ns.db.apl = {
+			ROGUE = {
+				damage = {
+					single = {
+						{ key = "Eviscerate", on = 1 },
+						{ key = "racial_Offence", on = 1 },
+					},
+				},
+			},
+		}
+		ns.InvalidateAPLCache()
+		list = ns.GetAPL("ROGUE", "damage", "single")
+		H.eq(list[1].key, "racial_Offence", "an old save is moved to the front")
+		H.eq(list[2].key, "Eviscerate")
+	end)
+end)
+
 describe("APL specs and modes", function()
 	it("picks the druid list from the form and role", function()
 		local w, ns = boot("DRUID", function(w)

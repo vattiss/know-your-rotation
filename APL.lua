@@ -194,6 +194,7 @@ function ns.RacialSteps(defensiveOnly)
 				opt = racial.opt or {},
 				on = racial.on and true or false,
 				racial = true,
+				front = racial.front,
 			}
 		end
 	end
@@ -343,9 +344,21 @@ local function defaultsFor(classFile, spec, mode)
 	if not list then
 		list = specPack(classFile, spec) or {}
 	end
-	local out = copyList(list)
+	local out = {}
+	-- The offensive racials (Blood Fury, Berserking, ...) are for the start of
+	-- the fight: first in the list; the others close it.
 	for _, racial in ipairs(ns.RacialSteps()) do
-		out[#out + 1] = racial
+		if racial.front then
+			out[#out + 1] = racial
+		end
+	end
+	for _, step in ipairs(copyList(list)) do
+		out[#out + 1] = step
+	end
+	for _, racial in ipairs(ns.RacialSteps()) do
+		if not racial.front then
+			out[#out + 1] = racial
+		end
 	end
 	return out
 end
@@ -453,6 +466,7 @@ local function mergeSteps(defaults, saved, dropped, skipMaint)
 					opt = injectHold(copyOpt(def.opt), def.id),
 					on = ns.IsStepEnabled(def),
 					racial = def.racial,
+					front = def.front,
 				}
 			end
 		end
@@ -475,6 +489,7 @@ local function mergeSteps(defaults, saved, dropped, skipMaint)
 					opt = applySavedHold(copyOpt(def.opt), row, def.id),
 					on = ns.IsStepEnabled(row),
 					racial = def.racial,
+					front = def.front,
 				}
 				seen[row.key] = true
 			elseif (row.id or row.custom) and not skipCombatOnly(row.id, skipMaint) then
@@ -526,11 +541,24 @@ local function mergeSteps(defaults, saved, dropped, skipMaint)
 					opt = injectHold(copyOpt(def.opt), def.id),
 					on = ns.IsStepEnabled(def),
 					racial = def.racial,
+					front = def.front,
 				}
 			end
 		end
 	end
-	return out
+	-- An old save has the racial at the end: it belongs at the start.
+	local front, rest = {}, {}
+	for _, row in ipairs(out) do
+		if row.front then
+			front[#front + 1] = row
+		else
+			rest[#rest + 1] = row
+		end
+	end
+	for _, row in ipairs(rest) do
+		front[#front + 1] = row
+	end
+	return front
 end
 
 local function packRows(steps)

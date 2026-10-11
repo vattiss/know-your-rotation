@@ -97,30 +97,40 @@ ns.CLASS_SPELL = {
 	DRUID = "Druid",
 }
 
+-- The offensive racials are for the fight (combat = true): with a target only
+-- selected, before the pull, they would be the one pressable spell of a target
+-- that is still out of range of everything else.
 -- Classic racials + Aeolides. Air Walk (1259416) and passives (Wind-blessed, Insight) are not listed.
 -- 95 = Aeolide of the High Order (Alliance), tellurian line
 -- 96 = Aeolide Windshaper (Horde), sky vision
 ns.RACIALS = {
 	{ key = "Perception", id = 20600, races = { 1 }, opt = { combat = true } },
-	{ key = "BloodFury", id = 20572, races = { 2 }, opt = { hostile = true }, on = true },
+	{ key = "BloodFury", id = 20572, races = { 2 }, opt = { hostile = true, combat = true }, on = true, front = true },
 	{ key = "Stoneform", id = 20594, races = { 3 }, opt = { combat = true, hp = 70 }, defensive = true },
 	{ key = "Shadowmeld", id = 20580, races = { 4 }, opt = { nobuff = true }, defensive = true },
 	{ key = "WilloftheForsaken", id = 7744, races = { 5 }, defensive = true },
-	{ key = "WarStomp", id = 20549, races = { 6 }, opt = { hostile = true } },
+	{ key = "WarStomp", id = 20549, races = { 6 }, opt = { hostile = true, combat = true } },
 	{ key = "EscapeArtist", id = 20589, races = { 7 }, defensive = true },
-	{ key = "Berserking", id = 20554, races = { 8 }, opt = { hostile = true }, on = true },
+	{ key = "Berserking", id = 20554, races = { 8 }, opt = { hostile = true, combat = true }, on = true, front = true },
 	{
 		key = "LeyLine",
 		id = 1259705,
 		races = { 95 },
 		factions = { "Alliance" },
-		opt = { hostile = true },
+		opt = { hostile = true, combat = true },
 		defensive = true,
 	},
 	{ key = "SkyView", id = 1259686, races = { 96 }, factions = { "Horde" } },
 	{ key = "WillToSurvive", id = 1259810, races = { 1 }, defensive = true },
-	{ key = "ElunesLight", id = 1259680, races = { 4 }, opt = { hostile = true }, on = true },
-	{ key = "Eureka", id = 1259813, races = { 7 }, opt = { hostile = true }, on = true },
+	{
+		key = "ElunesLight",
+		id = 1259680,
+		races = { 4 },
+		opt = { hostile = true, combat = true },
+		on = true,
+		front = true,
+	},
+	{ key = "Eureka", id = 1259813, races = { 7 }, opt = { hostile = true, combat = true }, on = true, front = true },
 	{ key = "ShatterCurse", id = 1259681, races = { 2 }, defensive = true },
 	{ key = "Cannibalize", id = 20577, races = { 5 }, opt = { nocombat = true } },
 	{ key = "RapidRegeneration", id = 1259682, races = { 8 }, opt = { combat = true, hp = 50 }, defensive = true },

@@ -17,3 +17,19 @@ describe("Data.Color", function()
 		H.same({ ns.Color("next") }, { 0.1, 0.2, 0.3 })
 	end)
 end)
+
+describe("Data.RACIALS", function()
+	it("keeps the offensive racials for the fight", function()
+		local w = wow.new()
+		w:player("WARRIOR")
+		local ns = w:load()
+		local count = 0
+		for _, racial in ipairs(ns.RACIALS) do
+			if racial.opt and racial.opt.hostile then
+				count = count + 1
+				H.eq(racial.opt.combat, true, racial.key .. " is not offered before the pull")
+			end
+		end
+		H.truthy(count >= 5, "the offensive racials were checked")
+	end)
+end)

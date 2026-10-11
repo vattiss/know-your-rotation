@@ -235,7 +235,7 @@ A mode bucket is a table with `auto` / `single` / `aoe` and **no** `[1]` index. 
 - explicit mode, otherwise `ns.ResolveCombatMode()`;
 - `auto` and `single` read `APLDefaults`;
 - `aoe` reads `APLModes`, otherwise the single default;
-- racials are appended at the end, unchecked;
+- racials are appended at the end, unchecked; the offensive ones (`hostile`, `front = true`: Blood Fury, Berserking, Elune's Light, Eureka) are `combat = true` and go to the **front** of the list (also in an old save, where the racial stood at the end): the first spell of a fight, not while a target is only selected before the pull;
 - with no save and no removal, the defaults are returned as is;
 - otherwise `mergeSteps(..., skipMaint = true)`: the saved order wins, new default steps are added if they are not in `aplDrop` and not already in the list under the same key; a default with the same spell as another default (a variant such as `Eviscerate` / `Eviscerate5` / `EviscerateWeak`) is still added, so an update reaches old saves without a reset. Only a spell the player added himself (`custom_*`) is not doubled by a default.
 
