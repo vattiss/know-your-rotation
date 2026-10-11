@@ -817,15 +817,24 @@ local function featureCheckbox(category, key, labelKey, tipKey)
 	end)
 end
 
--- items() returns { { value, label }, ... }
-local function dropdown(category, variable, labelKey, tipKey, default, get, set, items)
+-- items() returns { { value, label }, ... }; static lists are built once (the
+-- menu asks for them every time it opens: less of our code runs inside it).
+local function dropdown(category, variable, labelKey, tipKey, default, get, set, items, static)
 	local setting = proxy(category, variable, Settings.VarType.String, labelKey, default, get, set)
+	local cached
 	local function options()
+		if static and cached then
+			return cached
+		end
 		local container = Settings.CreateControlTextContainer()
 		for _, item in ipairs(items()) do
 			container:Add(item[1], item[2])
 		end
-		return container:GetData()
+		local data = container:GetData()
+		if static then
+			cached = data
+		end
+		return data
 	end
 	Settings.CreateDropdown(category, setting, options, tipKey and ns.T(tipKey) or nil)
 end
@@ -842,7 +851,7 @@ local function soundDropdown(category, dbKey, labelKey)
 			list[#list + 1] = { entry.key, ns.T(entry.label) }
 		end
 		return list
-	end)
+	end, true)
 end
 
 local function colorSwatch(category, key, labelKey)

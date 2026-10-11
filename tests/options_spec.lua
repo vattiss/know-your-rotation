@@ -134,6 +134,8 @@ describe("Options native pages", function()
 		H.eq(control(w, "weaponBuff").options()[1].label, ns.T("OPT_AUTOMATIC"))
 		control(w, "soundKick").setting:SetValue(nil)
 		H.eq(control(w, "soundKick").setting:GetValue(), "none")
+		local first = control(w, "soundKick").options()
+		H.truthy(rawequal(first, control(w, "soundKick").options()), "the sound list is built once")
 		ns.ApplyFeatureFlags = nil
 		control(w, "muted").setting:SetValue(true)
 		H.eq(ns.db.muted, true)
