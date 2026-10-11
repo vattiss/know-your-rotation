@@ -127,6 +127,7 @@ end
 function ns.BuildQueue()
 	local q = {}
 	ns.queueHeal = {}
+	ns.queueQuick = {}
 	if not ns.GetAPL then
 		return q
 	end
@@ -140,10 +141,15 @@ function ns.BuildQueue()
 		if not API.IsHealSpell(id, opt) then
 			return
 		end
+		-- A heal that is on or off a target (Renew, Shield: nobuff) is kept up;
+		-- the others are pressed when the health asks for it.
+		local quick = not (opt and opt.nobuff)
 		ns.queueHeal[id] = true
+		ns.queueQuick[id] = quick or nil
 		local resolved = API.Resolve(id)
 		if resolved then
 			ns.queueHeal[resolved] = true
+			ns.queueQuick[resolved] = quick or nil
 		end
 	end
 	-- Only called after pressable(), which already refuses a used ID.

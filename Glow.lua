@@ -193,7 +193,9 @@ local function showDamage(button, isHeal)
 		if button.KYROverlays and button.KYROverlays.next then
 			button.KYROverlays.next:Hide()
 		end
-		local r, g, b = ns.Color("heal")
+		-- isHeal is "quick" for a heal that is pressed when the health asks for
+		-- it, true for one that is kept up (HoT, shield).
+		local r, g, b = ns.Color(isHeal == "quick" and "healnow" or "heal")
 		overlay(button, "heal", GLOW_ART, r, g, b, 1.45, 0.95):Show()
 	else
 		if button.KYROverlays and button.KYROverlays.heal then
@@ -677,7 +679,12 @@ local function apply(spellID, isDef)
 		end
 		return
 	end
+	-- true for a heal, "quick" for a heal pressed when the health asks for it
+	---@type boolean|string
 	local heal = isHealSpell(spellID)
+	if heal and not isDef and ns.queueQuick and ns.queueQuick[spellID] then
+		heal = "quick"
+	end
 	if isDef and spellID == lastDef and lastDefHeal == heal and next(defenseGlowing) then
 		return
 	end

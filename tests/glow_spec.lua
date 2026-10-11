@@ -348,6 +348,29 @@ describe("Glow hidden-value cues", function()
 	end)
 end)
 
+describe("Glow heal colours", function()
+	it("tints a heal that is pressed when needed differently from one that is kept up", function()
+		local w, ns = boot("PRIEST", function(w)
+			button(w, "ActionButton1", 1, { type = "spell", id = 1 })
+		end)
+		ns.GlowFetch(true)
+		local function tint()
+			local frame = overlayOf(w.env.ActionButton1, "heal")
+			local tex = frame.texture or frame.ProcStartFlipbook
+			return tex._color
+		end
+		ns.queueHeal = { [1] = true }
+		ns.queueQuick = {}
+		ns.GlowSpell(1)
+		H.same({ tint()[1], tint()[2], tint()[3] }, { ns.Color("heal") }, "kept up: the heal colour")
+		ns.GlowClear()
+		ns.queueQuick = { [1] = true }
+		ns.GlowSpell(1)
+		H.same({ tint()[1], tint()[2], tint()[3] }, { ns.Color("healnow") }, "pressed when needed: the quick colour")
+		H.truthy(select(1, ns.Color("healnow")) ~= select(1, ns.Color("heal")), "two different greens")
+	end)
+end)
+
 describe("Glow heal fade", function()
 	it("lights the rotation glow of a heal by a party member's hidden health", function()
 		local w, ns = boot("PRIEST", function(w)

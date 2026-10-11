@@ -55,6 +55,7 @@ ns.CLASS_BY_ID = {
 ns.COLOR_DEFAULTS = {
 	next = { 1, 1, 1 },
 	heal = { 0.15, 1, 0.28 },
+	healnow = { 0.45, 1, 0.8 },
 	def = { 0.2, 0.55, 1 },
 	weapon = { 1, 0.12, 0.08 },
 	totem = { 1, 0.6, 0.1 },

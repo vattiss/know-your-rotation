@@ -123,6 +123,29 @@ describe("Debug party heal fade", function()
 	end)
 end)
 
+describe("Debug interact distance probe", function()
+	it("does not call CheckInteractDistance for a friend in combat", function()
+		local w, ns = boot("PRIEST")
+		local calls = 0
+		w.env.CheckInteractDistance = function()
+			calls = calls + 1
+			return true
+		end
+		w:target({ hostile = false, reaction = 5 })
+		w.state.units.player.combat = true
+		ns.Debug.Sample()
+		H.eq(calls, 0, "friend in combat: not asked")
+		w.state.units.player.combat = false
+		ns.Debug.Sample()
+		H.truthy(calls > 0, "out of combat it is asked")
+		calls = 0
+		w:target({ hostile = true })
+		w.state.units.player.combat = true
+		ns.Debug.Sample()
+		H.truthy(calls > 0, "an enemy answers in combat")
+	end)
+end)
+
 describe("Debug shot cue", function()
 	it("records which hunter shots the cue offers", function()
 		local w, ns = boot("HUNTER", function(w)

@@ -505,11 +505,12 @@ end)
 describe("Core party heal fade", function()
 	it("lights a heal for a selected group member by that member's health", function()
 		local _, ns = boot("PRIEST")
-		local opt = { hp = 90, heal = true, hpIfVisible = true }
+		local opt = { hp = 90, heal = true }
+		local id = 17
 		ns.BuildQueue = function()
 			ns.queueGlowOk = true
-			ns.queueSteps = { [17] = { id = 17, opt = opt } }
-			return { 17 }
+			ns.queueSteps = { [id] = { id = id, opt = opt } }
+			return { id }
 		end
 		ns.GlowButtonNames = function()
 			return { "b" }
@@ -525,8 +526,8 @@ describe("Core party heal fade", function()
 			return hidden
 		end
 		local got
-		ns.GlowFadeForHeal = function(id, threshold, who)
-			got = { id, threshold, who }
+		ns.GlowFadeForHeal = function(spell, threshold, who)
+			got = { spell, threshold, who }
 		end
 		ns.InvalidateTick()
 		ns.Tick()
@@ -545,10 +546,16 @@ describe("Core party heal fade", function()
 		ns.Tick()
 		H.eq(got, nil, "your own health has its own glow")
 		unit = "target"
-		opt.hpIfVisible = nil
+		opt.nobuff = true
 		ns.InvalidateTick()
 		ns.Tick()
-		H.eq(got, nil, "not a party heal step")
+		H.eq(got, nil, "a HoT or shield is kept up, not faded")
+		opt.nobuff = nil
+		opt.heal = nil
+		id = 5
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(got, nil, "not a heal step")
 	end)
 end)
 

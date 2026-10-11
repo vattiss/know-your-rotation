@@ -51,6 +51,8 @@ Aimed Shot, Multi-Shot and Volley avoid clipping Auto Shot, and energy spells ac
 | Blue glow | Defense buff |
 | Yellow glow | Interrupt |
 | Purple glow | Purge |
+| Green glow | Heals that are kept up (Renew, Shield) |
+| Mint glow | Quick heals, pressed when the health asks for it |
 | Red glow | Weapon buff |
 | Cyan glow | Auto Shot, Concussive Shot (hunter) |
 | Orange glow | Totem |

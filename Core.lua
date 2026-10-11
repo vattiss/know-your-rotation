@@ -552,18 +552,28 @@ end
 local function healFadeFor(glow)
 	local step = glow and ns.queueSteps and ns.queueSteps[glow]
 	local opt = step and step.opt
-	if not (opt and opt.hpIfVisible and tonumber(opt.hp)) then
-		ns.healFadeNote = "not a party heal step"
+	if not (opt and (opt.heal or ns.API.IsHealSpell(glow, opt))) then
+		ns.healFadeNote = "not a heal step"
+		return nil
+	end
+	if opt.nobuff then
+		ns.healFadeNote = "kept up (HoT or shield): lit whenever it is missing"
 		return nil
 	end
 	local unit = ns.API.HealUnit(opt)
 	local inGroup = ns.API.InMyGroup(unit)
 	local hidden = ns.API.HealthHiddenFor(unit)
-	ns.healFadeNote = ("unit=%s inGroup=%s hidden=%s hp=%s"):format(unit, tostring(inGroup), tostring(hidden), opt.hp)
+	local threshold = tonumber(opt.hp) or 85
+	ns.healFadeNote = ("unit=%s inGroup=%s hidden=%s hp=%s"):format(
+		unit,
+		tostring(inGroup),
+		tostring(hidden),
+		threshold
+	)
 	if unit == "player" or not inGroup or not hidden then
 		return nil
 	end
-	return tonumber(opt.hp), unit
+	return threshold, unit
 end
 
 local lastRankNotice, lastRankNoticeAt = nil, 0

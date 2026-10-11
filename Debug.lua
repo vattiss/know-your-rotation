@@ -183,7 +183,13 @@ local function sampleTarget(ctx)
 	probe("UnitDistanceSquared(target) distance,checked", ctx, function()
 		return UnitDistanceSquared("target")
 	end)
+	-- The client blocks this call for a friend in combat (ADDON_ACTION_BLOCKED
+	-- named it, and it was this probe): only ask for an enemy, or out of combat.
 	probe("CheckInteractDistance(target, 3)", ctx, function()
+		local okAtk, canAttack = pcall(UnitCanAttack, "player", "target")
+		if ns.API.InCombat() and not (okAtk and canAttack == true) then
+			return "skipped: not an enemy, in combat"
+		end
 		return CheckInteractDistance("target", 3)
 	end)
 	probe("UnitCastingInfo(target) name,notInterruptible", ctx, function()

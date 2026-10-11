@@ -358,13 +358,13 @@ describe("StepOk health", function()
 		check(A, 1, { hp = 70 }, false, "health is above")
 	end)
 
-	it("offers a heal for someone else whose health the game hides (hpIfVisible)", function()
+	it("offers a heal for a group member whose health the game hides", function()
 		local w, _, A = setup()
 		w.state.secret.health = true
 		w.state.secret.healthPercent = true
 		w.state.units.target.hostile = false
 		w.state.units.target.reaction = 5
-		local opt = { hp = 85, heal = true, hpIfVisible = true }
+		local opt = { hp = 85, heal = true }
 		check(A, 6, opt, false, "health is hidden by the game")
 		w.state.units.target.inParty = true
 		check(A, 6, opt, true, "a party member you selected: no health to read")
@@ -373,7 +373,7 @@ describe("StepOk health", function()
 		check(A, 6, opt, true, "a raid member too")
 		w.state.units.target.inRaid = nil
 		w.state.units.target.inParty = true
-		check(A, 6, { hp = 85, heal = true }, false, "health is hidden by the game")
+		check(A, 1, { hp = 85, unit = "target" }, false, "health is hidden by the game")
 		w.state.units.target.hostile = true
 		w.state.units.target.reaction = 2
 		check(A, 6, opt, false, "health is hidden by the game")

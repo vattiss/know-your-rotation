@@ -886,6 +886,7 @@ local function registerHighlights(root)
 	featureCheckbox(category, "showRotation", "OPT_ROTATION", "TIP_ROTATION")
 	colorSwatch(category, "next", "OPT_COLOR_NEXT")
 	colorSwatch(category, "heal", "OPT_COLOR_HEAL")
+	colorSwatch(category, "healnow", "OPT_COLOR_HEALNOW")
 	if token == "HUNTER" then
 		colorSwatch(category, "shot", "OPT_COLOR_SHOT")
 	end
