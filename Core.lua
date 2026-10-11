@@ -545,6 +545,25 @@ end
 -- The spell to glow: the first of the queue that is on an action button. When
 -- the next spell is in the spellbook but on no bar, say so once (the message
 -- is not repeated for the same spell within 30 s) and go on with the next.
+local lastRankNotice, lastRankNoticeAt = nil, 0
+
+-- The spell that glows sits on the bar as a lower rank than the one the player
+-- has learned: say so (once per spell and rank pair, again after 30 s).
+local function noteOldRank(glow)
+	local onBar = ns.GlowBarRank(glow)
+	local best = ns.API.HighestKnownRank(glow)
+	if not (onBar and best and onBar < best) then
+		return
+	end
+	local key = glow .. ":" .. onBar .. ">" .. best
+	local now = GetTime()
+	if key == lastRankNotice and now - lastRankNoticeAt <= 30 then
+		return
+	end
+	lastRankNotice, lastRankNoticeAt = key, now
+	ns.ShowNotice(ns.T("NOTICE_OLD_RANK"):format(ns.API.SpellName(glow) or "?", onBar, best))
+end
+
 local function pickGlowSpell(queue)
 	local missing, glow = {}, nil
 	for _, id in ipairs(queue) do
@@ -572,6 +591,9 @@ local function pickGlowSpell(queue)
 			lastBarNotice, lastBarNoticeAt = key, now
 			ns.ShowNotice(ns.T("NOTICE_NOT_ON_BAR"):format(table.concat(names, ", ")))
 		end
+	end
+	if glow then
+		noteOldRank(glow)
 	end
 	return glow
 end

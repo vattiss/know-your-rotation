@@ -138,6 +138,16 @@ local function indexBookName(index, bookName, bookId)
 	end
 	if type(bookName) == "string" and bookName ~= "" then
 		local key = normSpellName(bookName)
+		if key then
+			-- Every learned rank of the name (ranks are separate book entries).
+			local rankKey = "\1" .. key
+			local ranks = index[rankKey]
+			if not ranks then
+				ranks = {}
+				index[rankKey] = ranks
+			end
+			ranks[#ranks + 1] = bookId
+		end
 		if key and not index[key] then
 			index[key] = bookId
 		end
@@ -481,6 +491,42 @@ function playerKnows(id)
 		end
 	end
 	return false
+end
+
+---The rank number of a spell ID from its subtext ("Rank 2"), nil when the
+---spell has no rank or its text is not loaded yet.
+---@param spellID integer
+---@return integer?
+function ns.API.SpellRank(spellID)
+	if not (C_Spell and C_Spell.GetSpellSubtext) then
+		return nil
+	end
+	local ok, text = pcall(C_Spell.GetSpellSubtext, spellID)
+	text = ok and safe(text, nil) or nil
+	if type(text) ~= "string" then
+		return nil
+	end
+	local number = text:match("(%d+)")
+	return number and tonumber(number) or nil
+end
+
+---The highest learned rank of a spell (by name, from the spellbook index),
+---nil when the book lists no rank for it.
+---@param spellID integer
+---@return integer?
+function ns.API.HighestKnownRank(spellID)
+	local name = ns.API.SpellName(spellID)
+	if type(name) ~= "string" or name == "" or not spellBookIndex then
+		return nil
+	end
+	local best
+	for _, id in ipairs(spellBookIndex["\1" .. normSpellName(name)] or {}) do
+		local rank = ns.API.SpellRank(id)
+		if rank and (not best or rank > best) then
+			best = rank
+		end
+	end
+	return best
 end
 
 ---The spell ID the player knows for this spell (by name + spellbook).

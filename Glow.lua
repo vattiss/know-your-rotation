@@ -615,6 +615,25 @@ local function buttonsFor(spellID)
 	return out
 end
 
+-- The highest rank of this spell (by name) that is on an action button, nil
+-- when no button holds a rank of it.
+function ns.GlowBarRank(spellID)
+	local name = spellName(plainID(spellID)) or spellName(plainID(API.Resolve and API.Resolve(spellID)))
+	if not name then
+		return nil
+	end
+	local best
+	for id, buttons in pairs(spells) do
+		if #buttons > 0 and spellName(id) == name then
+			local rank = API.SpellRank(id)
+			if rank and (not best or rank > best) then
+				best = rank
+			end
+		end
+	end
+	return best
+end
+
 -- Names of the buttons a spell would glow on (the debug report shows them).
 function ns.GlowButtonNames(spellID)
 	local names = {}

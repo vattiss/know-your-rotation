@@ -121,6 +121,7 @@ L.enUS = {
 	NOTICE_PET_ASSIST = "Pet is not attacking",
 	BLOCKED_ACTION = "The game blocked an action of this addon (%s). Please report it with the Debug report from the Profiles page.",
 	NOTICE_LISTS_RESET = "Know Your Rotation was updated: your saved rotation lists were reset to the new defaults.",
+	NOTICE_OLD_RANK = "%s: Rank %d is on your action bar, but you know Rank %d. Put the new rank on the bar.",
 	NOTICE_NOT_ON_BAR = "Not on your action bars (in rotation order): %s",
 	OPT_COLOR_NEXT = "Next spell color",
 	OPT_COLOR_HEAL = "Heal color",

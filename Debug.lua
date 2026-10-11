@@ -131,6 +131,11 @@ local function sampleSpells(ctx)
 			)
 			local why = ns.API.WhyNot(id, step.opt)
 			count("addon says | " .. name, ctx, why or "offered")
+			count(
+				"rank on bar | " .. name,
+				ctx,
+				("bar=%s known=%s"):format(tostring(ns.GlowBarRank(id)), tostring(ns.API.HighestKnownRank(id)))
+			)
 			local buttons = ns.GlowButtonNames(id)
 			count("glows on buttons | " .. name, ctx, #buttons > 0 and table.concat(buttons, ", ") or "none")
 		end

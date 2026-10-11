@@ -785,6 +785,13 @@ function wow.new()
 				maxRange = s.maxRange,
 			}
 		end,
+		GetSpellSubtext = function(id)
+			local s = state.spells[id]
+			if not s then
+				return nil
+			end
+			return s.rank and ("Rank " .. s.rank) or ""
+		end,
 		GetOverrideSpell = function(id)
 			local s = state.spells[id]
 			return s and s.override or id

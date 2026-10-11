@@ -502,6 +502,53 @@ describe("Core tick", function()
 	end)
 end)
 
+describe("Core old rank", function()
+	it("says once when the bar holds a lower rank than the learned one", function()
+		local w, ns = boot("MAGE", function(w)
+			w.spell(900, { name = "Frostbolt", rank = 1 })
+		end)
+		ns.BuildQueue = function()
+			ns.queueGlowOk = true
+			return { 900 }
+		end
+		ns.GlowButtonNames = function()
+			return { "b" }
+		end
+		local onBar, best = 1, 3
+		ns.GlowBarRank = function()
+			return onBar
+		end
+		ns.API.HighestKnownRank = function()
+			return best
+		end
+		local said = {}
+		local show = ns.ShowNotice
+		ns.ShowNotice = function(text)
+			said[#said + 1] = text
+			show(text)
+		end
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(said[1], ns.T("NOTICE_OLD_RANK"):format("Frostbolt", 1, 3))
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 1, "said once")
+		w:advance(31)
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 2, "again after 30 s")
+		onBar = 3
+		w:advance(31)
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 2, "the bar holds the best rank")
+		onBar, best = nil, 3
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(#said, 2, "no rank on a bar to compare")
+	end)
+end)
+
 describe("Core self-buff memory", function()
 	it("remembers a buff seen in town, so combat does not call it missing", function()
 		local w, ns = boot("PRIEST", function(w)

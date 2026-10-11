@@ -39,7 +39,7 @@ The folder must contain `KnowYourRotation.toc`, the `.lua` files and the `images
 | **Interrupt / Purge / Cleanse** | Your interrupt while the target casts, purge for an enemy magic effect, cleanse for an effect you can remove |
 | **Weapon buff** | A missing or expiring weapon buff (shaman imbues, rogue poisons on each hand, warlock stones) |
 | **Totems** | The totems in your totem bar: buff totems at the start of the fight, slows and area totems once enemies are in melee. A cue next to the rotation, so the other buttons keep going |
-| **Messages** | Pet reminders for hunters and warlocks; "Not on your action bars (in rotation order): A, B" when the next spells are learned but on no bar (the glow then goes to the next spell that is on a bar) |
+| **Messages** | Pet reminders for hunters and warlocks; "Not on your action bars (in rotation order): A, B" when the next spells are learned but on no bar (the glow then goes to the next spell that is on a bar); "Spell: Rank 1 is on your action bar, but you know Rank 3" when the bar holds an older rank than the one you learned |
 
 Aimed Shot, Multi-Shot and Volley avoid clipping Auto Shot, and energy spells account for the next energy tick.
 ### Glow colors
