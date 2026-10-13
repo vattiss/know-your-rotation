@@ -81,6 +81,33 @@ describe("Rogue leveling", function()
 	end)
 end)
 
+describe("Rotation pull opener", function()
+	it("opens with a cast-time attack at range out of combat, instants first in melee or in combat", function()
+		local w, ns = setup(function(w)
+			w.spell(10, { name = "Bolt", harmful = true, inRange = true, castTime = 2000 })
+			w.spell(11, { name = "Shock", harmful = true, inRange = true })
+		end)
+		useList(ns, {
+			step("Shock", 11, { hostile = true, nodebuff = true }),
+			step("Bolt", 10, { filler = true, hostile = true }),
+		})
+		w.state.units.target.distance = 25
+		H.eq(ns.API.CastTimeMs(10), 2000)
+		H.eq(ns.API.CastTimeMs(11), 0)
+		H.eq(ns.BuildQueue()[1], 10, "the pull: the cast while the mob runs in")
+		w.state.units.player.combat = true
+		H.eq(ns.BuildQueue()[1], 11, "in combat the list order")
+		w.state.units.player.combat = false
+		w.state.units.target.distance = 3
+		H.eq(ns.BuildQueue()[1], 11, "in melee the instants")
+		w.state.units.target.distance = 25
+		ns.API.CastRemain = function()
+			return 1.5
+		end
+		H.eq(ns.BuildQueue()[1] ~= 10, true, "while casting: what comes next")
+	end)
+end)
+
 describe("Rotation queue", function()
 	it("returns an empty queue without a list function", function()
 		local _, ns = setup()

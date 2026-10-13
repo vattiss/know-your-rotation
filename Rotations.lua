@@ -219,6 +219,27 @@ function ns.BuildQueue()
 		end
 		return false
 	end
+	-- The pull: out of combat, with an enemy that is not in melee range and
+	-- nothing being cast, the first cast-time attack of the list opens (its
+	-- cast is free while the mob runs in); the instants (DoTs, shocks) follow.
+	local function pickOpener(shift)
+		if API.InCombat() or API.CastRemain() > 0 or not API.Hostile() or API.TargetInMelee() then
+			return false
+		end
+		for _, step in ipairs(apl) do
+			local opt = step.opt or {}
+			if
+				opt.hostile
+				and not opt.autoRepeat
+				and API.CastTimeMs(API.Resolve(step.id) or step.id) > 0
+				and pressable(step, shift, "in")
+			then
+				take(step)
+				return true
+			end
+		end
+		return false
+	end
 	local function fillSlots()
 		local shift = math.max(0.2, API.CastRemain())
 		-- The spell being cast right now is not glowed again: it only counts as
@@ -232,7 +253,7 @@ function ns.BuildQueue()
 				break
 			end
 		end
-		if not pickNext(shift, "in") then
+		if not pickOpener(shift) and not pickNext(shift, "in") then
 			pickNext(shift, "notOut")
 		end
 		while #q < 3 do

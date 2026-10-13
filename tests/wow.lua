@@ -791,6 +791,7 @@ function wow.new()
 				iconID = s.icon or 136000,
 				originalIconID = s.icon,
 				maxRange = s.maxRange,
+				castTime = s.castTime,
 			}
 		end,
 		GetSpellSubtext = function(id)

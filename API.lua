@@ -37,6 +37,15 @@ function ns.API.SpellInfo(spellID)
 	return nil
 end
 
+---Cast time in milliseconds (SpellInfo.castTime); 0 for an instant or unknown.
+---@param spellID integer
+---@return number
+function ns.API.CastTimeMs(spellID)
+	local info = ns.API.SpellInfo(spellID)
+	local ms = info and safe(info.castTime, nil)
+	return type(ms) == "number" and ms or 0
+end
+
 local function junkSpellName(name)
 	if type(name) ~= "string" then
 		return true
