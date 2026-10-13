@@ -1037,7 +1037,10 @@ local handlers = {}
 local function onSpellsLearned()
 	scheduleSpellFlush()
 end
-handlers.LEARNED_SPELL_IN_SKILL_LINE = onSpellsLearned
+function handlers.LEARNED_SPELL_IN_SKILL_LINE(spellID)
+	ns.API.NoteLearnedSpell(spellID)
+	onSpellsLearned()
+end
 handlers.PLAYER_TALENT_UPDATE = onSpellsLearned
 handlers.PLAYER_LEVEL_UP = onSpellsLearned
 

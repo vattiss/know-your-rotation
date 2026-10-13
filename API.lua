@@ -519,6 +519,28 @@ function ns.API.SpellRank(spellID)
 	return number and tonumber(number) or nil
 end
 
+---A spell was just learned (LEARNED_SPELL_IN_SKILL_LINE gives its ID): add it
+---to the ranks of its name in the spellbook index. The index is not rebuilt on
+---learning (a full book walk froze the Forever client), so without this a new
+---rank only showed after a /reload.
+---@param spellID integer
+function ns.API.NoteLearnedSpell(spellID)
+	spellID = safe(spellID, nil)
+	local name = type(spellID) == "number" and ns.API.SpellName(spellID)
+	if not spellBookIndex or type(name) ~= "string" or name == "" then
+		return
+	end
+	local rankKey = "\1" .. normSpellName(name)
+	local ranks = spellBookIndex[rankKey] or {}
+	spellBookIndex[rankKey] = ranks
+	for _, id in ipairs(ranks) do
+		if id == spellID then
+			return
+		end
+	end
+	ranks[#ranks + 1] = spellID
+end
+
 ---The highest learned rank of a spell (by name, from the spellbook index),
 ---nil when the book lists no rank for it.
 ---@param spellID integer
