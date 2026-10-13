@@ -373,6 +373,15 @@ local function auraIdentity(aura)
 	return auraID, auraName, hidden
 end
 
+-- A druid form (Cat Form, Bear Form, Travel Form ...): an aura without an end
+-- that only changes with a shapeshift. Its memory lasts long, and the
+-- shapeshift event (FormChanged) drops it.
+local FORM_SECONDS = 1800
+
+local function isFormKey(key)
+	return key:find(" form$") ~= nil
+end
+
 -- HoldSeconds reads the current list, and for a druid the current list depends
 -- on the form (ActiveSpec -> Form -> HasAura -> rememberAura): asking again
 -- inside that chain would never end. The inner call takes the default.
@@ -386,6 +395,9 @@ local function rememberAura(spellID, auraName, remain, fromCast)
 	local key = normName(name)
 	local family = familyOf(name)
 	local seconds = family and FAMILY_SECONDS[family]
+	if not seconds and isFormKey(key) then
+		seconds = FORM_SECONDS
+	end
 	if not seconds then
 		local hold
 		if not askingHold then
@@ -740,8 +752,47 @@ function ns.API.HasWeaponBuff(entry)
 	return false, 0
 end
 
+-- The form bar says which form is active: GetShapeshiftFormInfo(i) returns
+-- icon, active, castable, spellID (a legacy global, not in the generated API
+-- docs; the stance bar reads it). true / false, nil when it cannot tell.
+local function formFromBar(spellID)
+	local okNum, num = pcall(GetNumShapeshiftForms)
+	if not okNum or type(num) ~= "number" then
+		return nil
+	end
+	local want = ns.API.SpellName(spellID)
+	for index = 1, num do
+		local ok, _, active, _, formSpell = pcall(GetShapeshiftFormInfo, index)
+		if ok and readable(formSpell) and formSpell ~= nil then
+			if formSpell == spellID or (want and ns.API.SpellName(formSpell) == want) then
+				if not readable(active) then
+					return nil
+				end
+				return active == true or active == 1
+			end
+		end
+	end
+	return nil
+end
+
 function ns.API.Form(spellID)
+	local onBar = formFromBar(spellID)
+	if onBar ~= nil then
+		return onBar
+	end
 	return ns.API.HasAura(spellID, "player", "HELPFUL")
+end
+
+-- A shapeshift happened: the remembered form is out of date (in combat the
+-- aura cannot be read again). A form cast a moment ago is the new one: kept.
+function ns.API.FormChanged()
+	local now = GetTime()
+	for key in pairs(heldNames) do
+		if isFormKey(key) and not (buffCastAt[key] and now - buffCastAt[key] < 1.5) then
+			heldNames[key] = nil
+		end
+	end
+	ns.API.WipeAuraScans()
 end
 
 function ns.API.Combo()

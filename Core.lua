@@ -1045,7 +1045,10 @@ handlers.PLAYER_LEVEL_UP = onSpellsLearned
 handlers.SPELL_PUSHED_TO_ACTIONBAR = scheduleBarFlush
 handlers.ACTIONBAR_SLOT_CHANGED = scheduleBarFlush
 handlers.ACTIONBAR_PAGE_CHANGED = scheduleBarFlush
-handlers.UPDATE_SHAPESHIFT_FORM = scheduleBarFlush
+function handlers.UPDATE_SHAPESHIFT_FORM()
+	ns.API.FormChanged()
+	scheduleBarFlush()
+end
 
 function handlers.PLAYER_LOGOUT()
 	stopTicker()

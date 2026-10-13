@@ -14,6 +14,35 @@ local function api(class, setup)
 	return w, ns, ns.API
 end
 
+describe("API forms", function()
+	it("reads the form from the form bar, then the remembered aura", function()
+		local w, _, A = api("DRUID", function(w)
+			w.spell(768, { name = "Cat Form" })
+			w.spell(5487, { name = "Bear Form" })
+		end)
+		w.state.forms = { { spellID = 768, active = true }, { spellID = 5487, active = false } }
+		H.eq(A.Form(768), true, "the form bar says so")
+		H.eq(A.Form(5487), false)
+		w.state.forms[1].active = wow.SECRET_BOOL
+		w.aura("player", { name = "Cat Form", spellId = 768 })
+		H.eq(A.Form(768), true, "hidden on the bar: the aura decides")
+		w.env.GetNumShapeshiftForms = function()
+			error("boom")
+		end
+		H.eq(A.Form(768), true)
+		w.state.units.player.combat = true
+		w.state.secret.auras = true
+		A.WipeAuraScans()
+		w:advance(600)
+		H.eq(A.Form(768), true, "a form is remembered for long in combat")
+		A.FormChanged()
+		H.eq(A.Form(768), false, "a shapeshift drops the memory")
+		A.NoteSelfBuff(5487)
+		A.FormChanged()
+		H.eq(A.Form(5487), true, "the form cast a moment ago is the new one")
+	end)
+end)
+
 describe("API aura memory", function()
 	it("keeps a permanent aspect in mind in combat for as long as it is seen", function()
 		local w, _, A = api("HUNTER", function(w)

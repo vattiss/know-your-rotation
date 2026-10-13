@@ -1023,7 +1023,11 @@ function wow.new()
 		if not f then
 			return nil
 		end
-		return f.icon or 1, f.active == true, true, f.spellID
+		local active = f.active
+		if active ~= SECRET_BOOL then
+			active = active == true
+		end
+		return f.icon or 1, active, true, f.spellID
 	end
 
 	-- actions / macros / bindings ---------------------------------------------
@@ -1082,6 +1086,13 @@ function wow.new()
 	end
 	env.C_Item = {
 		GetWeaponEnchantInfo = nil,
+		GetItemSpell = function(id)
+			local item = state.itemInfo and state.itemInfo[id]
+			if not item or not item.spellID then
+				return nil
+			end
+			return item.spellName, item.spellID
+		end,
 		GetItemInfoInstant = function(id)
 			local item = state.itemInfo and state.itemInfo[id]
 			if not item then

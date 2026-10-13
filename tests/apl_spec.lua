@@ -152,6 +152,13 @@ describe("APL racials", function()
 end)
 
 describe("APL druid form", function()
+	it("tells a tank out of bear form to shift", function()
+		local _, ns = boot("DRUID")
+		local first = ns.APLDefaults.DRUID.tank[1]
+		H.eq(first.key, "BearForm")
+		H.eq(first.opt.noform, ns.Spell.Druid.BearForm)
+	end)
+
 	it("reads the cat form without recursing through the hold lookup", function()
 		local w, ns = boot("DRUID", function(w)
 			w.spell(768, { name = "Cat Form" })

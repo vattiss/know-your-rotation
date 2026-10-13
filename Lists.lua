@@ -59,6 +59,8 @@ ns.APLDefaults = {
 			step("Wrath", D.Wrath, { filler = true, hostile = true }),
 		},
 		tank = {
+			-- The tank list is used out of bear form: shift first.
+			step("BearForm", D.BearForm, { noform = D.BearForm, engaged = true }),
 			step("DemoralizingRoar", D.DemoralizingRoar, { nodebuff = true, hostile = true }),
 			step("FaerieFireFeral", D.FaerieFireFeral, { nodebuff = true, hostile = true }),
 			step("MangleBear", D.MangleBear, { hostile = true }),

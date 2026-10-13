@@ -404,6 +404,13 @@ local function addStandard(button)
 					id = plainID(spellFromAction) or plainID(actionID)
 				elseif okInfo and isToken(t, "macro") then
 					actionType, id = "macro", actionID
+				elseif okInfo and isToken(t, "item") and C_Item and C_Item.GetItemSpell then
+					-- A rogue poison, a warlock stone, a potion: the spell the item
+					-- casts is what the cues name.
+					local okSpell, _, itemSpell = pcall(C_Item.GetItemSpell, plainID(actionID))
+					if okSpell and plainID(itemSpell) then
+						actionType, id = "spell", plainID(itemSpell)
+					end
 				end
 			end
 		end

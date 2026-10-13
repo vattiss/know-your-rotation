@@ -82,10 +82,38 @@ local function readTempEnchant(offhand)
 	return true, remain > 0 and remain or 9999, enchId
 end
 
+-- C_Item.GetWeaponEnchantInfo(weaponSlot): a list of WeaponEnchantInfo
+-- (hasEnchant, enchantType, timeLeft, charges, enchantID). Only a temporary
+-- enchant or an imbue (Enum.ItemEnchantType 2 / 3) counts. nil = no answer.
+local function readItemEnchant(offhand)
+	if not (C_Item and C_Item.GetWeaponEnchantInfo) then
+		return nil
+	end
+	local slots = Enum and Enum.WeaponSlot
+	local slot = offhand and (slots and slots.OffHand or 1) or (slots and slots.MainHand or 0)
+	local ok, list = pcall(C_Item.GetWeaponEnchantInfo, slot)
+	if not ok or type(list) ~= "table" then
+		return nil
+	end
+	local types = Enum and Enum.ItemEnchantType
+	local temporary, imbue = types and types.Temporary or 2, types and types.Imbue or 3
+	for _, entry in ipairs(list) do
+		local kind = type(entry) == "table" and safe(entry.enchantType, nil)
+		if (kind == temporary or kind == imbue) and safe(entry.hasEnchant, nil) == true then
+			return interpretEnchant(true, safe(entry.timeLeft, nil), safe(entry.enchantID, nil))
+		end
+	end
+	return false, 0, 0
+end
+
 local function readWeaponEnchant(offhand)
 	local tHas, tRemain, tId = readTempEnchant(offhand)
 	if tHas ~= nil then
 		return tHas, tRemain, tId
+	end
+	local iHas, iRemain, iId = readItemEnchant(offhand)
+	if iHas ~= nil then
+		return iHas, iRemain, iId
 	end
 	local packs = {}
 	local function push(ok, a, b, c, d, e, f, g, h)
@@ -95,9 +123,6 @@ local function readWeaponEnchant(offhand)
 	end
 	if GetWeaponEnchantInfo then
 		push(pcall(GetWeaponEnchantInfo))
-	end
-	if C_Item and C_Item.GetWeaponEnchantInfo then
-		push(pcall(C_Item.GetWeaponEnchantInfo))
 	end
 	local bestHas, bestRemain, bestId
 	local sawFalse = false

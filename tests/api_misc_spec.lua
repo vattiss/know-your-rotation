@@ -633,11 +633,25 @@ describe("API weapon enchants", function()
 		w.env.GetWeaponEnchantInfo = function()
 			error("boom")
 		end
-		w.env.C_Item.GetWeaponEnchantInfo = function()
-			return false, 0, 0, nil, "x", "y", 0, "1"
+		w.env.C_Item.GetWeaponEnchantInfo = function(slot)
+			if slot == 0 then
+				return {
+					{ hasEnchant = true, enchantType = 1, timeLeft = 0, enchantID = 99 },
+					{ hasEnchant = true, enchantType = 3, timeLeft = 600000, enchantID = 5 },
+				}
+			end
+			return { { hasEnchant = false, enchantType = 2, timeLeft = 0, enchantID = 0 } }
 		end
-		H.same({ A.WeaponEnchant(false) }, { false, 0, 0 })
-		H.same({ A.WeaponEnchant(true) }, { true, 9999, 1 }, "text enchant ID")
+		H.same({ A.WeaponEnchant(false) }, { true, 600, 5 }, "the imbue, not the permanent enchant")
+		H.same({ A.WeaponEnchant(true) }, { false, 0, 0 }, "off hand: none")
+		w.env.C_Item.GetWeaponEnchantInfo = function()
+			return { { hasEnchant = true, enchantType = 2, timeLeft = 30, enchantID = "7" } }
+		end
+		H.same({ A.WeaponEnchant(true) }, { true, 30, 7 }, "an enchant ID given as text")
+		w.env.C_Item.GetWeaponEnchantInfo = function()
+			return "odd"
+		end
+		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil }, "an odd answer: the old API (failing) decides")
 		w.env.C_Item.GetWeaponEnchantInfo = nil
 		w.env.GetWeaponEnchantInfo = nil
 		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil })

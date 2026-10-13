@@ -307,7 +307,7 @@ Options (`KnowYourRotationOptions`, inside the Settings panel):
 
 ## Highlight (`Glow.lua`)
 
-`ns.GlowFetch` reads the action buttons of the default bars (`Action`, `MultiBar*`), the shaman's totem bar (`MultiCastActionButton1-12`), the stance bar and, when loaded, Dominos, Bartender4 and ElvUI. A spell that is on none of them has no button to glow.
+`ns.GlowFetch` reads the action buttons (a spell, a macro through `GetMacroSpell` and `#showtooltip`, or an item through `C_Item.GetItemSpell`, so a rogue poison or a warlock stone on the bar glows for its spell) of the default bars (`Action`, `MultiBar*`), the shaman's totem bar (`MultiCastActionButton1-12`), the stance bar and, when loaded, Dominos, Bartender4 and ElvUI. A spell that is on none of them has no button to glow.
 
 `ns.GlowFetch` (at most every 2 s, or forced) scans:
 
@@ -427,6 +427,8 @@ The page host and the spell-list rows are built by `ns.PrebuildOptions` / `ns.Wa
 
 Rogues coat both weapons: with an off-hand weapon equipped (`ns.WeaponIsDual`, item class 2 in slot 17) each hand has its own pick (`weaponBuff`, `weaponBuffOff`, both per profile and in the export as `W=` / `O=`). Automatic main hand: Instant, Deadly, Wound, Crippling, Mind-numbing; off hand: Deadly, Instant, Crippling, Wound, Mind-numbing (first learned). `buildDualWeapon` reads each hand with `handState`: a missing or wrong poison, or one with 30 s or less left, is suggested; main hand first. A missing reading must hold for 1.5 s and is ignored during the 3 s grace after a cast; an unanswered reading never nags. Hands are read with `C_PaperDollInfo.GetTemporaryEnchantmentInfo(slot)` (what the Blizzard buff frame uses), falling back to the `GetWeaponEnchantInfo` shim.
 
+Reading a weapon enchant: `C_PaperDollInfo.GetTemporaryEnchantmentInfo(slot)` per hand first (what the Blizzard buff frame uses), then `C_Item.GetWeaponEnchantInfo(Enum.WeaponSlot.MainHand / OffHand)`, which returns a list of `WeaponEnchantInfo` where only a temporary enchant or an imbue (`Enum.ItemEnchantType` 2 / 3) counts (`ItemDocumentation.lua`: the slot argument is required), then the legacy `GetWeaponEnchantInfo`, then the weapon tooltip. A poison or stone that sits on the bar as an item glows through the spell the item casts (`C_Item.GetItemSpell`).
+
 ## Finishers and executes with hidden target health
 
 The client hides the target's health in combat too. Spells that are only usable on a low target anyway (Execute, Hammer of Wrath) use `proc = true`, so the client's own "usable" answer decides. Other low-target steps (`hp` with `unit = "target"`, or `hpPerCombo`, e.g. Eviscerate at 8% target health per combo point from 2 points, Shadow Word: Death, Shadowburn) get a second glow: `ns.BuildHiddenExecute` picks the first such step that is otherwise ready, and `ns.GlowHiddenExecute` lights it with an alpha from `UnitHealthPercent("target", true, curve)`, like the hidden heal glow. When the health is readable, `StepOk` compares it directly (`needHp = Combo() * hpPerCombo`).
@@ -436,6 +438,9 @@ While that finisher glow is active and the rotation glow sits on another spell, 
 ## Self-buffs in combat
 
 In combat the client may return no auras at all, which looks like "buff missing". `ns.API.HasAura` therefore trusts the remembered expiry of a self-buff (`heldAura`: set when the buff is seen with its remaining time, or when it is cast, by family length such as 30 min for armors) while in combat, and only releases it on a "not found" out of combat. `StepOk`'s `nobuff` check uses the same rule, so Demon Skin, armors, aspects and similar buffs are not re-suggested mid-fight.
+
+
+Druid forms: `ns.API.Form` first asks the form bar (`GetShapeshiftFormInfo(i)`: icon, active, castable, spellID; a legacy global, not in the generated API docs) and only falls back to the aura when that does not answer. A form aura (`... form`) is remembered for 30 minutes, not the default 30 s, so a long fight does not switch the list back to the caster one; `UPDATE_SHAPESHIFT_FORM` calls `ns.API.FormChanged`, which drops the remembered form unless it was cast in the last 1.5 s (the new one). `rememberAura` asks `HoldSeconds` at most once at a time: the hold lookup reads the current list, which for a druid reads the form (it recursed without end before). The druid `tank` list starts with Bear Form (`noform`, `engaged`): it is the list used out of bear form.
 
 Defense steps that wait for low health (`hp`, on the player: Power Word: Shield, Shield Wall, Divine Protection, …) get the same treatment when health is hidden: `ns.BuildHiddenDefense` picks the first ready one from `ns.GetDef()` and `ns.GlowHiddenDefense` lights it in the defense color with the player-health curve.
 
