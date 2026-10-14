@@ -1,12 +1,18 @@
 # Next steps
 
-State: 261 unit tests, 100 % line coverage on all 12 addon files (CI enforces it through `tests/MIN_COVERAGE`), luacheck / StyLua / LuaLS clean. Nothing here was tried in game yet.
+State: 332 unit tests, 100 % line coverage on all 19 addon files (CI enforces it through `tests/MIN_COVERAGE`), luacheck / StyLua / LuaLS clean. Played in game to about level 10 on shaman, rogue, hunter, priest and druid; the bugs found there are fixed. Next: feedback from players of the beta.
 
 ## 1. Try it in game (most important)
 
 Turn on **Behavior > Debug > Collect debug data** first. It samples the API once a second and counts events. After testing, open **Profiles > Debug report**, copy the text and send it: it answers the open questions below with data (is `GetTotemInfo`, `UnitCreatureType`, `UnitGUID`, `UnitThreatSituation` secret in combat; what `IsSpellUsable` says out of range; which error texts the client sends).
 
-Every change since the 1.0.0-beta.1 push was checked only by syntax checks and the unit tests with the WoW API stand-in (`tests/wow.lua`). The stand-in follows the API docs, but the real client can differ. Things to watch:
+Still open, only the game (or player reports) can answer:
+
+- Is `GetShapeshiftFormInfo` / `GetNumShapeshiftForms` readable in combat (druid form)?
+- Rogue poisons: spell, item or aura in the Forever client? Not played to level 20.
+- Levels above 20 were not played on any class.
+
+Older checklist (mostly confirmed in game):
 
 - **Shaman totem cue:** does the totem glow (orange) appear at the start of a fight and stay until the totem is down, while the other buttons keep going? Does Earthbind wait for melee range? Walk 25+ yards from a Searing Totem: a new one must be glowing.
 - **Interrupt:** does the Kick / Pummel / Counterspell / Earth Shock glow light on a normal cast (`notInterruptible` is return 8 of `UnitCastingInfo`, 7 of `UnitChannelInfo`)?
@@ -31,8 +37,8 @@ Done: `API.lua` is split by topic into seven files that share `ns.API.I`; `Core.
 Still to do:
 
 - `APIUnit.lua` is still about 1100 lines (units, range, roles, casts); it could be split further.
-- The release workflow runs only the syntax check; the unit tests, luacheck and StyLua could run there too.
+- The release workflow runs the syntax check and the unit tests; luacheck and StyLua run in the Check workflow on every push.
 
 ## 4. Release
 
-Version stays 1.0.0-beta.1 until the official release (bump `VERSION.txt` and the TOC together, then push the tag `v<version>`). Nothing is tagged yet.
+1.0.0-beta.1 is released with the tag `v1.0.0-beta.1` (GitHub Actions builds the zip). Next version: bump `VERSION.txt` (with new release notes) and the TOC together, then push the tag `v<version>`.

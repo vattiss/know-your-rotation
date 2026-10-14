@@ -41,6 +41,9 @@ jobs:
         run: |
           for f in *.lua; do luajit -bl "$f" > /dev/null; done
 
+      - name: Unit tests and coverage
+        run: luajit tests/run.lua --min=$(cat tests/MIN_COVERAGE)
+
       - name: Build the addon zip
         id: build
         run: |

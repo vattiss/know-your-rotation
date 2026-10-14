@@ -10,9 +10,12 @@ A rotation helper for WoW Forever, made for learning a class from level 1: inste
 
 ## What it shows
 - The next rotation spell glows on its action-bar button, only when you can actually press it.
-- Heals light up once your missing health is about the size of the heal, also in combat when the client hides health values.
-- Defense buffs, interrupts, purges, cleanses and weapon buffs (imbues, poisons, stones) each get their own glow, with an optional sound.
-- A screen message when a cue spell is not on your action bars, and pet reminders for hunters and warlocks.
+- Heals light up once your missing health is about the size of the heal, also in combat when the client hides health values. Heals and shields also work on a party or raid member you select: quick heals once enough health is missing, Renew / Power Word: Shield whenever they are missing.
+- Defense buffs, interrupts, purges, cleanses and weapon buffs (imbues, poisons on each hand, stones) each get their own glow, with an optional sound.
+- Shaman totems and the hunter Auto Shot / Concussive Shot get their own cue next to the rotation, so the other buttons keep going.
+- The pull: an offensive racial first, then a cast-time attack while the mob runs in, then the instants.
+- Screen messages when the next spells are learned but on no action bar (the glow moves on to the next one), when a bar holds an older rank than the one you know, and pet reminders for hunters and warlocks.
+- Quiet in towns and inns: no glow or message while resting out of combat (can be switched off).
 
 ## What it does on its own
 - Role from the name of your main talent tree (Protection = tank; Holy, Discipline, Restoration = heal), and melee or ranged from the distance to your target.
@@ -22,10 +25,15 @@ A rotation helper for WoW Forever, made for learning a class from level 1: inste
 
 ## Options
 - Game menu → Options → AddOns → Know Your Rotation, built from the game's own settings controls.
-- Highlights: per-cue switch, sound and color, and a switch to disable the addon on one character.
-- Behavior: role, combat mode, AoE threshold, profile, smart heal threshold, action-bar-only suggestions, Classic swing and auto-shot timing.
+- Highlights: per-cue switch, sound and color, a switch to disable the addon on one character, and the quiet-in-towns switch.
+- Behavior: role, combat mode, AoE threshold, profile, smart heal threshold, Classic swing and auto-shot timing, debug data collection.
 - Rotation and Defense: edit one list at a time, drag spells in from the spellbook, optional per-spell delay.
 - Profiles: reset, export and import.
+
+## Tested so far
+- Played to about level 10 on shaman, rogue, hunter, priest and druid. Warrior, mage, warlock and paladin are built from the spell data and the API docs, not played yet.
+- Levels above 20 have not been played: the lists for them follow the spell data. Reports from those levels help the most.
+- To help: switch on Behavior > Collect debug data, play until the problem happens, then press Debug report on the Profiles page and paste the text into your issue (the README says more).
 
 ## Scope
 - WoW Forever (camelot client) only, English only.
