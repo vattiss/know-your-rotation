@@ -77,6 +77,9 @@ local function weaponNameSet()
 			if name then
 				weaponNames[name] = true
 			end
+			if entry.name then
+				weaponNames[entry.name] = true
+			end
 		end
 	end
 	return weaponNames
@@ -595,8 +598,17 @@ local function learnedWeaponID(entry)
 			end
 		end
 	end
-	if API.Known(entry.id) then
+	-- The ID must still name this buff: a client can give an old ID to another
+	-- spell. Then, and when the ID is not known, the name decides (rogue
+	-- poisons carry their name).
+	if API.Known(entry.id) and (not entry.name or API.SpellName(API.Resolve(entry.id) or entry.id) == entry.name) then
 		return entry.id
+	end
+	if entry.name then
+		local byName = API.ResolveFromName(entry.name)
+		if byName and API.Known(byName) then
+			return byName
+		end
 	end
 	return nil
 end
@@ -878,6 +890,14 @@ local function buildDualWeapon()
 			return nil
 		end
 		local state, remain = handState(entry, offhand)
+		if state ~= "up" then
+			-- A poison kept as an aura on you (not as a weapon enchant) covers
+			-- both hands, like the one-weapon read (detectSelected) counts it.
+			local auraOn, auraRemain = API.HasWeaponBuff(entry)
+			if auraOn then
+				state, remain = "up", auraRemain
+			end
+		end
 		if state == "up" then
 			missingSince[hand] = nil
 			if remain and remain > 0 and remain < 9000 and remain <= 30 then

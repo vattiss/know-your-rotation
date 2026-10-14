@@ -147,6 +147,7 @@ local function defaults()
 				lastManualMode = ns.db.lastManualMode,
 				autoEnemies = ns.db.autoEnemies,
 				weaponBuff = ns.db.weaponBuff,
+				weaponBuffOff = ns.db.weaponBuffOff,
 			},
 			pvp = {},
 		}

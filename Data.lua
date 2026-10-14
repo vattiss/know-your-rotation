@@ -237,6 +237,7 @@ ns.WEAPON_BUFFS = {
 	ROGUE = {
 		{
 			key = "InstantPoison",
+			name = "Instant Poison",
 			id = 8679,
 			duration = 1800,
 			enchants = { 323, 324, 325, 623, 624, 625 },
@@ -244,6 +245,7 @@ ns.WEAPON_BUFFS = {
 		},
 		{
 			key = "DeadlyPoison",
+			name = "Deadly Poison",
 			id = 2823,
 			duration = 1800,
 			enchants = { 7, 8, 626, 627, 2630 },
@@ -251,6 +253,7 @@ ns.WEAPON_BUFFS = {
 		},
 		{
 			key = "CripplingPoison",
+			name = "Crippling Poison",
 			id = 3408,
 			duration = 1800,
 			enchants = { 22, 603 },
@@ -258,6 +261,7 @@ ns.WEAPON_BUFFS = {
 		},
 		{
 			key = "WoundPoison",
+			name = "Wound Poison",
 			id = 13219,
 			duration = 1800,
 			enchants = { 703, 704, 705, 706 },
@@ -265,6 +269,7 @@ ns.WEAPON_BUFFS = {
 		},
 		{
 			key = "MindNumbingPoison",
+			name = "Mind-numbing Poison",
 			id = 5761,
 			duration = 1800,
 			enchants = { 23, 35, 643 },

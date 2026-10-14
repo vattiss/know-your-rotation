@@ -89,6 +89,27 @@ describe("Weapon dual wield (rogue)", function()
 		H.eq(ns.WeaponIsDual(), false)
 	end)
 
+	it("finds a poison by its name when the client gives its old ID to another spell", function()
+		local _, ns = boot("ROGUE", function(w)
+			w.spell(8679, { name = "Wound Poison" })
+			w.spell(9001, { name = "Instant Poison" })
+		end)
+		local entry, id = ns.AutoWeaponBuff(false)
+		H.eq(entry.key, "InstantPoison")
+		H.eq(id, 9001, "the spell named Instant Poison, not the old ID")
+		H.eq(ns.IsWeaponBuff(9001), true, "known as a weapon buff by its name")
+	end)
+
+	it("counts a poison kept as an aura on you for both hands", function()
+		local w, ns = boot("ROGUE", function(w)
+			w.spell(8679, { name = "Instant Poison" })
+			w.state.items = { [17] = 123 }
+			w.state.itemInfo = { [123] = { classID = 2 } }
+		end)
+		w.aura("player", { name = "Instant Poison", spellId = 8679, expirationTime = w.state.time + 1200 })
+		H.same({ ns.BuildWeapon() }, { 8679, 0, false }, "no weapon enchant, but the aura is on")
+	end)
+
 	it("suggests the first hand that is missing or about to run out", function()
 		local w, ns = boot("ROGUE", function(w)
 			w.spell(8679, { name = "Instant Poison" })

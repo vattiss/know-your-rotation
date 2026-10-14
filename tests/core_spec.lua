@@ -59,6 +59,16 @@ describe("Core saved variables", function()
 		H.eq(ns.noticeFrame.text:GetText(), ns.T("NOTICE_LISTS_RESET"), "the player is told why the order changed")
 	end)
 
+	it("keeps both weapon picks when the first profile is made", function()
+		local w = wow.new()
+		w:player("ROGUE")
+		w.env.KnowYourRotationCharDB = { charReady = 1, weaponBuff = "InstantPoison", weaponBuffOff = "DeadlyPoison" }
+		local ns = w:load()
+		w:fire("PLAYER_LOGIN")
+		H.eq(ns.db.profiles.pve.weaponBuff, "InstantPoison")
+		H.eq(ns.db.profiles.pve.weaponBuffOff, "DeadlyPoison", "the off-hand pick is not lost")
+	end)
+
 	it("tells about a list reset only when saved lists were really replaced", function()
 		local function login(saved)
 			local w = wow.new()

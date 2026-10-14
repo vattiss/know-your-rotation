@@ -946,12 +946,12 @@ local function registerHighlights(root)
 				local auto = ns.AutoWeaponBuff(offhand)
 				local label = ns.T("OPT_AUTOMATIC")
 				if auto then
-					label = label .. " (" .. (API.SpellLabel(auto.id) or auto.key) .. ")"
+					label = label .. " (" .. (auto.name or API.SpellLabel(auto.id) or auto.key) .. ")"
 				end
 				local list = { { "auto", label } }
 				for _, entry in ipairs(ns.WeaponChoices() or {}) do
 					if ns.WeaponBuffLearned(entry) then
-						list[#list + 1] = { entry.key, API.SpellLabel(entry.id) or entry.key }
+						list[#list + 1] = { entry.key, entry.name or API.SpellLabel(entry.id) or entry.key }
 					end
 				end
 				return list
