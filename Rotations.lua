@@ -243,6 +243,16 @@ function ns.BuildQueue()
 		end
 		return false
 	end
+	-- An offensive racial at the front of the list (Blood Fury, Berserking,
+	-- Eureka: front) comes before the pull opener too: it costs no cast.
+	local function pickFront(shift)
+		for _, step in ipairs(apl) do
+			if step.racial and step.front and not isRotSpent(step) and pressable(step, shift, "in") then
+				take(step)
+				return
+			end
+		end
+	end
 	local function fillSlots()
 		local shift = math.max(0.2, API.CastRemain())
 		-- The spell being cast right now is not glowed again: it only counts as
@@ -256,6 +266,7 @@ function ns.BuildQueue()
 				break
 			end
 		end
+		pickFront(shift)
 		if not pickOpener(shift) and not pickNext(shift, "in") then
 			pickNext(shift, "notOut")
 		end

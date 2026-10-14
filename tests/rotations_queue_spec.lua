@@ -95,6 +95,18 @@ describe("Rotation pull opener", function()
 		H.eq(ns.API.CastTimeMs(10), 2000)
 		H.eq(ns.API.CastTimeMs(11), 0)
 		H.eq(ns.BuildQueue()[1], 10, "the pull: the cast while the mob runs in")
+		w.spell(12, { name = "Racial", inRange = true })
+		useList(ns, {
+			{ key = "racial_X", id = 12, opt = { hostile = true }, on = true, racial = true, front = true },
+			step("Shock", 11, { hostile = true, nodebuff = true }),
+			step("Bolt", 10, { filler = true, hostile = true }),
+		})
+		local q = ns.BuildQueue()
+		H.same({ q[1], q[2] }, { 12, 10 }, "the racial first, then the cast")
+		useList(ns, {
+			step("Shock", 11, { hostile = true, nodebuff = true }),
+			step("Bolt", 10, { filler = true, hostile = true }),
+		})
 		w.state.units.player.combat = true
 		H.eq(ns.BuildQueue()[1], 11, "in combat the list order")
 		w.state.units.player.combat = false
