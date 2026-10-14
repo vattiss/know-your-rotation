@@ -47,17 +47,16 @@ Aimed Shot, Multi-Shot and Volley avoid clipping Auto Shot, and energy spells ac
 | Color | Meaning |
 | --- | --- |
 | White glow | Next rotation spell |
-| Green glow | Heal or cleanse |
+| Green glow | Cleanse, and heals that are kept up (Renew, Power Word: Shield) |
 | Blue glow | Defense buff |
 | Yellow glow | Interrupt |
 | Purple glow | Purge |
-| Green glow | Heals that are kept up (Renew, Shield) |
 | Mint glow | Quick heals, pressed when the health asks for it |
 | Red glow | Weapon buff |
 | Cyan glow | Auto Shot, Concussive Shot (hunter) |
 | Orange glow | Totem |
 
-The rotation, heal, defense and weapon colors can be changed on the Highlights page.
+The rotation, heal, quick heal, defense, weapon, hunter shot and totem colors can be changed on the Highlights page.
 ### Combat list vs defense
 
 - **Rotation** = short combat spells (strikes, shocks, heals, judgements…).
@@ -73,16 +72,29 @@ Heals in your lists light up when they are needed:
 - Emergency heals keep their own low threshold (for example Lay on Hands around 20%).
 - The game hides your health and mana from add-ons (the debug mode showed it is hidden all the time, not only in combat). The heal glow therefore follows **your own** health, faded in and out by the game itself. Defensive spells that wait for low health (Power Word: Shield, Shield Wall, …) work the same way, in the defense color.
 - Out of combat a heal follows the unit it would land on: a friendly target, or a friendly mouseover when the game's mouseover cast is on, otherwise you.
+- **Group members:** a heal or shield also lights up for a party or raid member you select (not for other players). Their health is hidden too, so the game fades the glow by that member's health. Quick heals (mint) show once enough health is missing; heals that are kept up (Renew, Power Word: Shield; green) show whenever they are missing, and the damage glow stays visible next to them.
 
 Full health → no heal suggestion, the damage rotation stays visible.
 
-### Auto Shot and wands
+### The pull and racials
 
-Hunters are told to start Auto Shot (right after Hunter's Mark) and never while it is already running, since pressing it again would stop it. Priests, mages and warlocks get the wand (Shoot) once the main spell is out of mana; it needs a wand equipped.
+- Out of combat, with an enemy target out of melee range, the first spell with a cast time in your list opens the fight (for example Fireball, Smite, Lightning Bolt): the cast is free while the mob runs in, and the instants (DoTs, shocks) come right after it.
+- Offensive racials (Blood Fury, Berserking, Elune's Light, Eureka) are on by default and come first: at the pull, once the target is within about 28 yards, before the opener; in combat whenever they are ready.
+
+### Hunter shots, pets and wands
+
+- Auto Shot and Concussive Shot are a separate cyan cue next to the rotation, so the rotation (Serpent Sting, Arcane Shot, …) keeps going. Auto Shot lights up only when it is not running (pressing it again would stop it) and the target is in shooting range; neither lights up in melee range.
+- Stings are skipped on Mechanical and Elemental targets, which are immune to them.
+- Call Pet is offered only once you have tamed a pet and are fighting; Revive Pet out of combat when it is dead.
+- Priests, mages and warlocks get the wand (Shoot) once the main spell is out of mana; it needs a wand equipped.
+
+### Druid forms
+
+With the hybrid style the list follows your form (Cat Form: the cat list, Bear Form: the bear list). The tank list starts with Bear Form, so you are told to shift when you are out of it. After a shapeshift the spells of the new form are found on the bar that the game pages in.
 
 ### Finishing a low target
 
-Execute and Hammer of Wrath light up as soon as the game lets you use them. Rogue Eviscerate does not wait for 5 combo points when the target is low: from 2 points it lights up once the target is below about 8% health per point (2 points: 16%, 3 points: 24%, …). Shadow Word: Death and Shadowburn light up below 20%. In combat the target's health is hidden from add-ons, so the game itself fades the finisher glow in and the regular rotation glow (for example Sinister Strike) out at that point: only one of them shows.
+Execute and Hammer of Wrath light up as soon as the game lets you use them. Rogue Eviscerate does not wait for 5 combo points when the target is low: from 2 points it lights up once the target is below about 8% health per point (2 points: 16%, 3 points: 24%, …). While leveling (below level 20) Eviscerate also goes from 2 points on a mob below your level and from 3 points otherwise, instead of waiting for 5. Shadow Word: Death and Shadowburn light up below 20%. In combat the target's health is hidden from add-ons, so the game itself fades the finisher glow in and the regular rotation glow (for example Sinister Strike) out at that point: only one of them shows.
 
 ### Profiles
 
@@ -106,7 +118,7 @@ Per class: damage, tank, heal, and the extra Classic styles (hunter range/melee,
 
 ### Options pages
 
-- **Highlights**: disable on this character; one section per cue (rotation, defense, interrupt, purge, cleanse, weapon buff, totems) with its switch, sound and color. Only the cues your class can use are listed. The weapon buff is Automatic by default: the best one you have learned (for example Rockbiter at level 1, then Flametongue, then Windfury for a melee shaman); you can also pick one of the learned buffs. Rogues with an off-hand weapon get a separate main-hand and off-hand poison pick (Automatic: Instant on the main hand, Deadly on the off hand once learned).
+- **Highlights**: disable on this character; **Stay quiet in towns and inns** (on by default: no glow or message while you are resting and not in combat); one section per cue (rotation, defense, interrupt, purge, cleanse, weapon buff, totems) with its switch, sound and color. Only the cues your class can use are listed. The weapon buff is Automatic by default: the best one you have learned (for example Rockbiter at level 1, then Flametongue, then Windfury for a melee shaman); you can also pick one of the learned buffs. Rogues with an off-hand weapon get a separate main-hand and off-hand poison pick (Automatic: Instant on the main hand, Deadly on the off hand once learned).
 - **Behavior**: role, combat mode, AoE threshold and profile (each can be Automatic); smart heal threshold (a heal is offered once the missing health is about the heal size; emergency steps below 50% keep their own value); Classic swing and auto-shot timing.
 - **Rotation** and **Defense**: the spell lists. Pick the list with the two dropdowns at the top (role and, for the rotation, the mode), then reorder, switch off, remove, or drag in spells. "Show the delay column" adds the per-spell re-suggest delay.
 - **Profiles**: reset, export, import.
@@ -145,7 +157,7 @@ Saved variables: `KnowYourRotationDB` (account), `KnowYourRotationCharDB` (per c
 ## Notes
 
 - This is a **helper**, not a bot. You still press the keys.
-- Racials appear in the editor (off by default). Air Walk is never put in the combat list.
+- Racials appear in the editor: the offensive ones are on by default, the others off. Air Walk is never put in the combat list.
 - Do not overwrite Blizzard spell APIs from other add-ons; this one reads `C_Spell` / `C_SpellBook` and never patches them.
 
 ## What to expect, and how to help
