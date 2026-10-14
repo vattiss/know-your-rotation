@@ -24,7 +24,8 @@ For a bigger change (a new cue, a new option, a different list order for a class
 4. **Tests:** every change to addon code comes with tests in `tests/*_spec.lua`. Line coverage is 100 % for every file and CI enforces it. Code no test can reach is dead code: remove it.
 5. **Docs:** update the ARCHITECTURE section you touched, and `README.md` when players can notice the change.
 6. Do not bump the version or edit `VERSION.txt` / the TOC version: releases are made by the maintainer.
-7. Open the pull request against `main` and fill in the template.
+7. Write the commit messages and the pull request title as [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `fix(rogue): finish with Eviscerate from 2 points on weak mobs`. The types and scopes are listed in [AGENTS.md](AGENTS.md#commit-messages).
+8. Open the pull request against `main` and fill in the template.
 
 ### Checks to run before you push
 

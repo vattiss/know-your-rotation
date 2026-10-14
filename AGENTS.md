@@ -26,6 +26,23 @@ If the docs do not answer a question, say so instead of guessing; it can only be
 - A new addon `.lua` file goes into the TOC, `tests/wow.lua` (`ADDON_FILES`, and `API_FILES` for an API file) and `tests/run.lua` (`ADDON_FILES`), or CI and the coverage report miss it.
 - `tests/`, `tools/` and `types/` are never copied to the AddOns folder and never shipped (the release zip takes only the root `*.lua`).
 
+## Commit messages
+
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <summary>`, the summary in English, imperative, lower case, no full stop, at most about 72 characters. The body (after a blank line) says why.
+
+| Type | For |
+| --- | --- |
+| `feat` | something new a player can notice (a cue, an option, a message, a list step) |
+| `fix` | a bug fix |
+| `docs` | README, ARCHITECTURE, AGENTS, CONTRIBUTING only |
+| `test` | tests only |
+| `refactor` | code change with no change in behaviour |
+| `style` | formatting only (StyLua) |
+| `ci` | `.github/workflows` |
+| `chore` | anything else: version bump, submodule update, tools, templates |
+
+Scope (optional): the class (`rogue`, `druid`, `shaman` …) when the change is for one class, else the topic (`glow`, `heal`, `totem`, `weapon`, `options`, `debug`, `release`). Examples: `fix(druid): find spells on the bar after a shapeshift`, `feat(heal): glow party heals by the member's health`, `chore(release): 1.0.0-beta.2`. A change that breaks saved settings or lists gets `!` after the scope (`feat(lists)!: …`) and a `BREAKING CHANGE:` line in the body.
+
 ## Scope
 
 - Supports **WoW Forever only**. No other client or version.
