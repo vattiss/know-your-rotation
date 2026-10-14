@@ -191,7 +191,7 @@ Open an issue at [github.com/vattiss/know-your-rotation/issues](https://github.c
 
 ## For agents and contributors
 
-The player guide above is not the implementation map. Before changing code, read [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Pull requests are welcome: [CONTRIBUTING.md](CONTRIBUTING.md) says how to make one and which checks to run. The player guide above is not the implementation map. Before changing code, read [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Every push runs a check on GitHub: syntax, TOC file list, version match, luacheck with the exact list of WoW globals, StyLua formatting, and the unit tests with a minimum line coverage (`tests/MIN_COVERAGE`). Run the tests locally with LuaJIT: `luajit tests/run.lua` (`--uncovered` lists the lines no test reaches). The recommended VS Code extensions (Lua, WoW API, StyLua) are listed in `.vscode/extensions.json`. Releases are built by GitHub Actions from a version tag (`v1.0.0-beta.1`): bump `VERSION.txt` and the TOC, push, then push the tag. The release zip comes with a SHA-256 checksum and a GitHub build attestation (`gh attestation verify <zip> --repo vattiss/know-your-rotation`).
 
