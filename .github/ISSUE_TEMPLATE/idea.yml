@@ -1,0 +1,22 @@
+name: Idea or missing spell
+description: A spell missing from a list, a better order for leveling, or a new feature.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The lists are for leveling and learning a class: a sensible order, not a tuned endgame rotation. You can already reorder, switch off, remove or add spells on the **Rotation** page; this form is for changes that would help every player.
+  - type: input
+    id: character
+    attributes:
+      label: Class, role and level
+      placeholder: Shaman, melee, level 24
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What should change, and why?
+      description: The spell or feature, when it should glow, and why it helps while leveling.
+    validations:
+      required: true

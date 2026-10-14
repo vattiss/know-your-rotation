@@ -1,0 +1,69 @@
+name: Bug or wrong suggestion
+description: A wrong spell glows, a cue is missing or stays on, a message is wrong, or a Lua error.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! The addon is built for leveling and learning a class, and most spells above level 20 have not been played yet, so your report is what fixes them.
+
+        The **debug report** helps the most: switch on **Behavior > Collect debug data**, play until the problem happens, then press **Debug report** on the **Profiles** page and copy the text (`Ctrl+C`). [How to collect it](https://github.com/vattiss/know-your-rotation#collecting-data-for-a-bug-report).
+  - type: input
+    id: version
+    attributes:
+      label: Addon version
+      description: Shown in the game's AddOns list and at the top of the debug report.
+      placeholder: 1.0.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: character
+    attributes:
+      label: Class, race and level
+      placeholder: Gnome priest, level 8
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Role, combat mode and talent tree
+      description: Role and combat mode from the Behavior page (Automatic is fine). Talent tree if you know it.
+      placeholder: "Role: Automatic (heal), mode: Automatic, Holy"
+  - type: dropdown
+    id: situation
+    attributes:
+      label: Where did it happen?
+      multiple: true
+      options:
+        - Solo, in combat
+        - Solo, out of combat
+        - In a group or dungeon
+        - Battleground or against a player
+        - In a town or inn
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Which spell or cue glowed (and in which color), which one you expected instead, and what you were doing. A screenshot of the action bars helps.
+      placeholder: |
+        Out of combat at range, Mind Blast glowed first. I expected my racial first.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      description: Optional. The steps, if you found them.
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug report
+      description: |
+        Paste the text from Profiles > Debug report. If it is too long, attach your SavedVariables file instead (`WTF\Account\<account>\<realm>\<character>\SavedVariables\KnowYourRotation.lua`, renamed to `.txt`). It holds no character name, realm or chat.
+      render: text
+  - type: textarea
+    id: luaerror
+    attributes:
+      label: Lua error or "blocked" message
+      description: Optional. The full text of a Lua error, or the "KnowYourRotation has been blocked from an action" message.
+      render: text

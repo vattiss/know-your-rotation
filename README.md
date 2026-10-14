@@ -177,13 +177,13 @@ The addon has a debug mode that records what the game really answers (a value, n
 
 The data is also written to your character's saved variables when you `/reload` or log out:
 `World of Warcraft\_classic_beta_\WTF\Account\<account>\<realm>\<character>\SavedVariables\KnowYourRotation.lua`
-(`KnowYourRotationCharDB.debug`). Attach that file if the text is too long to paste.
+(`KnowYourRotationCharDB.debug`). Attach that file if the text is too long to paste (rename it to `.txt` first: GitHub does not accept `.lua` attachments).
 
 The report holds your class and level, the client and addon version, counts of what the game answered per situation (in combat or not, enemy, friend or no target), the reasons the addon gave per spell (`addon says | ...`, `defense says | ...`), and the names of buffs, totems and error messages the client sent. It holds no character name, realm or chat.
 
 ### Reporting an issue
 
-Open an issue at [github.com/vattiss/know-your-rotation/issues](https://github.com/vattiss/know-your-rotation/issues) and write:
+Open an issue at [github.com/vattiss/know-your-rotation/issues](https://github.com/vattiss/know-your-rotation/issues) and pick **Bug or wrong suggestion** (or **Idea or missing spell**). The form asks for:
 
 - class, level, talent tree (if you know it) and what you were doing (alone, in a group, in combat or not);
 - what you expected, and what the addon showed instead (a screenshot of the action bar helps);

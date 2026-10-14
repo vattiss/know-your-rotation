@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How to collect a debug report
+    url: https://github.com/vattiss/know-your-rotation#collecting-data-for-a-bug-report
+    about: The steps to record what the game answers, before you open a bug report.
