@@ -287,15 +287,13 @@ local function addButton(spellID, button, slot)
 	end
 end
 
+-- The slot the button shows now. A Blizzard action button keeps the paged slot
+-- in GetPagedID / self.action (CalculateAction: a druid form or a warrior
+-- stance pages the main bar, e.g. bear form to 73-84), while its "action"
+-- attribute is the base slot 1-12. The attribute comes last (bar addons).
 local function actionSlot(button)
 	local slot
-	if button.GetAttribute then
-		local ok, value = pcall(button.GetAttribute, button, "action")
-		if ok and value and value ~= 0 then
-			slot = value
-		end
-	end
-	if (not slot or slot == 0) and button.GetPagedID then
+	if button.GetPagedID then
 		local ok, value = pcall(button.GetPagedID, button)
 		if ok and value and value ~= 0 then
 			slot = value
@@ -309,6 +307,12 @@ local function actionSlot(button)
 	end
 	if (not slot or slot == 0) and button.action and button.action ~= 0 then
 		slot = button.action
+	end
+	if (not slot or slot == 0) and button.GetAttribute then
+		local ok, value = pcall(button.GetAttribute, button, "action")
+		if ok and value and value ~= 0 then
+			slot = value
+		end
 	end
 	return slot
 end

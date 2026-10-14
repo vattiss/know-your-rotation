@@ -160,6 +160,17 @@ describe("Debug shapeshift forms", function()
 			c["GetShapeshiftFormInfo(1) icon,active,castable,spellID | idle, no target | number,boolean=true,boolean=true,number"]
 		)
 		H.truthy(c["form as the addon reads it | idle, no target | spec=cat cat=true bear=false"])
+		w.env.GetNumShapeshiftForms = function()
+			return wow.SECRET
+		end
+		ns.Debug.Sample()
+		H.truthy(
+			counts(ns)["GetNumShapeshiftForms() | idle, no target | SECRET number"],
+			"a hidden count is recorded, not compared"
+		)
+		w.env.GetNumShapeshiftForms = function()
+			return #w.state.forms
+		end
 		w.state.forms = {}
 		ns.Debug.Sample()
 		H.eq(#ns.API.TotemBar(), 0, "a class without forms records nothing more")

@@ -267,8 +267,11 @@ end
 -- from the aura, which the client hides in combat. Is the form index
 -- (GetShapeshiftForm, not in the generated API docs) readable there?
 local function sampleForms(ctx)
+	probe("GetNumShapeshiftForms()", ctx, function()
+		return GetNumShapeshiftForms()
+	end)
 	local okNum, num = pcall(GetNumShapeshiftForms)
-	if not okNum or type(num) ~= "number" or num < 1 then
+	if not okNum or not readable(num) or type(num) ~= "number" or num < 1 then
 		return
 	end
 	if type(GetShapeshiftForm) == "function" then

@@ -27,6 +27,10 @@ describe("API forms", function()
 		w.aura("player", { name = "Cat Form", spellId = 768 })
 		H.eq(A.Form(768), true, "hidden on the bar: the aura decides")
 		w.env.GetNumShapeshiftForms = function()
+			return wow.SECRET
+		end
+		H.eq(A.Form(768), true, "a hidden form count: the aura decides")
+		w.env.GetNumShapeshiftForms = function()
 			error("boom")
 		end
 		H.eq(A.Form(768), true)

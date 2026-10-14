@@ -514,6 +514,10 @@ end
 
 local lastAlertKick, lastAlertCleanse, lastAlertWeapon, lastNotice
 local lastBarNotice, lastBarNoticeAt = nil, 0
+-- When the bars last changed (a form, a stance, a page, a slot): the bars are
+-- read again 0.5 s later, and until then the old map would call every spell of
+-- the new page missing.
+local barsChangedAt = -10
 
 local NOTICE_SECONDS = 10
 local noticeToken = 0
@@ -614,7 +618,7 @@ local function pickGlowSpell(queue)
 			ids[#ids + 1] = id
 		end
 	end
-	if #names > 0 then
+	if #names > 0 and GetTime() - barsChangedAt > 1.5 then
 		-- All the spells before the one that glows, in rotation order, in one message.
 		local key = table.concat(ids, ",")
 		local now = GetTime()
@@ -976,6 +980,7 @@ local function flushBars()
 end
 
 local function scheduleBarFlush()
+	barsChangedAt = GetTime()
 	-- ConROC: CancelTimer + ScheduleTimer('Fetch', 0.5)
 	barFlushGen = barFlushGen + 1
 	local gen = barFlushGen

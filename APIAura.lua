@@ -757,7 +757,7 @@ end
 -- docs; the stance bar reads it). true / false, nil when it cannot tell.
 local function formFromBar(spellID)
 	local okNum, num = pcall(GetNumShapeshiftForms)
-	if not okNum or type(num) ~= "number" then
+	if not okNum or not readable(num) or type(num) ~= "number" then
 		return nil
 	end
 	local want = ns.API.SpellName(spellID)

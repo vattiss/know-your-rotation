@@ -348,6 +348,24 @@ describe("Glow hidden-value cues", function()
 	end)
 end)
 
+describe("Glow paged bars", function()
+	it("reads the slot the button shows now, not the base slot of its attribute", function()
+		local _, ns = boot("DRUID", function(w)
+			w.spell(6807, { name = "Maul" })
+			w.spell(5176, { name = "Wrath" })
+			local b = button(w, "ActionButton2", 74, { type = "spell", id = 6807 })
+			b:SetAttribute("action", 2)
+			w.state.actions[2] = { type = "spell", id = 5176 }
+			b.GetPagedID = function(self)
+				return self.action
+			end
+		end)
+		ns.GlowFetch(true)
+		H.same(ns.GlowButtonNames(6807), { "ActionButton2" }, "bear form page: Maul")
+		H.same(ns.GlowButtonNames(5176), {}, "the caster page is not shown")
+	end)
+end)
+
 describe("Glow item buttons", function()
 	it("finds a button that holds an item through the spell the item casts", function()
 		local w, ns = boot("ROGUE", function(w)

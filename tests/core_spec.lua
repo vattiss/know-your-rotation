@@ -392,6 +392,34 @@ describe("Core tick", function()
 		H.eq(glowed, nil, "nothing on a bar: nothing to glow")
 	end)
 
+	it("waits for the bars to be read again after a form change", function()
+		local w, ns = boot("DRUID", function(w)
+			w.spell(11, { name = "Alpha" })
+		end)
+		ns.BuildQueue = function()
+			ns.queueGlowOk = true
+			return { 11 }
+		end
+		local onBar = { "b" }
+		ns.GlowButtonNames = function()
+			return onBar
+		end
+		local said = 0
+		ns.ShowNotice = function()
+			said = said + 1
+		end
+		w:advance(5)
+		onBar = {}
+		w:fire("UPDATE_SHAPESHIFT_FORM")
+		ns.InvalidateTick()
+		ns.Tick()
+		H.eq(said, 0, "the new page is not read yet: no message")
+		w:advance(2)
+		ns.InvalidateTick()
+		ns.Tick()
+		H.truthy(said >= 1, "read again, still missing: said")
+	end)
+
 	it("does not announce the wand as missing from the bars", function()
 		local _, ns = boot("PRIEST", function(w)
 			w.spell(5019, { name = "Shoot" })
