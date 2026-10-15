@@ -249,11 +249,10 @@ local function sampleDefense(ctx)
 			count(
 				"known via | " .. name,
 				ctx,
-				("same id=%s IsPlayerSpell=%s IsSpellKnown=%s IsSpellKnownOrOverridesKnown=%s inBook=%s bookSlot=%s itemType=%s"):format(
+				("same id=%s known=%s inBookExact=%s inBook=%s bookSlot=%s itemType=%s"):format(
 					tostring(id == step.id),
-					yes(IsPlayerSpell, step.id),
-					yes(IsSpellKnown, step.id),
-					yes(IsSpellKnownOrOverridesKnown, step.id),
+					yes(C_SpellBook.IsSpellKnown, step.id),
+					yes(C_SpellBook.IsSpellInSpellBook, step.id, 0, false), -- bank 0 = Player
 					yes(C_SpellBook.IsSpellInSpellBook, step.id),
 					yes(C_SpellBook.FindSpellBookSlotForSpell, step.id),
 					bookItemType(step.id)

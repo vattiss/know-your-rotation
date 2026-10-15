@@ -74,27 +74,15 @@ end
 
 local cachedBanks
 
+-- The spellbook banks (SpellBookConstantsDocumentation.lua: Player 0, Pet 1).
+-- The "spell" / "pet" strings and BOOKTYPE_* of the old API are not used.
 local function bookBanks()
 	if cachedBanks then
 		return cachedBanks
 	end
-	local banks = {}
-	if Enum and Enum.SpellBookSpellBank then
-		banks[#banks + 1] = Enum.SpellBookSpellBank.Player
-		banks[#banks + 1] = Enum.SpellBookSpellBank.Pet
-	end
-	if BOOKTYPE_SPELL then
-		banks[#banks + 1] = BOOKTYPE_SPELL
-	end
-	if BOOKTYPE_PET then
-		banks[#banks + 1] = BOOKTYPE_PET
-	end
-	banks[#banks + 1] = 0
-	banks[#banks + 1] = 1
-	banks[#banks + 1] = "spell"
-	banks[#banks + 1] = "pet"
-	cachedBanks = banks
-	return banks
+	local enum = Enum and Enum.SpellBookSpellBank
+	cachedBanks = { enum and enum.Player or 0, enum and enum.Pet or 1 }
+	return cachedBanks
 end
 
 local function readBookItem(index, bank)
@@ -114,12 +102,6 @@ local function readBookItem(index, bank)
 	end
 	if C_SpellBook and C_SpellBook.GetSpellBookItemName then
 		local ok, name = pcall(C_SpellBook.GetSpellBookItemName, index, bank)
-		if ok then
-			return safe(name, nil), nil
-		end
-	end
-	if GetSpellBookItemName then
-		local ok, name = pcall(GetSpellBookItemName, index, bank)
 		if ok then
 			return safe(name, nil), nil
 		end
@@ -289,6 +271,19 @@ end
 
 local playerKnows
 
+-- One C_SpellBook question (SpellBookDocumentation.lua: IsSpellKnown,
+-- IsSpellInSpellBook); false when the client lacks it or it fails.
+local function askBook(fn, id)
+	if not fn then
+		return false
+	end
+	local ok, known = pcall(fn, id)
+	if ok and known then
+		return true
+	end
+	return false
+end
+
 local function findPlayerSpellByName(name)
 	name = safe(name, nil)
 	if type(name) ~= "string" or name == "" then
@@ -372,11 +367,8 @@ function ns.API.CursorSpell()
 	if type(arg1) == "number" and readable(arg1) then
 		local guessed = ns.API.SpellName(arg1)
 		if guessed and not junkSpellName(guessed) then
-			if IsPlayerSpell then
-				local okKnown, known = pcall(IsPlayerSpell, arg1)
-				if okKnown and known then
-					return arg1
-				end
+			if C_SpellBook and askBook(C_SpellBook.IsSpellKnown, arg1) then
+				return arg1
 			end
 			return findPlayerSpellByName(guessed) or arg1
 		end
@@ -472,34 +464,14 @@ function ns.API.InvalidateSpells(full)
 	end
 end
 
+-- Learned (IsSpellKnown), or in the spellbook with overrides (IsSpellInSpellBook,
+-- default bank Player and includeOverrides true). These replace the deprecated
+-- IsPlayerSpell / IsSpellKnown / IsSpellKnownOrOverridesKnown wrappers.
 function playerKnows(id)
-	if IsPlayerSpell then
-		local ok, known = pcall(IsPlayerSpell, id)
-		if ok and known then
-			return true
-		end
+	if not C_SpellBook then
+		return false
 	end
-	if IsSpellKnownOrOverridesKnown then
-		local ok, known = pcall(IsSpellKnownOrOverridesKnown, id)
-		if ok and known then
-			return true
-		end
-	end
-	if IsSpellKnown then
-		local ok, known = pcall(IsSpellKnown, id)
-		if ok and known then
-			return true
-		end
-	end
-	if C_SpellBook then
-		if C_SpellBook.IsSpellInSpellBook then
-			local ok, known = pcall(C_SpellBook.IsSpellInSpellBook, id)
-			if ok and known then
-				return true
-			end
-		end
-	end
-	return false
+	return askBook(C_SpellBook.IsSpellKnown, id) or askBook(C_SpellBook.IsSpellInSpellBook, id)
 end
 
 ---The rank number of a spell ID from its subtext ("Rank 2"), nil when the

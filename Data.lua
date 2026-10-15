@@ -198,7 +198,7 @@ ns.CLEANSE = {
 	},
 }
 
--- Forever weapon enchants (lab 1.60.1): 60 min duration, IDs = 4th value of GetWeaponEnchantInfo.
+-- Forever weapon enchants (lab 1.60.1): 60 min duration, IDs = the enchantID of the weapon enchant read.
 ns.WEAPON_BUFFS = {
 	SHAMAN = {
 		{

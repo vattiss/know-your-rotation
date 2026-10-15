@@ -140,12 +140,7 @@ describe("API spellbook index", function()
 
 	it("pumps the legacy walk on timers", function()
 		local w, _, A = book()
-		w.env.C_SpellBook = nil
-		w.env.GetSpellBookItemName = function(index, bank)
-			if bank == "spell" and index == 1 then
-				return "Frostbolt"
-			end
-		end
+		w.env.C_SpellBook.GetNumSpellBookSkillLines = nil
 		A.RebuildSpellBookIndex(false)
 		w:advance(0)
 		A.RebuildSpellBookIndex(false)
@@ -197,11 +192,7 @@ describe("API spellbook index", function()
 		w.env.C_SpellBook.GetSpellBookItemName = function()
 			error("boom")
 		end
-		w.env.GetSpellBookItemName = function()
-			error("boom")
-		end
 		w.env.Enum = nil
-		w.env.BOOKTYPE_SPELL, w.env.BOOKTYPE_PET = nil, nil
 		A.RebuildSpellBookIndex(true)
 		H.eq(A.ResolveFromName("Frostbolt"), 10, "name API still answers")
 	end)
@@ -303,37 +294,20 @@ describe("API.Resolve", function()
 			w.spell(700, { name = "A" })
 		end)
 		local env = w.env
-		env.IsPlayerSpell = function()
+		env.C_SpellBook.IsSpellKnown = function()
 			error("boom")
-		end
-		env.IsSpellKnownOrOverridesKnown = function()
-			return false
-		end
-		env.IsSpellKnown = function()
-			return false
-		end
-		env.C_SpellBook.IsSpellInSpellBook = function()
-			return false
 		end
 		env.C_SpellBook.IsSpellInSpellBook = function(id)
 			return id == 700
 		end
-		H.eq(A.Resolve(700), 700)
+		H.eq(A.Resolve(700), 700, "in the spellbook")
 		A.InvalidateSpells(true)
 		env.C_SpellBook.IsSpellInSpellBook = nil
-		env.IsSpellKnown = function(id)
+		env.C_SpellBook.IsSpellKnown = function(id)
 			return id == 700
 		end
-		H.eq(A.Resolve(700), 700)
+		H.eq(A.Resolve(700), 700, "learned")
 		A.InvalidateSpells(true)
-		env.IsSpellKnown = nil
-		env.IsSpellKnownOrOverridesKnown = function(id)
-			return id == 700
-		end
-		H.eq(A.Resolve(700), 700)
-		A.InvalidateSpells(true)
-		env.IsSpellKnownOrOverridesKnown = nil
-		env.IsPlayerSpell = nil
 		env.C_SpellBook = nil
 		env.C_Spell.GetOverrideSpell = nil
 		H.eq(A.Resolve(700), nil, "a name alone does not make a spell known")
@@ -389,7 +363,7 @@ describe("API names from the cursor and the API", function()
 		H.eq(A.CursorSpell(), 10, "spell info by name")
 		w.state.cursor = { "spell", "Nothing" }
 		H.eq(A.CursorSpell(), nil)
-		w.env.IsPlayerSpell = nil
+		w.env.C_SpellBook.IsSpellKnown = nil
 		w.state.cursor = { "spell", 30 }
 		H.eq(A.CursorSpell(), 30)
 		w.env.GetCursorInfo = function()

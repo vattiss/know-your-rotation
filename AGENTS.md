@@ -96,6 +96,7 @@ All shared state lives in the `ns` table (second value of `...`). `Core.lua` run
 - Hunter stings do not apply to Mechanical / Elemental targets (`CreatureBlocked`).
 - Rotation pass: a listed spell already cast is marked used for this pass; when nothing is usable the queue restarts. Reset on target change and leaving combat.
 - `IsRotationAction`: a filler yields slot 1 to a ready shock / DoT / CD / proc listed lower. Do not use `require` / `requireAny` to hide a filler: list order wins.
+- Never call a deprecated API: a global defined in `ref/wow-ui-source/Interface/AddOns/Blizzard_Deprecated*` or `Deprecated_*` (e.g. `HasAction`, `IsPlayerSpell`, `GetWeaponEnchantInfo`, `ChatFrame_OpenChat`). Use the `C_*` / `*Util` function it wraps (ARCHITECTURE *Deprecated APIs*).
 - Do not call `CombatLogGetCurrentEventInfo`: the client blocks the addon. Proc spells use `opt.proc` (`IsSpellUsable`).
 - `listVersion` is 8: saved lists are replaced once by the default order on next login. **Do not raise it** for a normal change: `mergeSteps` keeps the saved order, adds new default steps (a variant with the same spell but another key too) and drops cue spells (`ns.IsCueSpell`) by itself. Raise it only when a saved row would be wrong, and then the player is told once at login.
 - `auto` mode uses the single list out of combat (the pull) and until `ns.API.EnemyCount()` reaches `autoEnemies` (default 3, minimum 2) in combat, then the `aoe` list.

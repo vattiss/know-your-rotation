@@ -1001,7 +1001,7 @@ local function flushSpells()
 	-- ConROC-style (Forever-safe): on learn / level-up, only clear *failed*
 	-- Resolve entries so newly learned ranks can resolve. Do NOT wipe known
 	-- hits and do NOT rebuild the spellbook index (that is what froze Forever
-	-- on quest turn-in). Pulse/Tick picks up new ranks via IsPlayerSpell.
+	-- on quest turn-in). Pulse/Tick picks up new ranks via C_SpellBook.IsSpellKnown.
 	if ns.API and ns.API.InvalidateSpells then
 		ns.API.InvalidateSpells(false)
 	end

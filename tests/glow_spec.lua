@@ -475,11 +475,11 @@ describe("Glow range", function()
 		w.env.C_Spell.IsSpellInRange = function()
 			error("boom")
 		end
-		w.env.IsActionInRange = function()
+		w.env.C_ActionBar.IsActionInRange = function()
 			return wow.SECRET_BOOL
 		end
 		H.eq(ns.SpellInRange(3, 1), nil)
-		w.env.IsActionInRange = function()
+		w.env.C_ActionBar.IsActionInRange = function()
 			error("boom")
 		end
 		H.eq(ns.SpellInRange(3, 1), nil)
@@ -518,6 +518,9 @@ describe("Glow edge cases", function()
 		H.eq(ns.SpellBarSlot("abc"), nil)
 		w.state.secret.spellName = true
 		H.eq(ns.SpellBarSlot(1), 3)
+		w.env.C_ActionBar = nil
+		ns.GlowFetch(true)
+		H.eq(ns.SpellBarSlot(1), nil, "no action bar API: the action slots are not read")
 	end)
 
 	it("swaps the next and heal glow on one button", function()

@@ -344,9 +344,19 @@ local function addIcon(key, button)
 	buttonsByIcon[key][#buttonsByIcon[key] + 1] = button
 end
 
+-- C_ActionBar.HasAction (ActionBarFrameDocumentation.lua; the HasAction global
+-- is a deprecated wrapper of it).
+local function hasAction(slot)
+	if not (C_ActionBar and C_ActionBar.HasAction) then
+		return false
+	end
+	local ok, has = pcall(C_ActionBar.HasAction, slot)
+	return ok and has == true
+end
+
 local function indexButtonIcon(button, slot)
-	if slot and GetActionTexture then
-		local ok, tex = pcall(GetActionTexture, slot)
+	if slot and C_ActionBar and C_ActionBar.GetActionTexture then
+		local ok, tex = pcall(C_ActionBar.GetActionTexture, slot)
 		if ok then
 			addIcon(plainTexture(tex), button)
 		end
@@ -399,22 +409,19 @@ local function addStandard(button)
 	local slot = actionSlot(button)
 	local actionType, id = attrType, nil
 	if attrType == "action" or (not attrType and slot) then
-		if slot and HasAction then
-			local okHas, has = pcall(HasAction, slot)
-			if okHas and has then
-				local okInfo, t, actionID, _, spellFromAction = pcall(GetActionInfo, slot)
-				if okInfo and isToken(t, "spell") then
-					actionType = "spell"
-					id = plainID(spellFromAction) or plainID(actionID)
-				elseif okInfo and isToken(t, "macro") then
-					actionType, id = "macro", actionID
-				elseif okInfo and isToken(t, "item") and C_Item and C_Item.GetItemSpell then
-					-- A rogue poison, a warlock stone, a potion: the spell the item
-					-- casts is what the cues name.
-					local okSpell, _, itemSpell = pcall(C_Item.GetItemSpell, plainID(actionID))
-					if okSpell and plainID(itemSpell) then
-						actionType, id = "spell", plainID(itemSpell)
-					end
+		if slot and hasAction(slot) then
+			local okInfo, t, actionID, _, spellFromAction = pcall(GetActionInfo, slot)
+			if okInfo and isToken(t, "spell") then
+				actionType = "spell"
+				id = plainID(spellFromAction) or plainID(actionID)
+			elseif okInfo and isToken(t, "macro") then
+				actionType, id = "macro", actionID
+			elseif okInfo and isToken(t, "item") and C_Item and C_Item.GetItemSpell then
+				-- A rogue poison, a warlock stone, a potion: the spell the item
+				-- casts is what the cues name.
+				local okSpell, _, itemSpell = pcall(C_Item.GetItemSpell, plainID(actionID))
+				if okSpell and plainID(itemSpell) then
+					actionType, id = "spell", plainID(itemSpell)
 				end
 			end
 		end
@@ -471,11 +478,8 @@ local function addStandard(button)
 			end
 		end
 	end
-	if slot and HasAction then
-		local okHas, has = pcall(HasAction, slot)
-		if okHas and has then
-			indexButtonIcon(button, slot)
-		end
+	if slot and hasAction(slot) then
+		indexButtonIcon(button, slot)
 	end
 	if slot then
 		buttonSlots[button] = slot
@@ -1162,8 +1166,8 @@ local function rangeUnitFor(spellID)
 end
 
 function ns.SpellInRange(spellID, slot)
-	if slot and IsActionInRange then
-		local ok, result = pcall(IsActionInRange, slot)
+	if slot and C_ActionBar and C_ActionBar.IsActionInRange then
+		local ok, result = pcall(C_ActionBar.IsActionInRange, slot)
 		if ok then
 			local flag = readableFlag(result)
 			if flag ~= nil then
@@ -1185,8 +1189,8 @@ function ns.SpellInRange(spellID, slot)
 			return flag
 		end
 	end
-	if slot and IsActionInRange then
-		local ok, result = pcall(IsActionInRange, slot)
+	if slot and C_ActionBar and C_ActionBar.IsActionInRange then
+		local ok, result = pcall(C_ActionBar.IsActionInRange, slot)
 		if ok then
 			return readableFlag(result)
 		end

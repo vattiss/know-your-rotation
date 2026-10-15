@@ -45,8 +45,11 @@ local function copyText(text)
 	if CopyToClipboard then
 		pcall(CopyToClipboard, text)
 	end
-	if ChatFrame_OpenChat then
-		local ok = pcall(ChatFrame_OpenChat, text, DEFAULT_CHAT_FRAME)
+	-- ChatFrameUtil (Blizzard_ChatFrameBase/Shared/ChatFrameUtil.lua) replaces the
+	-- deprecated ChatFrame_OpenChat / ChatEdit_* globals.
+	local chat = ChatFrameUtil or {}
+	if chat.OpenChat then
+		local ok = pcall(chat.OpenChat, text, DEFAULT_CHAT_FRAME)
 		if ok then
 			local box = DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox
 			if box and box.HighlightText then
@@ -57,8 +60,8 @@ local function copyText(text)
 		end
 	end
 	local box
-	if ChatEdit_ChooseBoxForSend then
-		local ok, chosen = pcall(ChatEdit_ChooseBoxForSend)
+	if chat.ChooseBoxForSend then
+		local ok, chosen = pcall(chat.ChooseBoxForSend)
 		if ok then
 			box = chosen
 		end
@@ -67,8 +70,8 @@ local function copyText(text)
 	if not box then
 		return false
 	end
-	if ChatEdit_ActivateChat then
-		pcall(ChatEdit_ActivateChat, box)
+	if chat.ActivateChat then
+		pcall(chat.ActivateChat, box)
 	end
 	if box.SetText then
 		pcall(box.SetText, box, text)

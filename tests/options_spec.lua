@@ -213,23 +213,21 @@ describe("Options landing page", function()
 		H.eq(w.chat, "https://github.com/vattiss/know-your-rotation")
 		w.env.DEFAULT_CHAT_FRAME.editBox = w.env.CreateFrame("EditBox")
 		copies[1]:Click()
-		w.env.ChatFrame_OpenChat = function()
+		w.env.ChatFrameUtil.OpenChat = function()
 			error("no chat")
 		end
 		w.env.CopyToClipboard = nil
 		copies[2]:Click()
-		w.env.ChatEdit_ChooseBoxForSend = function()
+		w.env.ChatFrameUtil.ChooseBoxForSend = function()
 			return w.env.CreateFrame("EditBox")
 		end
 		copies[2]:Click()
-		w.env.ChatEdit_ChooseBoxForSend = function()
+		w.env.ChatFrameUtil.ChooseBoxForSend = function()
 			error("boom")
 		end
 		w.env.DEFAULT_CHAT_FRAME.editBox = nil
 		copies[2]:Click()
-		w.env.ChatFrame_OpenChat = nil
-		w.env.ChatEdit_ChooseBoxForSend = nil
-		w.env.ChatEdit_ActivateChat = nil
+		w.env.ChatFrameUtil = nil
 		copies[1]:Click()
 		w.env.DEFAULT_CHAT_FRAME = nil
 		copies[1]:Click()

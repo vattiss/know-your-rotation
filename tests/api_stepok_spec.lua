@@ -75,10 +75,8 @@ describe("StepOk basics", function()
 		w.state.spells[1].repeating = true
 		check(A, 1, { autoRepeat = true }, false, "already on")
 		w.env.C_Spell.IsAutoRepeatSpell = function()
-			return false
+			error("boom")
 		end
-		check(A, 1, { autoRepeat = true }, false, "already on")
-		w.env.IsAutoRepeatSpell = nil
 		check(A, 1, { autoRepeat = true }, true)
 		w.env.C_Spell.IsAutoRepeatSpell = nil
 		check(A, 1, { autoRepeat = true }, true)

@@ -167,13 +167,8 @@ local STEP_CHECKS = {
 		"autoRepeat",
 		function(c)
 			local repeating = false
-			local check = (C_Spell and C_Spell.IsAutoRepeatSpell) or IsAutoRepeatSpell
-			if check then
-				local ok, on = pcall(check, c.id)
-				repeating = ok and on == true
-			end
-			if not repeating and IsAutoRepeatSpell and check ~= IsAutoRepeatSpell then
-				local ok, on = pcall(IsAutoRepeatSpell, ns.API.SpellName(c.id) or c.id)
+			if C_Spell and C_Spell.IsAutoRepeatSpell then
+				local ok, on = pcall(C_Spell.IsAutoRepeatSpell, c.id)
 				repeating = ok and on == true
 			end
 			if repeating then

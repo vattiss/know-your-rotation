@@ -857,15 +857,6 @@ function wow.new()
 		local s = spellOf(id)
 		return s and s.baseCooldown or 0, 1500
 	end
-	env.IsAutoRepeatSpell = function(id)
-		local s = spellOf(id)
-		return s ~= nil and s.repeating == true
-	end
-	env.IsPlayerSpell = function(id)
-		return known(id)
-	end
-	env.IsSpellKnown = env.IsPlayerSpell
-	env.IsSpellKnownOrOverridesKnown = env.IsPlayerSpell
 	env.Enum = {
 		SpellBookSpellBank = { Player = 0, Pet = 1 },
 		SpellBookItemType = { None = 0, Spell = 1, FutureSpell = 2 },
@@ -895,6 +886,9 @@ function wow.new()
 			end
 			local id = state.book[index]
 			return id and state.spells[id] and state.spells[id].name
+		end,
+		IsSpellKnown = function(id)
+			return known(id)
 		end,
 		IsSpellInSpellBook = function(id)
 			return known(id)
@@ -1032,9 +1026,6 @@ function wow.new()
 	end
 
 	-- actions / macros / bindings ---------------------------------------------
-	env.HasAction = function(slot)
-		return state.actions[slot] ~= nil
-	end
 	env.GetActionInfo = function(slot)
 		local a = state.actions[slot]
 		if not a then
@@ -1042,14 +1033,19 @@ function wow.new()
 		end
 		return a.type, a.id, a.subType, a.spellID or (a.type == "spell" and a.id or nil)
 	end
-	env.GetActionTexture = function(slot)
-		local a = state.actions[slot]
-		return a and a.icon
-	end
-	env.IsActionInRange = function(slot)
-		local a = state.actions[slot]
-		return a and a.inRange
-	end
+	env.C_ActionBar = {
+		HasAction = function(slot)
+			return state.actions[slot] ~= nil
+		end,
+		GetActionTexture = function(slot)
+			local a = state.actions[slot]
+			return a and a.icon
+		end,
+		IsActionInRange = function(slot)
+			local a = state.actions[slot]
+			return a and a.inRange
+		end,
+	}
 	env.GetMacroSpell = function(id)
 		local m = state.macros[id]
 		return m and m.spell
@@ -1074,17 +1070,6 @@ function wow.new()
 			return state.enchants[slot]
 		end,
 	}
-	env.GetWeaponEnchantInfo = function()
-		local m, o = state.enchants[16], state.enchants[17]
-		return m ~= nil,
-			m and m.remainingTimeMs or 0,
-			0,
-			m and m.enchantID,
-			o ~= nil,
-			o and o.remainingTimeMs or 0,
-			0,
-			o and o.enchantID
-	end
 	env.C_Item = {
 		GetWeaponEnchantInfo = nil,
 		GetItemSpell = function(id)
@@ -1177,19 +1162,20 @@ function wow.new()
 	env.RANGE_INDICATOR = "*"
 	env.SPELL_FAILED_NOT_BEHIND = "You must be behind your target."
 	env.YES, env.NO, env.OKAY, env.CANCEL = "Yes", "No", "Okay", "Cancel"
-	env.BOOKTYPE_SPELL, env.BOOKTYPE_PET = "spell", "pet"
 	env.StaticPopupDialogs = {}
 	env.StaticPopup_Show = function(name, ...)
 		w.popup = { name = name, ... }
 		return w.popup
 	end
-	env.ChatEdit_ChooseBoxForSend = function()
-		return nil
-	end
-	env.ChatEdit_ActivateChat = noop
-	env.ChatFrame_OpenChat = function(text)
-		w.chat = text
-	end
+	env.ChatFrameUtil = {
+		ChooseBoxForSend = function()
+			return nil
+		end,
+		ActivateChat = noop,
+		OpenChat = function(text)
+			w.chat = text
+		end,
+	}
 
 	-- frames ---------------------------------------------------------------
 	env.CreateFrame = function(kind, name, parent, template)

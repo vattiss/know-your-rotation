@@ -608,31 +608,10 @@ describe("API weapon enchants", function()
 		H.same({ A.WeaponEnchant(true) }, { true, 9999, nil })
 	end)
 
-	it("falls back to the old weapon enchant APIs", function()
+	it("falls back to C_Item.GetWeaponEnchantInfo", function()
 		local w, _, A = api("ROGUE")
 		w.env.C_PaperDollInfo = nil
-		w.state.enchants[16] = { enchantID = 323, remainingTimeMs = 600000 }
-		H.same({ A.WeaponEnchant(false) }, { true, 600, 323 })
-		H.same({ A.WeaponEnchant(true) }, { false, 0, 0 })
-		w.state.enchants[17] = { remainingTimeMs = 5000 }
-		H.same({ A.WeaponEnchant(true) }, { true, 5000 / 1000 * 1000 / 1000 * 1000 > 10000 and 5 or 5000, nil })
-		w.env.GetWeaponEnchantInfo = function()
-			return {
-				hasMainHandEnchant = true,
-				mainHandExpiration = 20000,
-				hasOffHandEnchant = wow.SECRET_BOOL,
-				offHandExpiration = 0,
-			}
-		end
-		H.same({ A.WeaponEnchant(false) }, { true, 20, nil })
-		H.same({ A.WeaponEnchant(true) }, { nil, 0, nil }, "unknown")
-		w.env.GetWeaponEnchantInfo = function()
-			return { [1] = { "odd" } }
-		end
-		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil })
-		w.env.GetWeaponEnchantInfo = function()
-			error("boom")
-		end
+		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil }, "no API answers: unknown")
 		w.env.C_Item.GetWeaponEnchantInfo = function(slot)
 			if slot == 0 then
 				return {
@@ -649,11 +628,14 @@ describe("API weapon enchants", function()
 		end
 		H.same({ A.WeaponEnchant(true) }, { true, 30, 7 }, "an enchant ID given as text")
 		w.env.C_Item.GetWeaponEnchantInfo = function()
+			return { { hasEnchant = true, enchantType = 2, timeLeft = wow.SECRET, enchantID = 0 } }
+		end
+		H.same({ A.WeaponEnchant(true) }, { true, 9999, nil }, "on, without an ID or time")
+		w.env.C_Item.GetWeaponEnchantInfo = function()
 			return "odd"
 		end
-		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil }, "an odd answer: the old API (failing) decides")
+		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil }, "an odd answer: unknown")
 		w.env.C_Item.GetWeaponEnchantInfo = nil
-		w.env.GetWeaponEnchantInfo = nil
 		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil })
 	end)
 
@@ -662,7 +644,6 @@ describe("API weapon enchants", function()
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			error("boom")
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		H.same({ A.WeaponEnchant(false) }, { nil, 0, nil })
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			return "odd"

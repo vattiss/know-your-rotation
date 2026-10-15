@@ -15,20 +15,7 @@ local function asNumber(value)
 	return nil
 end
 
-local function pickField(t, key, index)
-	if t[key] ~= nil then
-		return t[key]
-	end
-	return t[index]
-end
-
 local function interpretEnchant(has, remainRaw, enchRaw)
-	if type(has) == "table" then
-		local t = has
-		has = pickField(t, "hasMainHandEnchant", 1)
-		remainRaw = pickField(t, "mainHandExpiration", 2)
-		enchRaw = pickField(t, "mainHandEnchantID", 4)
-	end
 	local remain = asNumber(remainRaw)
 	local enchId = asNumber(enchRaw)
 	if remain then
@@ -41,16 +28,7 @@ local function interpretEnchant(has, remainRaw, enchRaw)
 	if enchId and enchId > 0 then
 		return true, remain > 0 and remain or 9999, enchId
 	end
-	if type(has) == "table" then
-		return nil, 0, nil
-	end
-	if readable(has) then
-		if has then
-			return true, remain > 0 and remain or 9999, nil
-		end
-		return false, 0, 0
-	end
-	return nil, 0, nil
+	return true, remain > 0 and remain or 9999, nil
 end
 
 -- Per-slot read (C_PaperDollInfo, what the Blizzard buff frame uses). Returns
@@ -115,55 +93,8 @@ local function readWeaponEnchant(offhand)
 	if iHas ~= nil then
 		return iHas, iRemain, iId
 	end
-	local packs = {}
-	local function push(ok, a, b, c, d, e, f, g, h)
-		if ok then
-			packs[#packs + 1] = { a, b, c, d, e, f, g, h }
-		end
-	end
-	if GetWeaponEnchantInfo then
-		push(pcall(GetWeaponEnchantInfo))
-	end
-	local bestHas, bestRemain, bestId
-	local sawFalse = false
-	local sawUnknown = false
-	for _, src in ipairs(packs) do
-		local has, remain, enchId
-		if type(src[1]) == "table" then
-			local t = src[1]
-			if offhand then
-				has, remain, enchId = interpretEnchant(
-					pickField(t, "hasOffHandEnchant", 5),
-					pickField(t, "offHandExpiration", 6),
-					pickField(t, "offHandEnchantID", 8)
-				)
-			else
-				has, remain, enchId = interpretEnchant(t)
-			end
-		elseif offhand then
-			has, remain, enchId = interpretEnchant(src[5], src[6], src[8])
-		else
-			has, remain, enchId = interpretEnchant(src[1], src[2], src[4])
-		end
-		if has == true then
-			return true, remain, enchId
-		end
-		if has == false then
-			sawFalse = true
-		else
-			sawUnknown = true
-			if bestHas == nil then
-				bestHas, bestRemain, bestId = has, remain, enchId
-			end
-		end
-	end
-	if sawUnknown then
-		return bestHas, bestRemain or 0, bestId
-	end
-	if sawFalse then
-		return false, 0, 0
-	end
-	return bestHas, bestRemain or 0, bestId
+	-- No answer from either API: unknown (the tooltip read decides).
+	return nil, 0, nil
 end
 
 function ns.API.WeaponEnchant(offhand)

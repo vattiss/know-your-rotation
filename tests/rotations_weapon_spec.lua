@@ -136,7 +136,6 @@ describe("Weapon dual wield (rogue)", function()
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			return "odd"
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		H.same({ ns.BuildWeapon() }, { 8679, 0, false }, "client cannot say: quiet")
 		ns.weaponGrace = w.state.time + 5
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
@@ -190,7 +189,6 @@ describe("Weapon single hand", function()
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			error("boom")
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		w.state.tooltips = { [16] = { { leftText = "Rockbiter 3" } } }
 		ns.API.ClearWeaponTooltipCache()
 		H.same({ ns.BuildWeapon() }, { 8017, 9999, false }, "tooltip")
@@ -210,7 +208,6 @@ describe("Weapon single hand", function()
 			end
 			return a
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		answers[16] = "error"
 		answers[17] = { enchantID = 5, remainingTimeMs = 1000 }
 		ns.ClearWeaponMemory()
@@ -275,7 +272,6 @@ describe("Weapon single hand", function()
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			return "odd"
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		ns.weaponGrace = w.state.time + 2
 		H.same({ ns.BuildWeapon() }, { 8017, 0, false }, "unknown state inside the grace")
 	end)
@@ -286,7 +282,6 @@ describe("Weapon single hand", function()
 		w.env.C_PaperDollInfo.GetTemporaryEnchantmentInfo = function()
 			return "odd"
 		end
-		w.env.GetWeaponEnchantInfo = nil
 		w.state.tooltips = { [16] = { { leftText = "Stone Edge" } } }
 		ns.WEAPON_BUFFS.SHAMAN[3].match = nil
 		ns.InvalidateBuffCaches()
