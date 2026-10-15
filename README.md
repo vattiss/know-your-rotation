@@ -4,7 +4,7 @@ Rotation helper for **WoW Forever** (Classic Era combat on the camelot / Midnigh
 
 It highlights the spell to press next with a glow on your action-bar button, and does the same for heals, long defense buffs, interrupts, purges, cleanses, and weapon imbues. There is no HUD window.
 
-Current version: **1.0.0-beta.2** (beta)
+Current version: **1.0.0-beta.2** (beta). Download: **[CurseForge](https://www.curseforge.com/wow/addons/know-your-rotation)**.
 
 **Beta:** the addon works, but not every class and level range has been played through yet, and the default spell lists are still being tuned for WoW Forever. Please report wrong suggestions, missing glows or Lua errors in the [issues](https://github.com/vattiss/know-your-rotation/issues).
 
@@ -19,6 +19,10 @@ Current version: **1.0.0-beta.2** (beta)
 Forever uses its own spell IDs for some abilities (for example Devotion Aura). The addon resolves spells by **name + spellbook**, so ranks and remapped IDs still match.
 
 ## Install
+
+**CurseForge (recommended):** install [Know Your Rotation](https://www.curseforge.com/wow/addons/know-your-rotation) with the CurseForge app, or download the file from the project page. The app keeps it up to date.
+
+**By hand:** download the zip from [CurseForge](https://www.curseforge.com/wow/addons/know-your-rotation/files) or from the [GitHub releases](https://github.com/vattiss/know-your-rotation/releases) (each GitHub zip has a SHA-256 checksum and a build attestation), then:
 
 1. Copy the `KnowYourRotation` folder into:
 

@@ -7,6 +7,8 @@
 ## SavedVariables: KnowYourRotationDB
 ## SavedVariablesPerCharacter: KnowYourRotationCharDB
 ## DefaultState: enabled
+## X-Curse-Project-ID: 1745557
+## X-Website: https://github.com/vattiss/know-your-rotation
 
 Locale.lua
 API.lua
