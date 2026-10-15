@@ -1,8 +1,12 @@
-1.0.0-beta.1
+1.0.0-beta.2
 
-# 1.0.0-beta.1
+# 1.0.0-beta.2
 
-First beta of Know Your Rotation.
+## Changes since 1.0.0-beta.1
+- No deprecated API calls any more: the action bar, spellbook, auto-repeat, weapon enchant and chat reads use the current C_* functions (C_ActionBar, C_SpellBook, C_Spell, C_Item, ChatFrameUtil). Nothing changes in game; the addon no longer depends on the deprecation fallbacks.
+- The spellbook is indexed once per bank instead of up to four times.
+
+## About Know Your Rotation
 
 This is a beta: the addon works, but not every class and level range has been played through yet, and the default spell lists are still being tuned for WoW Forever. Please report anything odd (a wrong suggestion, a missing glow, a Lua error) on GitHub: https://github.com/vattiss/know-your-rotation/issues
 

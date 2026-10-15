@@ -13,7 +13,7 @@ body:
     attributes:
       label: Addon version
       description: Shown in the game's AddOns list and at the top of the debug report.
-      placeholder: 1.0.0-beta.1
+      placeholder: 1.0.0-beta.2
     validations:
       required: true
   - type: input

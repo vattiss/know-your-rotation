@@ -41,4 +41,4 @@ Still to do:
 
 ## 4. Release
 
-1.0.0-beta.1 is released with the tag `v1.0.0-beta.1` (GitHub Actions builds the zip). Next version: bump `VERSION.txt` (with new release notes) and the TOC together, then push the tag `v<version>`.
+1.0.0-beta.2 is the latest release (tag `v1.0.0-beta.2`; GitHub Actions builds the zip, which is uploaded to CurseForge by hand as Beta). Next version: bump `VERSION.txt` (with new release notes) and the TOC together, then push the tag `v<version>`.
